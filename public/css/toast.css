@@ -1,0 +1,87 @@
+/* Toast Customization */
+
+/* Dark Theme Toast Styling */
+.toast {
+    background-color: #2a2a3a;
+    color: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.toast-header {
+    background-color: #1e1e28;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.toast-body {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Brand Colors for Icons */
+.toast-header .text-success {
+    color: #31d8b2 !important;
+}
+
+.toast-header .text-danger {
+    color: #e74c3c !important;
+}
+
+.toast-header .text-warning {
+    color: #ffa91e !important;
+}
+
+.toast-header .text-info {
+    color: #31d8b2 !important;
+}
+
+/* Light Theme Toast Styling */
+[data-theme="light"] .toast {
+    background-color: #ffffff;
+    color: #1e1e28;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .toast-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    color: #1e1e28;
+}
+
+[data-theme="light"] .toast-body {
+    color: #1e1e28;
+}
+
+[data-theme="light"] .toast-header .text-success {
+    color: #31d8b2 !important;
+}
+
+[data-theme="light"] .toast-header .text-danger {
+    color: #e74c3c !important;
+}
+
+[data-theme="light"] .toast-header .text-warning {
+    color: #ffa91e !important;
+}
+
+[data-theme="light"] .toast-header .text-info {
+    color: #204e7e !important;
+}
+
+/* Toast Animation Enhancements */
+.toast {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="light"] .toast {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* Hover effect */
+.toast:hover {
+    box-shadow: 0 12px 32px rgba(49, 216, 178, 0.15);
+}
+
+[data-theme="light"] .toast:hover {
+    box-shadow: 0 12px 32px rgba(32, 78, 126, 0.15);
+}
+

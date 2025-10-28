@@ -1,0 +1,16 @@
+{
+    "$schema": "https://json.schemastore.org/package.json",
+    "private": true,
+    "description": "Tridah Framework Template - Uses CDN for assets, no build process required",
+    "scripts": {
+        "test": "echo \"No npm scripts needed - using CDN for Bootstrap and Font Awesome\""
+    },
+    "devDependencies": {
+        "@tailwindcss/forms": "^0.5.2",
+        "alpinejs": "^3.4.2",
+        "autoprefixer": "^10.4.2",
+        "postcss": "^8.4.31",
+        "tailwindcss": "^3.1.0"
+    },
+    "dependencies": []
+}
