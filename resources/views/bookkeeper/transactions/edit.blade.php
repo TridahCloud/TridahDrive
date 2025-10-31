@@ -179,13 +179,11 @@
                                                     <i class="fas fa-file fa-2x text-muted"></i>
                                                 @endif
                                                 <small class="d-block text-truncate" title="{{ $attachment->original_filename }}">{{ $attachment->original_filename }}</small>
-                                                <form action="{{ route('drives.bookkeeper.transactions.attachments.destroy', [$drive, $transaction, $attachment]) }}" method="POST" class="mt-1" onsubmit="return confirm('Delete this attachment?');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </form>
+                                                <button type="button" 
+                                                    class="btn btn-sm btn-outline-danger mt-1" 
+                                                    onclick="deleteAttachment({{ $attachment->id }})">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -212,9 +210,32 @@
                         </a>
                     </div>
                 </form>
+                
+                <!-- Hidden delete forms for attachments (one per attachment) -->
+                @if($transaction->attachments->count() > 0)
+                    @foreach($transaction->attachments as $attachment)
+                        <form id="delete-attachment-{{ $attachment->id }}" 
+                              action="{{ route('drives.bookkeeper.transactions.attachments.destroy', [$drive, $transaction, $attachment]) }}" 
+                              method="POST" 
+                              style="display: none;">
+                            @csrf
+                            @method('DELETE')
+                        </form>
+                    @endforeach
+                @endif
             </div>
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+function deleteAttachment(attachmentId) {
+    if (confirm('Are you sure you want to delete this attachment?')) {
+        document.getElementById('delete-attachment-' + attachmentId).submit();
+    }
+}
+</script>
+@endpush
 @endsection
 

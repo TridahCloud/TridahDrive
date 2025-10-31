@@ -246,6 +246,9 @@ class BookTransactionController extends Controller
             abort(404);
         }
 
+        // Load attachments relationship
+        $transaction->load('attachments');
+
         $accounts = $drive->accounts()->where('is_active', true)->orderBy('name')->get();
         $categories = $drive->categories()->where('is_active', true)->orderBy('name')->get();
 
@@ -284,6 +287,9 @@ class BookTransactionController extends Controller
         }
 
         $transaction->update($validated);
+        
+        // Refresh transaction to get updated data
+        $transaction->refresh();
 
         // Handle new file uploads
         if ($request->hasFile('attachments')) {
