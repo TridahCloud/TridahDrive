@@ -31,7 +31,17 @@ class NotificationManager {
 
     async loadNotifications() {
         try {
-            const response = await fetch('/notifications?per_page=10');
+            const response = await fetch('/notifications?per_page=10', {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
             const data = await response.json();
             
             this.notifications = data.notifications.data || [];
@@ -95,7 +105,15 @@ class NotificationManager {
                                 </div>
                                 ${!notification.read ? '<span class="badge bg-primary rounded-pill ms-2">New</span>' : ''}
                             </div>
-                            ${driveId ? `
+                            ${notification.data?.url ? `
+                                <div class="mt-2">
+                                    <a href="${notification.data.url}" class="btn btn-sm btn-outline-primary notification-view-link" 
+                                       data-notification-id="${notification.id}" 
+                                       data-read="${notification.read}">
+                                        <i class="fas fa-arrow-right me-1"></i>View
+                                    </a>
+                                </div>
+                            ` : driveId ? `
                                 <div class="mt-2">
                                     <a href="/drives/${driveId}" class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-folder me-1"></i>View Drive
@@ -135,6 +153,27 @@ class NotificationManager {
         }).join('');
 
         container.innerHTML = html;
+
+        // Add event listeners for notification view links
+        container.querySelectorAll('.notification-view-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                const notificationId = link.getAttribute('data-notification-id');
+                const isRead = link.getAttribute('data-read') === 'true';
+                
+                // If unread, mark as read before navigating
+                if (!isRead && notificationId) {
+                    e.preventDefault();
+                    this.markAsRead(notificationId).then(() => {
+                        // Navigate after marking as read
+                        window.location.href = link.href;
+                    }).catch(() => {
+                        // Even if marking fails, still navigate
+                        window.location.href = link.href;
+                    });
+                }
+                // If already read, just navigate normally
+            });
+        });
 
         // Add event listeners
         container.querySelectorAll('.mark-as-read').forEach(btn => {
@@ -192,9 +231,14 @@ class NotificationManager {
             const data = await response.json();
             this.unreadCount = data.unread_count || 0;
             this.updateBadge();
-            this.loadNotifications();
+            // Don't reload notifications here if we're navigating away
+            if (!response.ok) {
+                throw new Error('Failed to mark as read');
+            }
+            return data;
         } catch (error) {
             console.error('Error marking notification as read:', error);
+            throw error;
         }
     }
 
@@ -267,6 +311,8 @@ class NotificationManager {
             'drive_invite': { name: 'fa-folder-plus', color: 'text-info' },
             'drive_role_changed': { name: 'fa-user-cog', color: 'text-warning' },
             'drive_removed': { name: 'fa-folder-minus', color: 'text-danger' },
+            'task_mention': { name: 'fa-at', color: 'text-info' },
+            'task_comment': { name: 'fa-comment', color: 'text-primary' },
         };
         
         return icons[type] || { name: 'fa-bell', color: 'text-secondary' };

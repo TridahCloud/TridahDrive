@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Drive;
 use App\Models\Invoice;
+use App\Models\BookTransaction;
+use App\Models\Task;
 use App\Services\DriveService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -65,24 +67,73 @@ class DriveController extends Controller
         $this->authorize('view', $drive);
 
         // Load relationships
-        $drive->load(['items', 'users', 'toolProfiles']);
+        $drive->load(['items', 'users', 'toolProfiles', 'invoices', 'projects', 'accounts']);
 
-        // Group items by tool type
+        // Group items by tool type (legacy support)
         $itemsByType = $drive->items()
             ->whereNull('deleted_at')
             ->latest()
             ->get()
             ->groupBy('tool_type');
 
-        // Get invoice stats
+        // Invoice stats
         $invoiceStats = [
             'total' => $drive->invoices()->count(),
             'draft' => $drive->invoices()->where('status', 'draft')->count(),
             'paid' => $drive->invoices()->where('status', 'paid')->count(),
             'total_amount' => $drive->invoices()->where('status', 'paid')->sum('total'),
         ];
+        
+        // Recent invoices (last 5)
+        $recentInvoices = $drive->invoices()
+            ->with(['client', 'user'])
+            ->latest()
+            ->take(5)
+            ->get();
+        
+        // BookKeeper stats
+        $bookkeeperStats = [
+            'total_transactions' => $drive->bookTransactions()->count(),
+            'total_accounts' => $drive->accounts()->where('is_active', true)->count(),
+            'total_categories' => $drive->categories()->where('is_active', true)->count(),
+        ];
+        
+        // Recent transactions (last 5)
+        $recentTransactions = $drive->bookTransactions()
+            ->with(['account', 'category', 'creator'])
+            ->latest()
+            ->take(5)
+            ->get();
+        
+        // Project Board stats
+        $projectStats = [
+            'total_projects' => $drive->projects()->whereNull('deleted_at')->count(),
+            'active_projects' => $drive->projects()->whereNull('deleted_at')->where('status', 'active')->count(),
+            'total_tasks' => Task::whereHas('project', function($query) use ($drive) {
+                $query->where('drive_id', $drive->id)->whereNull('deleted_at');
+            })->whereNull('deleted_at')->count(),
+        ];
+        
+        // Recent projects (last 5)
+        $recentProjects = $drive->projects()
+            ->whereNull('deleted_at')
+            ->with(['creator', 'tasks' => function($query) {
+                $query->whereNull('deleted_at');
+            }])
+            ->latest()
+            ->take(5)
+            ->get();
 
-        return view('drives.show', compact('drive', 'itemsByType', 'invoiceStats'));
+        return view('drives.show', compact(
+            'drive', 
+            'itemsByType', 
+            'invoiceStats', 
+            'recentInvoices',
+            'bookkeeperStats',
+            'recentTransactions',
+            'projectStats',
+            'recentProjects'
+        ));
     }
 
     /**

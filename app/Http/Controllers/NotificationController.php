@@ -12,11 +12,30 @@ class NotificationController extends Controller
     /**
      * Get all notifications for the authenticated user
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request)
     {
         $user = $request->user();
         
-        $perPage = $request->get('per_page', 20);
+        // If it's an AJAX request or expects JSON, return JSON
+        if ($request->expectsJson() || $request->ajax() || $request->header('Accept') === 'application/json') {
+            $perPage = $request->get('per_page', 20);
+            
+            $notifications = Notification::where('user_id', $user->id)
+                ->orderBy('created_at', 'desc')
+                ->paginate($perPage);
+
+            $unreadCount = Notification::where('user_id', $user->id)
+                ->where('read', false)
+                ->count();
+
+            return response()->json([
+                'notifications' => $notifications,
+                'unread_count' => $unreadCount,
+            ]);
+        }
+
+        // Otherwise, return view
+        $perPage = 20;
         
         $notifications = Notification::where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
@@ -26,10 +45,7 @@ class NotificationController extends Controller
             ->where('read', false)
             ->count();
 
-        return response()->json([
-            'notifications' => $notifications,
-            'unread_count' => $unreadCount,
-        ]);
+        return view('notifications.index', compact('notifications', 'unreadCount'));
     }
 
     /**

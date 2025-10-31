@@ -137,6 +137,22 @@ class Drive extends Model
     }
 
     /**
+     * Get projects for this drive (Project Board)
+     */
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class);
+    }
+
+    /**
+     * Get task labels for this drive (Project Board)
+     */
+    public function taskLabels(): HasMany
+    {
+        return $this->hasMany(TaskLabel::class);
+    }
+
+    /**
      * Get the default invoice profile
      */
     public function getDefaultInvoiceProfileAttribute(): ?InvoiceProfile

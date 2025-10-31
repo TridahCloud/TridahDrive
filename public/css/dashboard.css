@@ -292,6 +292,117 @@
     color: rgba(30, 30, 40, 0.6) !important;
 }
 
+/* CSS Variables for theme support */
+:root {
+    --text-color: rgba(255, 255, 255, 0.9);
+    --bg-primary: #141420;
+    --bg-secondary: #1e1e28;
+    --bg-tertiary: #2a2a3a;
+    --border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="light"] {
+    --text-color: #1e1e28;
+    --bg-primary: #f8f9fa;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f8f9fa;
+    --border-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Light mode fixes for white text */
+[data-theme="light"] .bg-primary .text-white,
+[data-theme="light"] .bg-secondary .text-white,
+[data-theme="light"] span.text-white[style*="color: white"],
+[data-theme="light"] span[style*="color: white"] {
+    color: white !important;
+}
+
+/* Ensure list-group-items are visible in light mode */
+[data-theme="light"] .list-group-item {
+    background-color: #ffffff;
+    color: #1e1e28;
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .list-group-item:hover {
+    background-color: #f8f9fa;
+}
+
+[data-theme="light"] .list-group-item a {
+    color: #1e1e28;
+}
+
+[data-theme="light"] .list-group-item a:hover {
+    color: #31d8b2;
+}
+
+/* Task card links in light mode */
+[data-theme="light"] .task-card a {
+    color: #1e1e28;
+}
+
+[data-theme="light"] .task-card a:hover {
+    color: #31d8b2;
+}
+
+[data-theme="light"] .task-card .text-muted {
+    color: rgba(30, 30, 40, 0.6) !important;
+}
+
+/* Comment content in light mode */
+[data-theme="light"] .comment-content {
+    color: #1e1e28 !important;
+}
+
+[data-theme="light"] .comment strong {
+    color: #1e1e28 !important;
+}
+
+[data-theme="light"] .comment p,
+[data-theme="light"] .comment div {
+    color: #1e1e28 !important;
+}
+
+[data-theme="light"] .comment a {
+    color: #204e7e !important;
+}
+
+/* Links in light mode */
+[data-theme="light"] a:not(.btn):not(.badge) {
+    color: #204e7e;
+}
+
+[data-theme="light"] a:not(.btn):not(.badge):hover {
+    color: #31d8b2;
+}
+
+/* Breadcrumb links */
+[data-theme="light"] .breadcrumb a {
+    color: #204e7e;
+}
+
+[data-theme="light"] .breadcrumb-item.active {
+    color: rgba(30, 30, 40, 0.6);
+}
+
+/* Task view specific light mode fixes */
+[data-theme="light"] .dashboard-card h5,
+[data-theme="light"] .dashboard-card h4,
+[data-theme="light"] .dashboard-card h3,
+[data-theme="light"] .dashboard-card h2,
+[data-theme="light"] .dashboard-card h6 {
+    color: #1e1e28 !important;
+}
+
+[data-theme="light"] .dashboard-card p:not(.text-muted),
+[data-theme="light"] .dashboard-card div:not(.text-muted) {
+    color: #1e1e28 !important;
+}
+
+[data-theme="light"] .dashboard-card label {
+    color: rgba(30, 30, 40, 0.6) !important;
+}
+
 [data-theme="light"] .card-title {
     color: rgba(30, 30, 40, 0.6);
 }
@@ -311,6 +422,39 @@
 [data-theme="light"] .btn-outline-light {
     color: #1e1e28;
     border-color: rgba(30, 30, 40, 0.2);
+}
+
+/* Dark mode overrides for Bootstrap bg classes */
+[data-theme="dark"] .bg-light,
+[data-theme="dark"] .bg-white {
+    background-color: var(--bg-secondary, #2a2a3a) !important;
+}
+
+[data-theme="dark"] .bg-light.bg-opacity-5,
+[data-theme="dark"] .bg-white.bg-opacity-5 {
+    background-color: rgba(42, 42, 58, 0.5) !important;
+}
+
+/* Stats card styling for dark mode */
+.stats-card {
+    background-color: rgba(255, 255, 255, 0.05);
+    transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .stats-card {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="light"] .stats-card {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.stats-card:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="light"] .stats-card:hover {
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
 [data-theme="light"] .bg-light {
@@ -731,6 +875,60 @@
 
 [data-theme="dark"] .invoice-container .bg-light {
     background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+[data-theme="dark"] .invoice-container {
+    background-color: var(--bg-secondary, #2a2a3a) !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="light"] .invoice-container {
+    background-color: #ffffff !important;
+    color: #1e1e28 !important;
+}
+
+/* Additional dark mode fixes for Bootstrap components */
+[data-theme="dark"] .dropdown-menu {
+    background-color: var(--bg-secondary, #2a2a3a) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .dropdown-item {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="dark"] .dropdown-item:hover,
+[data-theme="dark"] .dropdown-item:focus {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: rgba(255, 255, 255, 1) !important;
+}
+
+[data-theme="dark"] .dropdown-divider {
+    border-top-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .card {
+    background-color: var(--bg-secondary, #2a2a3a) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="dark"] .list-group-item {
+    background-color: var(--bg-secondary, #2a2a3a) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="dark"] .list-group-item:hover,
+[data-theme="dark"] .list-group-item:focus {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: rgba(255, 255, 255, 1) !important;
+}
+
+[data-theme="dark"] .list-group-item.active {
+    background-color: #31d8b2 !important;
+    border-color: #31d8b2 !important;
+    color: #141420 !important;
 }
 
 [data-theme="dark"] .invoice-container [contenteditable="true"] {

@@ -202,7 +202,7 @@
         @method('PATCH')
         
         <!-- Invoice Container - Looks like actual invoice -->
-        <div class="bg-white rounded shadow-sm p-5 invoice-container" style="max-width: 900px; margin: 0 auto;">
+        <div class="invoice-container rounded shadow-sm p-5" style="max-width: 900px; margin: 0 auto; background-color: var(--bg-secondary, #f8f9fa);">
             <!-- Top Section: Logo & Invoice Info -->
             <div class="invoice-section d-flex justify-content-between align-items-start mb-5" id="company-info" data-section="company-info">
                 <div class="flex-grow-1">

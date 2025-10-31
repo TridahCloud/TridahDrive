@@ -11,6 +11,10 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\InvoiceProfileController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\TaskController;
+use App\Http\Controllers\TaskCommentController;
+use App\Http\Controllers\TaskLabelController;
 use App\Http\Controllers\UserItemController;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +25,9 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     return redirect()->route('drives.index');
 })->middleware('auth')->name('dashboard');
+
+// Public project board route (no authentication required)
+Route::get('public/board/{publicKey}', [ProjectController::class, 'publicShow'])->name('projects.public.show');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -53,6 +60,25 @@ Route::middleware('auth')->group(function () {
         Route::resource('transactions', BookTransactionController::class);
         Route::get('transactions/{transaction}/attachments/{attachment}', [BookTransactionController::class, 'showAttachment'])->name('transactions.attachments.show');
         Route::delete('transactions/{transaction}/attachments/{attachment}', [BookTransactionController::class, 'destroyAttachment'])->name('transactions.attachments.destroy');
+    });
+    
+    // Project Board routes
+    Route::prefix('drives/{drive}/projects')->name('drives.projects.')->group(function () {
+        Route::resource('projects', ProjectController::class);
+        
+               Route::prefix('projects/{project}')->name('projects.')->group(function () {
+                   Route::resource('tasks', TaskController::class);
+                   Route::post('tasks/{task}/update-status', [TaskController::class, 'updateStatus'])->name('tasks.update-status');
+                   Route::get('tasks/{task}/attachments/{attachment}', [TaskController::class, 'showAttachment'])->name('tasks.attachments.show');
+                   Route::delete('tasks/{task}/attachments/{attachment}', [TaskController::class, 'destroyAttachment'])->name('tasks.attachments.destroy');
+                   
+                   // Task comments
+                   Route::post('tasks/{task}/comments', [TaskCommentController::class, 'store'])->name('tasks.comments.store');
+                   Route::patch('tasks/{task}/comments/{comment}', [TaskCommentController::class, 'update'])->name('tasks.comments.update');
+                   Route::delete('tasks/{task}/comments/{comment}', [TaskCommentController::class, 'destroy'])->name('tasks.comments.destroy');
+               });
+        
+        Route::resource('task-labels', TaskLabelController::class);
     });
     
     // Notification routes

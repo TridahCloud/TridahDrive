@@ -19,6 +19,9 @@
                     <a href="{{ route('drives.bookkeeper.transactions.index', $drive) }}" class="btn btn-primary">
                         <i class="fas fa-book me-2"></i>BookKeeper
                     </a>
+                    <a href="{{ route('drives.projects.projects.index', $drive) }}" class="btn btn-primary">
+                        <i class="fas fa-tasks me-2"></i>Project Board
+                    </a>
                     @can('update', $drive)
                         <a href="{{ route('drives.edit', $drive) }}" class="btn btn-outline-primary">
                             <i class="fas fa-cog me-2"></i>Settings
@@ -49,113 +52,209 @@
         </div>
     @endif
 
-    <!-- Invoice Stats -->
-    @if(isset($invoiceStats) && $invoiceStats['total'] > 0)
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="dashboard-card text-center">
-                    <h3 class="mb-0 brand-teal">{{ $invoiceStats['total'] }}</h3>
-                    <p class="text-muted mb-0">Total Invoices</p>
+    <!-- Apps Overview -->
+    <div class="row mb-4">
+        <!-- Invoicer App Card -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="dashboard-card h-100">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="mb-1">
+                            <i class="fas fa-file-invoice me-2 brand-teal"></i>
+                            Invoicer
+                        </h5>
+                        <p class="text-muted small mb-0">Create and manage invoices</p>
+                    </div>
+                    <a href="{{ route('drives.invoices.index', $drive) }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-external-link-alt"></i>
+                    </a>
                 </div>
-            </div>
-            <div class="col-md-3">
-                <div class="dashboard-card text-center">
-                    <h3 class="mb-0 text-secondary">{{ $invoiceStats['draft'] }}</h3>
-                    <p class="text-muted mb-0">Draft</p>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="text-center p-2 stats-card rounded">
+                            <h4 class="mb-0 brand-teal">{{ $invoiceStats['total'] ?? 0 }}</h4>
+                            <small class="text-muted">Total</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center p-2 stats-card rounded">
+                            <h4 class="mb-0 text-success">${{ number_format($invoiceStats['total_amount'] ?? 0, 2) }}</h4>
+                            <small class="text-muted">Revenue</small>
+                        </div>
+                    </div>
                 </div>
+                @if(isset($recentInvoices) && $recentInvoices->count() > 0)
+                    <div class="mb-3">
+                        <small class="text-muted d-block mb-2">Recent Invoices</small>
+                        <div class="list-group list-group-flush">
+                            @foreach($recentInvoices->take(3) as $invoice)
+                                <a href="{{ route('drives.invoices.show', [$drive, $invoice]) }}" class="list-group-item list-group-item-action px-0 py-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong class="small d-block">{{ $invoice->invoice_number }}</strong>
+                                            <small class="text-muted">{{ $invoice->client->name ?? 'No Client' }}</small>
+                                        </div>
+                                        <span class="badge bg-{{ $invoice->status === 'paid' ? 'success' : ($invoice->status === 'draft' ? 'secondary' : 'warning') }}">
+                                            {{ ucfirst($invoice->status) }}
+                                        </span>
+                                    </div>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+                <a href="{{ route('drives.invoices.create', $drive) }}" class="btn btn-primary btn-sm w-100">
+                    <i class="fas fa-plus me-1"></i>New Invoice
+                </a>
             </div>
-            <div class="col-md-3">
-                <div class="dashboard-card text-center">
-                    <h3 class="mb-0 text-success">{{ $invoiceStats['paid'] }}</h3>
-                    <p class="text-muted mb-0">Paid</p>
+        </div>
+
+        <!-- BookKeeper App Card -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="dashboard-card h-100">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="mb-1">
+                            <i class="fas fa-book me-2 brand-teal"></i>
+                            BookKeeper
+                        </h5>
+                        <p class="text-muted small mb-0">Track transactions and accounts</p>
+                    </div>
+                    <a href="{{ route('drives.bookkeeper.dashboard', $drive) }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-external-link-alt"></i>
+                    </a>
                 </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-4">
+                        <div class="text-center p-2 stats-card rounded">
+                            <h4 class="mb-0 brand-teal">{{ $bookkeeperStats['total_transactions'] ?? 0 }}</h4>
+                            <small class="text-muted">Transactions</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-center p-2 stats-card rounded">
+                            <h4 class="mb-0 text-info">{{ $bookkeeperStats['total_accounts'] ?? 0 }}</h4>
+                            <small class="text-muted">Accounts</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-center p-2 stats-card rounded">
+                            <h4 class="mb-0 text-secondary">{{ $bookkeeperStats['total_categories'] ?? 0 }}</h4>
+                            <small class="text-muted">Categories</small>
+                        </div>
+                    </div>
+                </div>
+                @if(isset($recentTransactions) && $recentTransactions->count() > 0)
+                    <div class="mb-3">
+                        <small class="text-muted d-block mb-2">Recent Transactions</small>
+                        <div class="list-group list-group-flush">
+                            @foreach($recentTransactions->take(3) as $transaction)
+                                <a href="{{ route('drives.bookkeeper.transactions.show', [$drive, $transaction]) }}" class="list-group-item list-group-item-action px-0 py-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong class="small d-block">{{ $transaction->description ? Str::limit($transaction->description, 30) : 'Transaction #' . $transaction->id }}</strong>
+                                            <small class="text-muted">{{ $transaction->account->name ?? 'No Account' }}</small>
+                                        </div>
+                                        <span class="badge bg-{{ $transaction->type === 'income' ? 'success' : 'danger' }}">
+                                            ${{ number_format(abs($transaction->amount), 2) }}
+                                        </span>
+                                    </div>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+                <a href="{{ route('drives.bookkeeper.transactions.create', $drive) }}" class="btn btn-primary btn-sm w-100">
+                    <i class="fas fa-plus me-1"></i>New Transaction
+                </a>
             </div>
-            <div class="col-md-3">
-                <div class="dashboard-card text-center">
-                    <h3 class="mb-0 brand-teal">${{ number_format($invoiceStats['total_amount'], 2) }}</h3>
-                    <p class="text-muted mb-0">Total Revenue</p>
+        </div>
+
+        <!-- Project Board App Card -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="dashboard-card h-100">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="mb-1">
+                            <i class="fas fa-tasks me-2 brand-teal"></i>
+                            Project Board
+                        </h5>
+                        <p class="text-muted small mb-0">Manage projects and tasks</p>
+                    </div>
+                    <a href="{{ route('drives.projects.projects.index', $drive) }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-external-link-alt"></i>
+                    </a>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-4">
+                        <div class="text-center p-2 stats-card rounded">
+                            <h4 class="mb-0 brand-teal">{{ $projectStats['total_projects'] ?? 0 }}</h4>
+                            <small class="text-muted">Projects</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-center p-2 stats-card rounded">
+                            <h4 class="mb-0 text-success">{{ $projectStats['active_projects'] ?? 0 }}</h4>
+                            <small class="text-muted">Active</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-center p-2 stats-card rounded">
+                            <h4 class="mb-0 text-info">{{ $projectStats['total_tasks'] ?? 0 }}</h4>
+                            <small class="text-muted">Tasks</small>
+                        </div>
+                    </div>
+                </div>
+                @if(isset($recentProjects) && $recentProjects->count() > 0)
+                    <div class="mb-3">
+                        <small class="text-muted d-block mb-2">Recent Projects</small>
+                        <div class="list-group list-group-flush">
+                            @foreach($recentProjects->take(3) as $project)
+                                <a href="{{ route('drives.projects.projects.show', [$drive, $project]) }}" class="list-group-item list-group-item-action px-0 py-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong class="small d-block">{{ $project->name }}</strong>
+                                            <small class="text-muted">{{ $project->tasks->count() }} tasks</small>
+                                        </div>
+                                        <span class="badge bg-{{ $project->status === 'active' ? 'success' : ($project->status === 'completed' ? 'info' : 'secondary') }}">
+                                            {{ ucfirst($project->status) }}
+                                        </span>
+                                    </div>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+                <a href="{{ route('drives.projects.projects.create', $drive) }}" class="btn btn-primary btn-sm w-100">
+                    <i class="fas fa-plus me-1"></i>New Project
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty State (only show if all apps are empty) -->
+    @if(($invoiceStats['total'] ?? 0) == 0 && ($bookkeeperStats['total_transactions'] ?? 0) == 0 && ($projectStats['total_projects'] ?? 0) == 0)
+        <div class="row">
+            <div class="col-12">
+                <div class="dashboard-card text-center py-5">
+                    <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                    <h4 class="mb-2">Get Started</h4>
+                    <p class="text-muted">Create your first invoice, transaction, or project to get started</p>
+                    <div class="mt-3 d-flex gap-2 justify-content-center">
+                        <a href="{{ route('drives.invoices.create', $drive) }}" class="btn btn-primary">
+                            <i class="fas fa-file-invoice me-2"></i>New Invoice
+                        </a>
+                        <a href="{{ route('drives.bookkeeper.transactions.create', $drive) }}" class="btn btn-primary">
+                            <i class="fas fa-book me-2"></i>New Transaction
+                        </a>
+                        <a href="{{ route('drives.projects.projects.create', $drive) }}" class="btn btn-primary">
+                            <i class="fas fa-tasks me-2"></i>New Project
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
     @endif
-
-    <!-- Drive Items by Tool Type -->
-    <div class="row">
-        @forelse($itemsByType as $toolType => $items)
-            <div class="col-12 mb-4">
-                <div class="dashboard-card">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="mb-0">
-                            <i class="fas fa-{{ $toolType === 'invoice' ? 'file-invoice' : ($toolType === 'bookkeeper' ? 'book' : 'file') }} me-2 brand-teal"></i>
-                            {{ ucfirst($toolType) }} Files
-                        </h4>
-                        <div class="d-flex align-items-center gap-3">
-                            <span class="badge bg-brand-teal">{{ $items->count() }} items</span>
-                            @if($toolType === 'invoice')
-                                <a href="{{ route('drives.invoices.create', $drive) }}" class="btn btn-sm btn-primary">
-                                    <i class="fas fa-plus me-1"></i>New Invoice
-                                </a>
-                            @endif
-                        </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Created</th>
-                                    <th>Created By</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($items as $item)
-                                    <tr>
-                                        <td>
-                                            <i class="fas fa-file me-2 text-muted"></i>
-                                            {{ $item->name }}
-                                        </td>
-                                        <td>{{ $item->created_at->diffForHumans() }}</td>
-                                        <td>{{ $item->creator->name }}</td>
-                                        <td>
-                                            @can('update', $item)
-                                                <button class="btn btn-sm btn-outline-primary">Edit</button>
-                                            @endcan
-                                            @can('delete', $item)
-                                                <form action="{{ route('drives.items.destroy', [$drive, $item]) }}" method="POST" class="d-inline">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure?')">
-                                                        Delete
-                                                    </button>
-                                                </form>
-                                            @endcan
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        @empty
-            <div class="col-12">
-                <div class="dashboard-card text-center py-5">
-                    <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
-                    <h4 class="mb-2">No items yet</h4>
-                    <p class="text-muted">Start by creating your first invoice or using the bookkeeper tool</p>
-                    <div class="mt-3">
-                        <a href="{{ route('drives.invoices.create', $drive) }}" class="btn btn-primary me-2">
-                            <i class="fas fa-file-invoice me-2"></i>New Invoice
-                        </a>
-                        <a href="{{ route('drives.bookkeeper.transactions.index', $drive) }}" class="btn btn-primary">
-                            <i class="fas fa-book me-2"></i>Open BookKeeper
-                        </a>
-                    </div>
-                </div>
-            </div>
-        @endforelse
-    </div>
 </div>
 @endsection
 
