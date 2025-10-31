@@ -615,9 +615,30 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('tax_rate').addEventListener('input', calculateTotals);
     
     // Save button
-    document.getElementById('saveBtn').addEventListener('click', function() {
-        document.getElementById('invoiceForm').submit();
-    });
+    const saveBtn = document.getElementById('saveBtn');
+    const invoiceForm = document.getElementById('invoiceForm');
+    
+    if (saveBtn && invoiceForm) {
+        saveBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Save button clicked, submitting form...');
+            
+            // Re-index items array before submission
+            const itemRows = document.querySelectorAll('.item-row');
+            itemRows.forEach((row, index) => {
+                const inputs = row.querySelectorAll('input[name^="items["]');
+                inputs.forEach(input => {
+                    const name = input.name;
+                    const newName = name.replace(/items\[\d+\]/, `items[${index}]`);
+                    input.name = newName;
+                });
+            });
+            
+            invoiceForm.submit();
+        });
+    } else {
+        console.error('Save button or invoice form not found!', { saveBtn, invoiceForm });
+    }
     
     // Initial calculation
     calculateTotals();

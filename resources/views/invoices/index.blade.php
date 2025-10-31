@@ -145,6 +145,11 @@
                             ">
                                 {{ ucfirst($invoice->status) }}
                             </span>
+                            @if($invoice->status === 'paid' && isset($syncedTransactions) && in_array($invoice->invoice_number, $syncedTransactions))
+                                <span class="badge bg-primary" title="Synced with BookKeeper">
+                                    <i class="fas fa-book me-1"></i>Synced
+                                </span>
+                            @endif
                         </div>
                         <small class="text-muted">
                             <i class="fas fa-user me-1"></i>{{ $invoice->client_name }} 

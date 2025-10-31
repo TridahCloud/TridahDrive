@@ -811,6 +811,48 @@
     color: rgba(255, 255, 255, 0.4) !important;
 }
 
+/* Dark mode table styles for bookkeeper and other tables */
+[data-theme="dark"] .dashboard-card .table {
+    color: rgba(255, 255, 255, 0.9) !important;
+    background-color: transparent !important;
+}
+
+[data-theme="dark"] .dashboard-card .table thead {
+    background-color: rgba(49, 216, 178, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .dashboard-card .table thead th {
+    color: rgba(255, 255, 255, 0.9) !important;
+    background-color: rgba(49, 216, 178, 0.15) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    font-weight: 600;
+}
+
+[data-theme="dark"] .dashboard-card .table tbody {
+    background-color: transparent !important;
+}
+
+[data-theme="dark"] .dashboard-card .table tbody tr {
+    background-color: transparent !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+[data-theme="dark"] .dashboard-card .table tbody tr:hover {
+    background-color: rgba(49, 216, 178, 0.05) !important;
+}
+
+[data-theme="dark"] .dashboard-card .table tbody td {
+    background-color: transparent !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+[data-theme="dark"] .dashboard-card .table tbody td code {
+    color: rgba(255, 255, 255, 0.8) !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
 [data-theme="dark"] .invoice-container .table td,
 [data-theme="dark"] .invoice-container .table th {
     border-color: rgba(255, 255, 255, 0.1) !important;

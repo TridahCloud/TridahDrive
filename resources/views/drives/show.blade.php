@@ -16,6 +16,9 @@
                     <a href="{{ route('drives.invoices.index', $drive) }}" class="btn btn-primary">
                         <i class="fas fa-file-invoice me-2"></i>Invoices
                     </a>
+                    <a href="{{ route('drives.bookkeeper.transactions.index', $drive) }}" class="btn btn-primary">
+                        <i class="fas fa-book me-2"></i>BookKeeper
+                    </a>
                     @can('update', $drive)
                         <a href="{{ route('drives.edit', $drive) }}" class="btn btn-outline-primary">
                             <i class="fas fa-cog me-2"></i>Settings
@@ -145,9 +148,9 @@
                         <a href="{{ route('drives.invoices.create', $drive) }}" class="btn btn-primary me-2">
                             <i class="fas fa-file-invoice me-2"></i>New Invoice
                         </a>
-                        <button class="btn btn-primary">
-                            <i class="fas fa-book me-2"></i>New Book Entry
-                        </button>
+                        <a href="{{ route('drives.bookkeeper.transactions.index', $drive) }}" class="btn btn-primary">
+                            <i class="fas fa-book me-2"></i>Open BookKeeper
+                        </a>
                     </div>
                 </div>
             </div>

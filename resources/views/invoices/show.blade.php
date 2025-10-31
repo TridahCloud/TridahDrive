@@ -61,6 +61,14 @@
                         ">
                             {{ ucfirst($invoice->status) }}
                         </span>
+                        @if($invoice->status === 'paid' && $invoice->bookTransaction())
+                            <br>
+                            <small class="text-muted">
+                                <a href="{{ route('drives.bookkeeper.transactions.show', [$drive, $invoice->bookTransaction()]) }}" class="text-decoration-none">
+                                    <i class="fas fa-book me-1"></i>View in BookKeeper
+                                </a>
+                            </small>
+                        @endif
                     </div>
                 </div>
             </div>

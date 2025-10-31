@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\InvoiceBookKeeperSyncService;
+use App\Models\BookTransaction;
 use App\Models\Drive;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
@@ -14,6 +16,9 @@ use Illuminate\Support\Facades\DB;
 
 class InvoiceController extends Controller
 {
+    public function __construct(
+        protected InvoiceBookKeeperSyncService $syncService
+    ) {}
     /**
      * Display a listing of invoices for the drive
      */
@@ -25,6 +30,15 @@ class InvoiceController extends Controller
             ->with(['client', 'items'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
+        
+        // Load BookKeeper transactions for paid invoices to show sync status
+        $paidInvoiceNumbers = $invoices->filter(fn($inv) => $inv->status === 'paid')
+            ->pluck('invoice_number');
+        
+        $syncedTransactions = BookTransaction::where('drive_id', $drive->id)
+            ->whereIn('reference', $paidInvoiceNumbers)
+            ->pluck('reference')
+            ->toArray();
 
         // Get stats for quick overview
         $stats = [
@@ -40,7 +54,7 @@ class InvoiceController extends Controller
         $hasClients = $drive->clients()->exists();
         $hasItems = $drive->userItems()->exists();
 
-        return view('invoices.index', compact('drive', 'invoices', 'stats', 'hasProfile', 'hasClients', 'hasItems'));
+        return view('invoices.index', compact('drive', 'invoices', 'stats', 'hasProfile', 'hasClients', 'hasItems', 'syncedTransactions'));
     }
 
     /**
@@ -132,6 +146,14 @@ class InvoiceController extends Controller
             // Calculate totals
             $invoice->calculateTotals();
 
+            // Refresh invoice to get calculated totals
+            $invoice->refresh();
+
+            // Sync with BookKeeper if invoice is paid
+            if ($invoice->status === 'paid') {
+                $this->syncService->syncInvoice($invoice);
+            }
+
             DB::commit();
 
             return redirect()->route('drives.invoices.show', [$drive, $invoice])
@@ -200,9 +222,16 @@ class InvoiceController extends Controller
                 'status' => 'required|in:draft,sent,paid,overdue,cancelled',
             ]);
             
+            $oldStatus = $invoice->status;
+            
             $invoice->update([
                 'status' => $request->status,
             ]);
+            
+            // Sync with BookKeeper when status changes
+            if ($oldStatus !== $invoice->status) {
+                $this->syncService->syncInvoice($invoice);
+            }
             
             return redirect()->route('drives.invoices.index', $drive)
                 ->with('success', 'Invoice status updated successfully!');
@@ -269,6 +298,12 @@ class InvoiceController extends Controller
             // Calculate totals
             $invoice->calculateTotals();
 
+            // Refresh invoice to get calculated totals
+            $invoice->refresh();
+
+            // Sync with BookKeeper when invoice is updated
+            $this->syncService->syncInvoice($invoice);
+
             DB::commit();
 
             return redirect()->route('drives.invoices.show', [$drive, $invoice])
@@ -292,9 +327,12 @@ class InvoiceController extends Controller
             abort(404);
         }
 
+        // Remove associated BookKeeper transaction if exists
+        $this->syncService->syncInvoice($invoice);
+
         $invoice->delete();
 
-        return redirect()->route('invoices.index', $drive)
+        return redirect()->route('drives.invoices.index', $drive)
             ->with('success', 'Invoice deleted successfully!');
     }
 }

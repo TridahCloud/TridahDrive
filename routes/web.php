@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\AccountController;
+use App\Http\Controllers\BookTransactionController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DriveController;
 use App\Http\Controllers\DriveItemController;
@@ -41,6 +44,16 @@ Route::middleware('auth')->group(function () {
     Route::resource('drives.clients', ClientController::class);
     Route::resource('drives.user-items', UserItemController::class);
     Route::resource('drives.invoice-profiles', InvoiceProfileController::class);
+    
+    // BookKeeper routes
+    Route::prefix('drives/{drive}/bookkeeper')->name('drives.bookkeeper.')->group(function () {
+        Route::get('/', [BookTransactionController::class, 'dashboard'])->name('dashboard');
+        Route::resource('accounts', AccountController::class);
+        Route::resource('categories', CategoryController::class);
+        Route::resource('transactions', BookTransactionController::class);
+        Route::get('transactions/{transaction}/attachments/{attachment}', [BookTransactionController::class, 'showAttachment'])->name('transactions.attachments.show');
+        Route::delete('transactions/{transaction}/attachments/{attachment}', [BookTransactionController::class, 'destroyAttachment'])->name('transactions.attachments.destroy');
+    });
     
     // Notification routes
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');

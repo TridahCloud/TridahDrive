@@ -105,6 +105,38 @@ class Drive extends Model
     }
 
     /**
+     * Get accounts for this drive (BookKeeper)
+     */
+    public function accounts(): HasMany
+    {
+        return $this->hasMany(Account::class);
+    }
+
+    /**
+     * Get categories for this drive (BookKeeper)
+     */
+    public function categories(): HasMany
+    {
+        return $this->hasMany(Category::class);
+    }
+
+    /**
+     * Get transactions for this drive (BookKeeper)
+     */
+    public function bookTransactions(): HasMany
+    {
+        return $this->hasMany(BookTransaction::class);
+    }
+
+    /**
+     * Get departments for this drive (BookKeeper)
+     */
+    public function departments(): HasMany
+    {
+        return $this->hasMany(Department::class);
+    }
+
+    /**
      * Get the default invoice profile
      */
     public function getDefaultInvoiceProfileAttribute(): ?InvoiceProfile

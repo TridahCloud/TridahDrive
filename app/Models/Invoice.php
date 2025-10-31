@@ -81,6 +81,16 @@ class Invoice extends Model
     }
 
     /**
+     * Get the BookKeeper transaction associated with this invoice (if paid)
+     */
+    public function bookTransaction()
+    {
+        return BookTransaction::where('drive_id', $this->drive_id)
+            ->where('reference', $this->invoice_number)
+            ->first();
+    }
+
+    /**
      * Check if invoice is overdue
      */
     public function isOverdue(): bool
