@@ -36,6 +36,15 @@
                             </a></li>
                         </ul>
                     </div>
+                    <a href="{{ route('drives.bookkeeper.recurring-transactions.upcoming', $drive) }}" class="btn btn-info">
+                        <i class="fas fa-calendar-alt me-2"></i>Upcoming
+                        @if($dueRecurring->count() > 0)
+                            <span class="badge bg-danger ms-1">{{ $dueRecurring->count() }}</span>
+                        @endif
+                    </a>
+                    <a href="{{ route('drives.bookkeeper.tax-report', $drive) }}" class="btn btn-success">
+                        <i class="fas fa-file-invoice-dollar me-2"></i>Tax Report
+                    </a>
                     <a href="{{ route('drives.bookkeeper.transactions.index', $drive) }}" class="btn btn-primary">
                         <i class="fas fa-list me-2"></i>View All Transactions
                     </a>
@@ -210,9 +219,64 @@
                 </div>
             @endif
 
+            @if($dueRecurring->count() > 0 || $upcomingRecurring->count() > 0)
+                <div class="dashboard-card mb-4">
+                    <h5 class="mb-3">
+                        <i class="fas fa-calendar-alt me-2"></i>Upcoming Recurring Transactions
+                        @if($dueRecurring->count() > 0)
+                            <span class="badge bg-danger ms-2">{{ $dueRecurring->count() }} Due</span>
+                        @endif
+                    </h5>
+                    @if($dueRecurring->count() > 0)
+                        <div class="alert alert-danger mb-3">
+                            <strong>{{ $dueRecurring->count() }} transaction(s) due or overdue!</strong>
+                            <a href="{{ route('drives.bookkeeper.recurring-transactions.upcoming', $drive) }}" class="btn btn-sm btn-danger ms-2">
+                                View & Process
+                            </a>
+                        </div>
+                    @endif
+                    @if($upcomingRecurring->count() > 0)
+                        <ul class="list-unstyled">
+                            @foreach($upcomingRecurring->take(5) as $recurring)
+                                <li class="mb-2 d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ $recurring->name }}</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            {{ $recurring->next_due_date->format('M d') }} - 
+                                            <span class="{{ $recurring->type === 'income' ? 'text-success' : 'text-danger' }}">
+                                                ${{ number_format($recurring->amount, 2) }}
+                                            </span>
+                                        </small>
+                                    </div>
+                                    @if($recurring->isOverdue())
+                                        <span class="badge bg-danger">Overdue</span>
+                                    @elseif($recurring->isDue())
+                                        <span class="badge bg-warning">Due</span>
+                                    @endif
+                                </li>
+                            @endforeach
+                        </ul>
+                        @if($upcomingRecurring->count() > 5)
+                            <a href="{{ route('drives.bookkeeper.recurring-transactions.upcoming', $drive) }}" class="btn btn-sm btn-outline-primary w-100">
+                                View All ({{ $upcomingRecurring->count() }})
+                            </a>
+                        @endif
+                    @else
+                        <p class="text-muted">No upcoming recurring transactions</p>
+                    @endif
+                </div>
+            @endif
+
             <div class="dashboard-card">
                 <h5 class="mb-3">Quick Actions</h5>
                 <div class="d-grid gap-2">
+                    <a href="{{ route('drives.bookkeeper.recurring-transactions.create', $drive) }}" class="btn btn-info">
+                        <i class="fas fa-sync-alt me-2"></i>New Recurring Transaction
+                    </a>
+                    <a href="{{ route('drives.bookkeeper.tax-report', $drive) }}" class="btn btn-success">
+                        <i class="fas fa-file-invoice-dollar me-2"></i>Tax Report
+                    </a>
                     <a href="{{ route('drives.bookkeeper.transactions.create', $drive) }}" class="btn btn-primary">
                         <i class="fas fa-plus me-2"></i>New Transaction
                     </a>

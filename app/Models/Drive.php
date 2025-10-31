@@ -129,6 +129,14 @@ class Drive extends Model
     }
 
     /**
+     * Get recurring transactions for this drive (BookKeeper)
+     */
+    public function recurringTransactions(): HasMany
+    {
+        return $this->hasMany(RecurringTransaction::class);
+    }
+
+    /**
      * Get departments for this drive (BookKeeper)
      */
     public function departments(): HasMany

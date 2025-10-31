@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\BookTransactionController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\RecurringTransactionController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DriveController;
 use App\Http\Controllers\DriveItemController;
@@ -55,11 +56,18 @@ Route::middleware('auth')->group(function () {
     // BookKeeper routes
     Route::prefix('drives/{drive}/bookkeeper')->name('drives.bookkeeper.')->group(function () {
         Route::get('/', [BookTransactionController::class, 'dashboard'])->name('dashboard');
+        Route::get('tax-report', [BookTransactionController::class, 'taxReport'])->name('tax-report');
         Route::resource('accounts', AccountController::class);
         Route::resource('categories', CategoryController::class);
         Route::resource('transactions', BookTransactionController::class);
         Route::get('transactions/{transaction}/attachments/{attachment}', [BookTransactionController::class, 'showAttachment'])->name('transactions.attachments.show');
         Route::delete('transactions/{transaction}/attachments/{attachment}', [BookTransactionController::class, 'destroyAttachment'])->name('transactions.attachments.destroy');
+        
+        // Recurring Transactions
+        Route::get('recurring-transactions/upcoming', [RecurringTransactionController::class, 'upcoming'])->name('recurring-transactions.upcoming');
+        Route::post('recurring-transactions/{recurringTransaction}/generate', [RecurringTransactionController::class, 'generate'])->name('recurring-transactions.generate');
+        Route::post('recurring-transactions/{recurringTransaction}/skip', [RecurringTransactionController::class, 'skip'])->name('recurring-transactions.skip');
+        Route::resource('recurring-transactions', RecurringTransactionController::class);
     });
     
     // Project Board routes

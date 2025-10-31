@@ -79,6 +79,11 @@ class BookTransactionController extends Controller
         // Calculate net income
         $stats['net_income'] = $stats['total_income'] - $stats['total_expense'];
 
+        // Get upcoming recurring transactions (next 30 days)
+        $recurringTransactionService = app(\App\Services\RecurringTransactionService::class);
+        $upcomingRecurring = $recurringTransactionService->getUpcoming($drive, 30);
+        $dueRecurring = $recurringTransactionService->getDue($drive);
+
         return view('bookkeeper.dashboard', compact(
             'drive',
             'stats',
@@ -86,7 +91,9 @@ class BookTransactionController extends Controller
             'topAccounts',
             'topCategories',
             'dateFrom',
-            'dateTo'
+            'dateTo',
+            'upcomingRecurring',
+            'dueRecurring'
         ));
     }
 
@@ -394,5 +401,146 @@ class BookTransactionController extends Controller
 
         return redirect()->route('drives.bookkeeper.transactions.show', [$drive, $transaction])
             ->with('success', 'Attachment deleted successfully!');
+    }
+
+    /**
+     * Generate a tax report for CPA
+     */
+    public function taxReport(Request $request, Drive $drive)
+    {
+        $this->authorize('view', $drive);
+
+        // Get date range from request or default to current year
+        $dateFrom = $request->filled('date_from') 
+            ? \Carbon\Carbon::parse($request->date_from)->startOfDay()
+            : now()->startOfYear();
+        
+        $dateTo = $request->filled('date_to')
+            ? \Carbon\Carbon::parse($request->date_to)->endOfDay()
+            : now()->endOfYear();
+
+        // Get all transactions in date range (excluding pending transactions)
+        $query = $drive->bookTransactions()
+            ->with(['account', 'category'])
+            ->whereBetween('date', [$dateFrom, $dateTo])
+            ->where('status', '!=', 'pending');
+
+        // Apply additional filters
+        if ($request->filled('account_id')) {
+            $query->where('account_id', $request->account_id);
+        }
+
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        $transactions = $query->orderBy('date', 'asc')->get();
+
+        // Aggregate income by category
+        $incomeByCategory = [];
+        $incomeTotal = 0;
+
+        // Aggregate expenses by category
+        $expensesByCategory = [];
+        $expensesTotal = 0;
+
+        // Aggregate by account type
+        $incomeByAccountType = [];
+        $expensesByAccountType = [];
+
+        // Detailed transaction list
+        $incomeTransactions = [];
+        $expenseTransactions = [];
+
+        foreach ($transactions as $transaction) {
+            $amount = (float) $transaction->amount;
+
+            if ($transaction->type === 'income') {
+                $incomeTotal += $amount;
+                $categoryName = $transaction->category ? $transaction->category->name : 'Uncategorized';
+                
+                if (!isset($incomeByCategory[$categoryName])) {
+                    $incomeByCategory[$categoryName] = [
+                        'category' => $categoryName,
+                        'count' => 0,
+                        'total' => 0,
+                        'transactions' => []
+                    ];
+                }
+                
+                $incomeByCategory[$categoryName]['count']++;
+                $incomeByCategory[$categoryName]['total'] += $amount;
+                $incomeByCategory[$categoryName]['transactions'][] = $transaction;
+
+                // Group by account type
+                $accountType = $transaction->account ? $transaction->account->type : 'unknown';
+                if (!isset($incomeByAccountType[$accountType])) {
+                    $incomeByAccountType[$accountType] = 0;
+                }
+                $incomeByAccountType[$accountType] += $amount;
+
+                $incomeTransactions[] = $transaction;
+
+            } elseif ($transaction->type === 'expense') {
+                $expensesTotal += $amount;
+                $categoryName = $transaction->category ? $transaction->category->name : 'Uncategorized';
+                
+                if (!isset($expensesByCategory[$categoryName])) {
+                    $expensesByCategory[$categoryName] = [
+                        'category' => $categoryName,
+                        'count' => 0,
+                        'total' => 0,
+                        'transactions' => []
+                    ];
+                }
+                
+                $expensesByCategory[$categoryName]['count']++;
+                $expensesByCategory[$categoryName]['total'] += $amount;
+                $expensesByCategory[$categoryName]['transactions'][] = $transaction;
+
+                // Group by account type
+                $accountType = $transaction->account ? $transaction->account->type : 'unknown';
+                if (!isset($expensesByAccountType[$accountType])) {
+                    $expensesByAccountType[$accountType] = 0;
+                }
+                $expensesByAccountType[$accountType] += $amount;
+
+                $expenseTransactions[] = $transaction;
+            }
+        }
+
+        // Sort categories by total (descending)
+        uasort($incomeByCategory, function($a, $b) {
+            return $b['total'] <=> $a['total'];
+        });
+
+        uasort($expensesByCategory, function($a, $b) {
+            return $b['total'] <=> $a['total'];
+        });
+
+        // Calculate net income
+        $netIncome = $incomeTotal - $expensesTotal;
+
+        // Get filter options for the form
+        $accounts = $drive->accounts()->where('is_active', true)->orderBy('name')->get();
+        $categories = $drive->categories()->where('is_active', true)->orderBy('name')->get();
+
+        return view('bookkeeper.reports.tax-report', compact(
+            'drive',
+            'transactions',
+            'incomeByCategory',
+            'expensesByCategory',
+            'incomeByAccountType',
+            'expensesByAccountType',
+            'incomeTransactions',
+            'expenseTransactions',
+            'incomeTotal',
+            'expensesTotal',
+            'netIncome',
+            'dateFrom',
+            'dateTo',
+            'accounts',
+            'categories'
+        ));
     }
 }

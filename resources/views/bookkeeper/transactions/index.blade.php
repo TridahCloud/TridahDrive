@@ -36,11 +36,14 @@
                             </a></li>
                         </ul>
                     </div>
+                    <a href="{{ route('drives.bookkeeper.tax-report', $drive) }}" class="btn btn-success">
+                        <i class="fas fa-file-invoice-dollar me-2"></i>Tax Report
+                    </a>
                     <a href="{{ route('drives.bookkeeper.transactions.create', $drive) }}" class="btn btn-primary">
                         <i class="fas fa-plus me-2"></i>New Transaction
                     </a>
-                    <a href="{{ route('drives.show', $drive) }}" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left me-2"></i>Back to Drive
+                    <a href="{{ route('drives.bookkeeper.dashboard', $drive) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
                     </a>
                 </div>
             </div>
