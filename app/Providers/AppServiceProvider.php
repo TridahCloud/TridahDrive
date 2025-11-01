@@ -50,6 +50,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Load helper functions explicitly to ensure they're available
+        // This ensures helpers work even if composer autoload hasn't been regenerated
+        $helpersPath = app_path('helpers.php');
+        if (file_exists($helpersPath)) {
+            require_once $helpersPath;
+        }
+
         // Custom route model binding for drives
         Route::bind('drive', function ($value) {
             $drive = Drive::where('id', $value)->firstOrFail();
