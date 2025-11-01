@@ -102,8 +102,8 @@
                         <td>{{ $item->description }}</td>
                         <td>{{ $item->quantity }}</td>
                         <td>{{ $item->unit }}</td>
-                        <td>${{ number_format($item->unit_price, 2) }}</td>
-                        <td class="text-end">${{ number_format($item->amount, 2) }}</td>
+                        <td>{{ currency_for($item->unit_price, $drive) }}</td>
+                        <td class="text-end">{{ currency_for($item->amount, $drive) }}</td>
                     </tr>
                     @endforeach
                 </tbody>
@@ -138,15 +138,15 @@
             <div class="col-md-6">
                 <div class="text-end">
                     <div class="mb-3">
-                        <strong>Subtotal: $<span id="subtotal">{{ number_format($invoice->subtotal, 2) }}</span></strong>
+                        <strong>Subtotal: {{ currency_for($invoice->subtotal, $drive) }}</strong>
                     </div>
                     @if($invoice->tax_rate > 0)
                     <div class="mb-3">
-                        <strong>Tax ({{ number_format($invoice->tax_rate, 2) }}%): $<span>{{ number_format($invoice->tax_amount, 2) }}</span></strong>
+                        <strong>Tax ({{ number_format($invoice->tax_rate, 2) }}%): {{ currency_for($invoice->tax_amount, $drive) }}</strong>
                     </div>
                     @endif
                     <div class="h3 mb-0">
-                        <strong>Total: <span class="brand-teal">${{ number_format($invoice->total, 2) }}</span></strong>
+                        <strong>Total: <span class="brand-teal">{{ currency_for($invoice->total, $drive) }}</span></strong>
                     </div>
                 </div>
             </div>

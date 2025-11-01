@@ -125,7 +125,7 @@
                                         <span class="badge bg-info">{{ ucfirst($recurringTransaction->frequency) }}</span>
                                     </td>
                                     <td class="{{ $recurringTransaction->type === 'income' ? 'text-success' : 'text-danger' }}">
-                                        <strong>${{ number_format($recurringTransaction->amount, 2) }}</strong>
+                                        <strong>{{ currency_for($recurringTransaction->amount, $drive) }}</strong>
                                     </td>
                                     <td>
                                         @if($recurringTransaction->isOverdue())

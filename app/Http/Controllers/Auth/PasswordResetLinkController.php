@@ -36,9 +36,11 @@ class PasswordResetLinkController extends Controller
             $request->only('email')
         );
 
-        return $status == Password::RESET_LINK_SENT
-                    ? back()->with('status', __($status))
-                    : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => __($status)]);
+        if ($status == Password::RESET_LINK_SENT) {
+            return back()->with('status', 'We have emailed your password reset link! Please check your inbox.');
+        }
+
+        return back()->withInput($request->only('email'))
+                    ->withErrors(['email' => 'We could not find a user with that email address.']);
     }
 }

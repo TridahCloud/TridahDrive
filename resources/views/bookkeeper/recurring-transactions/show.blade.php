@@ -80,12 +80,40 @@
                                 <th>Frequency:</th>
                                 <td>
                                     <span class="badge bg-info">{{ ucfirst($recurringTransaction->frequency) }}</span>
+                                    @if($recurringTransaction->frequency_interval && $recurringTransaction->frequency_interval > 1)
+                                        <span class="text-muted">(Every {{ $recurringTransaction->frequency_interval }} 
+                                            @if($recurringTransaction->frequency === 'daily')
+                                                days
+                                            @elseif($recurringTransaction->frequency === 'weekly')
+                                                weeks
+                                            @elseif($recurringTransaction->frequency === 'monthly')
+                                                months
+                                            @elseif($recurringTransaction->frequency === 'yearly')
+                                                years
+                                            @endif
+                                        )</span>
+                                    @endif
+                                    @if($recurringTransaction->frequency_day_of_week !== null)
+                                        @php
+                                            $days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                                        @endphp
+                                        <br><small class="text-muted">On {{ $days[$recurringTransaction->frequency_day_of_week] }}</small>
+                                        @if($recurringTransaction->frequency === 'monthly' && $recurringTransaction->frequency_week_of_month !== null)
+                                            @php
+                                                $weeks = [1 => 'First', 2 => 'Second', 3 => 'Third', 4 => 'Fourth', 5 => 'Last'];
+                                            @endphp
+                                            <small class="text-muted"> ({{ $weeks[$recurringTransaction->frequency_week_of_month] }} of month)</small>
+                                        @endif
+                                    @endif
+                                    @if($recurringTransaction->frequency === 'monthly' && $recurringTransaction->frequency_day_of_month !== null && $recurringTransaction->frequency_day_of_week === null)
+                                        <br><small class="text-muted">On day {{ $recurringTransaction->frequency_day_of_month }} of month</small>
+                                    @endif
                                 </td>
                             </tr>
                             <tr>
                                 <th>Amount:</th>
                                 <td class="{{ $recurringTransaction->type === 'income' ? 'text-success' : 'text-danger' }}">
-                                    <strong>${{ number_format($recurringTransaction->amount, 2) }}</strong>
+                                    <strong>{{ currency_for($recurringTransaction->amount, $drive) }}</strong>
                                 </td>
                             </tr>
                             <tr>
@@ -226,7 +254,7 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Amount <small class="text-muted">(Default: ${{ number_format($recurringTransaction->amount, 2) }})</small></label>
+                        <label class="form-label">Amount <small class="text-muted">(Default: {{ currency_for($recurringTransaction->amount, $drive) }})</small></label>
                         <input type="number" name="amount" class="form-control" step="0.01" min="0" value="{{ $recurringTransaction->amount }}">
                     </div>
 

@@ -65,6 +65,85 @@
                         </div>
                     </div>
 
+                    <!-- Advanced Recurrence Options -->
+                    <div class="mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="mb-3">
+                                    <i class="fas fa-cog me-2"></i>Advanced Recurrence Options
+                                    <small class="text-muted">(Optional - for more control)</small>
+                                </h6>
+                                
+                                <!-- Frequency Interval -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="frequency_interval" class="form-label">Repeat Every</label>
+                                        <div class="input-group">
+                                            <input type="number" name="frequency_interval" id="frequency_interval" class="form-control" value="{{ old('frequency_interval', 1) }}" min="1" max="365">
+                                            <span class="input-group-text" id="interval-unit">time(s)</span>
+                                        </div>
+                                        <small class="text-muted">Leave as 1 for standard recurrence (every day/week/month/year)</small>
+                                        @error('frequency_interval')
+                                            <div class="text-danger small">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+
+                                <!-- Day of Week (for weekly and monthly) -->
+                                <div class="row mb-3" id="day-of-week-section" style="display: none;">
+                                    <div class="col-md-6">
+                                        <label for="frequency_day_of_week" class="form-label">Day of Week</label>
+                                        <select name="frequency_day_of_week" id="frequency_day_of_week" class="form-select">
+                                            <option value="">Any Day</option>
+                                            <option value="0" {{ old('frequency_day_of_week') == '0' ? 'selected' : '' }}>Sunday</option>
+                                            <option value="1" {{ old('frequency_day_of_week') == '1' ? 'selected' : '' }}>Monday</option>
+                                            <option value="2" {{ old('frequency_day_of_week') == '2' ? 'selected' : '' }}>Tuesday</option>
+                                            <option value="3" {{ old('frequency_day_of_week') == '3' ? 'selected' : '' }}>Wednesday</option>
+                                            <option value="4" {{ old('frequency_day_of_week') == '4' ? 'selected' : '' }}>Thursday</option>
+                                            <option value="5" {{ old('frequency_day_of_week') == '5' ? 'selected' : '' }}>Friday</option>
+                                            <option value="6" {{ old('frequency_day_of_week') == '6' ? 'selected' : '' }}>Saturday</option>
+                                        </select>
+                                        <small class="text-muted">e.g., Every Monday, or First Friday of month</small>
+                                        @error('frequency_day_of_week')
+                                            <div class="text-danger small">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+
+                                <!-- Day of Month (for monthly) -->
+                                <div class="row mb-3" id="day-of-month-section" style="display: none;">
+                                    <div class="col-md-6">
+                                        <label for="frequency_day_of_month" class="form-label">Day of Month</label>
+                                        <input type="number" name="frequency_day_of_month" id="frequency_day_of_month" class="form-control" value="{{ old('frequency_day_of_month') }}" min="1" max="31">
+                                        <small class="text-muted">e.g., 15 = 15th of every month (1-31)</small>
+                                        @error('frequency_day_of_month')
+                                            <div class="text-danger small">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+
+                                <!-- Week of Month (for monthly with weekday) -->
+                                <div class="row mb-3" id="week-of-month-section" style="display: none;">
+                                    <div class="col-md-6">
+                                        <label for="frequency_week_of_month" class="form-label">Week of Month</label>
+                                        <select name="frequency_week_of_month" id="frequency_week_of_month" class="form-select">
+                                            <option value="">Any Week</option>
+                                            <option value="1" {{ old('frequency_week_of_month') == '1' ? 'selected' : '' }}>First</option>
+                                            <option value="2" {{ old('frequency_week_of_month') == '2' ? 'selected' : '' }}>Second</option>
+                                            <option value="3" {{ old('frequency_week_of_month') == '3' ? 'selected' : '' }}>Third</option>
+                                            <option value="4" {{ old('frequency_week_of_month') == '4' ? 'selected' : '' }}>Fourth</option>
+                                            <option value="5" {{ old('frequency_week_of_month') == '5' ? 'selected' : '' }}>Last</option>
+                                        </select>
+                                        <small class="text-muted">e.g., First Monday, Second Friday, Last Wednesday</small>
+                                        @error('frequency_week_of_month')
+                                            <div class="text-danger small">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -93,7 +172,7 @@
                             <div class="mb-3">
                                 <label for="amount" class="form-label">Amount <span class="text-danger">*</span></label>
                                 <div class="input-group">
-                                    <span class="input-group-text">$</span>
+                                    <span class="input-group-text">{{ currency_code_for($drive) ? \App\Helpers\CurrencyHelper::getSymbol(currency_code_for($drive)) : '$' }}</span>
                                     <input type="number" name="amount" id="amount" class="form-control" step="0.01" min="0" value="{{ old('amount') }}" required>
                                 </div>
                                 @error('amount')
@@ -198,5 +277,74 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const frequencySelect = document.getElementById('frequency');
+    const intervalInput = document.getElementById('frequency_interval');
+    const intervalUnit = document.getElementById('interval-unit');
+    const dayOfWeekSection = document.getElementById('day-of-week-section');
+    const dayOfMonthSection = document.getElementById('day-of-month-section');
+    const weekOfMonthSection = document.getElementById('week-of-month-section');
+    const frequencyDayOfWeek = document.getElementById('frequency_day_of_week');
+    const frequencyDayOfMonth = document.getElementById('frequency_day_of_month');
+    const frequencyWeekOfMonth = document.getElementById('frequency_week_of_month');
+
+    function updateRecurrenceUI() {
+        const frequency = frequencySelect.value;
+        
+        // Update interval unit text
+        if (frequency) {
+            const units = {
+                'daily': 'day(s)',
+                'weekly': 'week(s)',
+                'monthly': 'month(s)',
+                'yearly': 'year(s)'
+            };
+            intervalUnit.textContent = units[frequency] || 'time(s)';
+        }
+
+        // Show/hide day of week section (for weekly and monthly)
+        if (frequency === 'weekly' || frequency === 'monthly') {
+            dayOfWeekSection.style.display = 'block';
+        } else {
+            dayOfWeekSection.style.display = 'none';
+            frequencyDayOfWeek.value = '';
+        }
+
+        // Show/hide day of month section (for monthly)
+        if (frequency === 'monthly') {
+            dayOfMonthSection.style.display = 'block';
+        } else {
+            dayOfMonthSection.style.display = 'none';
+            frequencyDayOfMonth.value = '';
+        }
+
+        // Show/hide week of month section (for monthly with day of week)
+        if (frequency === 'monthly' && frequencyDayOfWeek.value !== '') {
+            weekOfMonthSection.style.display = 'block';
+        } else {
+            weekOfMonthSection.style.display = 'none';
+            frequencyWeekOfMonth.value = '';
+        }
+    }
+
+    frequencySelect.addEventListener('change', updateRecurrenceUI);
+    frequencyDayOfWeek.addEventListener('change', function() {
+        const frequency = frequencySelect.value;
+        if (frequency === 'monthly' && this.value !== '') {
+            weekOfMonthSection.style.display = 'block';
+        } else {
+            weekOfMonthSection.style.display = 'none';
+            frequencyWeekOfMonth.value = '';
+        }
+    });
+
+    // Initialize on page load
+    updateRecurrenceUI();
+});
+</script>
+@endpush
 @endsection
 

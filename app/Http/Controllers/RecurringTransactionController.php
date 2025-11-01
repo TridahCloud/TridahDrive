@@ -105,6 +105,10 @@ class RecurringTransactionController extends Controller
             'amount' => 'required|numeric|min:0',
             'type' => 'required|in:income,expense',
             'frequency' => 'required|in:daily,weekly,monthly,yearly',
+            'frequency_interval' => 'nullable|integer|min:1|max:365',
+            'frequency_day_of_week' => 'nullable|integer|min:0|max:6',
+            'frequency_day_of_month' => 'nullable|integer|min:1|max:31',
+            'frequency_week_of_month' => 'nullable|integer|min:1|max:5',
             'start_date' => 'required|date',
             'end_date' => 'nullable|date|after:start_date',
             'account_id' => 'required|exists:accounts,id',
@@ -133,20 +137,24 @@ class RecurringTransactionController extends Controller
             }
         }
 
-        // Calculate next due date from start date
+        // Calculate next due date from start date using the model's method
         $startDate = Carbon::parse($validated['start_date']);
-        $nextDueDate = match($validated['frequency']) {
-            'daily' => $startDate->copy()->addDay(),
-            'weekly' => $startDate->copy()->addWeek(),
-            'monthly' => $startDate->copy()->addMonth(),
-            'yearly' => $startDate->copy()->addYear(),
-            default => $startDate->copy()->addMonth(),
-        };
+        
+        // Create a temporary model instance to use calculateNextDueDate
+        $tempModel = new RecurringTransaction();
+        $tempModel->frequency = $validated['frequency'];
+        $tempModel->frequency_interval = $validated['frequency_interval'] ?? 1;
+        $tempModel->frequency_day_of_week = $validated['frequency_day_of_week'] ?? null;
+        $tempModel->frequency_day_of_month = $validated['frequency_day_of_month'] ?? null;
+        $tempModel->frequency_week_of_month = $validated['frequency_week_of_month'] ?? null;
+        $tempModel->start_date = $startDate;
+        $nextDueDate = $tempModel->calculateNextDueDate($startDate);
 
         $recurringTransaction = $drive->recurringTransactions()->create(array_merge($validated, [
             'created_by' => Auth::id(),
             'next_due_date' => $nextDueDate,
             'is_active' => $validated['is_active'] ?? true,
+            'frequency_interval' => $validated['frequency_interval'] ?? 1,
         ]));
 
         return redirect()->route('drives.bookkeeper.recurring-transactions.show', [$drive, $recurringTransaction])
@@ -203,6 +211,10 @@ class RecurringTransactionController extends Controller
             'amount' => 'required|numeric|min:0',
             'type' => 'required|in:income,expense',
             'frequency' => 'required|in:daily,weekly,monthly,yearly',
+            'frequency_interval' => 'nullable|integer|min:1|max:365',
+            'frequency_day_of_week' => 'nullable|integer|min:0|max:6',
+            'frequency_day_of_month' => 'nullable|integer|min:1|max:31',
+            'frequency_week_of_month' => 'nullable|integer|min:1|max:5',
             'start_date' => 'required|date',
             'end_date' => 'nullable|date|after:start_date',
             'next_due_date' => 'required|date',
@@ -232,7 +244,33 @@ class RecurringTransactionController extends Controller
             }
         }
 
-        $recurringTransaction->update(array_merge($validated, [
+        // If recurrence settings changed, recalculate next due date
+        $recurrenceChanged = $recurringTransaction->frequency !== $validated['frequency']
+            || $recurringTransaction->frequency_interval !== ($validated['frequency_interval'] ?? 1)
+            || $recurringTransaction->frequency_day_of_week != ($validated['frequency_day_of_week'] ?? null)
+            || $recurringTransaction->frequency_day_of_month != ($validated['frequency_day_of_month'] ?? null)
+            || $recurringTransaction->frequency_week_of_month != ($validated['frequency_week_of_month'] ?? null)
+            || $recurringTransaction->start_date != Carbon::parse($validated['start_date']);
+        
+        if ($recurrenceChanged) {
+            $startDate = Carbon::parse($validated['start_date']);
+            // Update model attributes first so calculateNextDueDate can use them
+            $recurringTransaction->frequency = $validated['frequency'];
+            $recurringTransaction->frequency_interval = $validated['frequency_interval'] ?? 1;
+            $recurringTransaction->frequency_day_of_week = $validated['frequency_day_of_week'] ?? null;
+            $recurringTransaction->frequency_day_of_month = $validated['frequency_day_of_month'] ?? null;
+            $recurringTransaction->frequency_week_of_month = $validated['frequency_week_of_month'] ?? null;
+            $updatedData = array_merge($validated, [
+                'frequency_interval' => $validated['frequency_interval'] ?? 1,
+                'next_due_date' => $recurringTransaction->calculateNextDueDate($startDate),
+            ]);
+        } else {
+            $updatedData = array_merge($validated, [
+                'frequency_interval' => $validated['frequency_interval'] ?? $recurringTransaction->frequency_interval ?? 1,
+            ]);
+        }
+        
+        $recurringTransaction->update(array_merge($updatedData, [
             'is_active' => $validated['is_active'] ?? $recurringTransaction->is_active,
         ]));
 

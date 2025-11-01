@@ -314,7 +314,7 @@
                             </td>
                             <td>
                                 <div class="d-flex align-items-center justify-content-between">
-                                    <span class="item-total">$0.00</span>
+                                    <span class="item-total">{{ currency_for(0, $drive) }}</span>
                                     <button type="button" class="btn btn-link btn-sm text-danger remove-item">
                                         <i class="fas fa-times"></i>
                                     </button>
@@ -360,15 +360,15 @@
                 <div class="col-md-6 invoice-section" id="totals" data-section="totals">
                     <div class="text-end">
                         <div class="mb-3">
-                            <strong>Subtotal: $<span id="subtotal" style="color: {{ $accentColor }};">0.00</span></strong>
+                            <strong>Subtotal: <span id="subtotal" style="color: {{ $accentColor }};">{{ currency_for(0, $drive) }}</span></strong>
                         </div>
                         <div class="mb-3 d-flex align-items-center gap-2">
                             <label class="mb-0">Tax:</label>
                             <input type="number" class="form-control invoice-field-small" id="tax_rate" name="tax_rate" value="0" step="0.01" min="0" max="100" style="width: 80px;">
-                            <span>% ($<span id="taxAmount" style="color: {{ $accentColor }};">0.00</span>)</span>
+                            <span>% (<span id="taxAmount" style="color: {{ $accentColor }};">{{ currency_for(0, $drive) }}</span>)</span>
                         </div>
                         <div class="h3 mb-0">
-                            <strong>Total: <span class="brand-teal">$<span id="total" style="color: {{ $accentColor }};">0.00</span></span></strong>
+                            <strong>Total: <span class="brand-teal"><span id="total" style="color: {{ $accentColor }};">{{ currency_for(0, $drive) }}</span></span></strong>
                         </div>
                     </div>
                 </div>
@@ -400,6 +400,20 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Get initial accent color from profile
     const initialAccentColor = '{{ $accentColor }}';
+    
+    // Get currency symbol for this drive
+    const currencySymbol = '{{ currency_symbol(currency_code_for($drive)) }}';
+    const currencyPosition = '{{ \App\Helpers\CurrencyHelper::getCurrency(currency_code_for($drive))['position'] }}';
+    
+    // Format currency amount
+    function formatCurrency(amount) {
+        const formatted = parseFloat(amount).toFixed(2);
+        if (currencyPosition === 'before') {
+            return currencySymbol + formatted;
+        } else {
+            return formatted + ' ' + currencySymbol;
+        }
+    }
     
     // Initialize accent color on page load
     function initializeAccentColor(color) {
@@ -459,7 +473,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </td>
             <td>
                 <div class="d-flex align-items-center justify-content-between">
-                    <span class="item-total">$0.00</span>
+                    <span class="item-total">${formatCurrency(0)}</span>
                     <button type="button" class="btn btn-link btn-sm text-danger remove-item">
                         <i class="fas fa-times"></i>
                     </button>
@@ -587,7 +601,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const price = parseFloat(row.querySelector('.item-price').value) || 0;
             const total = qty * price;
             
-            row.querySelector('.item-total').textContent = '$' + total.toFixed(2);
+            row.querySelector('.item-total').textContent = formatCurrency(total);
             subtotal += total;
         });
         
@@ -595,9 +609,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const taxAmount = subtotal * (taxRate / 100);
         const grandTotal = subtotal + taxAmount;
         
-        document.getElementById('subtotal').textContent = subtotal.toFixed(2);
-        document.getElementById('taxAmount').textContent = taxAmount.toFixed(2);
-        document.getElementById('total').textContent = grandTotal.toFixed(2);
+        document.getElementById('subtotal').textContent = formatCurrency(subtotal);
+        document.getElementById('taxAmount').textContent = formatCurrency(taxAmount);
+        document.getElementById('total').textContent = formatCurrency(grandTotal);
     }
     
     // Attach listeners to item row

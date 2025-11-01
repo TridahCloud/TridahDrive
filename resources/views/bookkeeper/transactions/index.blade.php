@@ -61,13 +61,13 @@
     <div class="row mb-4">
         <div class="col-md-4">
             <div class="dashboard-card text-center">
-                <h3 class="mb-0 text-success">${{ number_format($stats['total_income'] ?? 0, 2) }}</h3>
+                <h3 class="mb-0 text-success">{{ currency_for($stats['total_income'] ?? 0, $drive) }}</h3>
                 <p class="text-muted mb-0">Total Income</p>
             </div>
         </div>
         <div class="col-md-4">
             <div class="dashboard-card text-center">
-                <h3 class="mb-0 text-danger">${{ number_format($stats['total_expense'] ?? 0, 2) }}</h3>
+                <h3 class="mb-0 text-danger">{{ currency_for($stats['total_expense'] ?? 0, $drive) }}</h3>
                 <p class="text-muted mb-0">Total Expenses</p>
             </div>
         </div>
@@ -181,7 +181,7 @@
                                         </span>
                                     </td>
                                     <td class="{{ $transaction->type === 'income' ? 'text-success' : 'text-danger' }}">
-                                        <strong>${{ number_format($transaction->amount, 2) }}</strong>
+                                        <strong>{{ currency_for($transaction->amount, $drive) }}</strong>
                                     </td>
                                     <td>
                                         <span class="badge bg-{{ $transaction->status === 'reconciled' ? 'success' : ($transaction->status === 'cleared' ? 'info' : 'warning') }}">

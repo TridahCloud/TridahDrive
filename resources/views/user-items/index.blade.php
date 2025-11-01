@@ -51,7 +51,7 @@
                     @endif
                     <p class="text-muted mb-0 small">
                         Unit: <strong>{{ $item->unit }}</strong> &bull; 
-                        Default Price: <strong>${{ number_format($item->default_price, 2) }}</strong>
+                        Default Price: <strong>{{ currency_for($item->default_price, $drive) }}</strong>
                     </p>
                 </div>
                 <div class="d-flex gap-2">

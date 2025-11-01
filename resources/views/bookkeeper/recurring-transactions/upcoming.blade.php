@@ -97,7 +97,7 @@
                                             @endif
                                         </td>
                                         <td class="{{ $recurringTransaction->type === 'income' ? 'text-success' : 'text-danger' }}">
-                                            <strong>${{ number_format($recurringTransaction->amount, 2) }}</strong>
+                                            <strong>{{ currency_for($recurringTransaction->amount, $drive) }}</strong>
                                         </td>
                                         <td>{{ $recurringTransaction->account->name }}</td>
                                         <td>
@@ -181,7 +181,7 @@
                                             @endif
                                         </td>
                                         <td class="{{ $recurringTransaction->type === 'income' ? 'text-success' : 'text-danger' }}">
-                                            <strong>${{ number_format($recurringTransaction->amount, 2) }}</strong>
+                                            <strong>{{ currency_for($recurringTransaction->amount, $drive) }}</strong>
                                         </td>
                                         <td>{{ $recurringTransaction->account->name }}</td>
                                         <td>
@@ -247,7 +247,7 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Amount <small class="text-muted">(Default: ${{ number_format($recurringTransaction->amount, 2) }})</small></label>
+                            <label class="form-label">Amount <small class="text-muted">(Default: {{ currency_for($recurringTransaction->amount, $drive) }})</small></label>
                             <input type="number" name="amount" class="form-control" step="0.01" min="0" value="{{ $recurringTransaction->amount }}">
                         </div>
 

@@ -97,7 +97,7 @@
                             <div class="mb-3">
                                 <label for="amount" class="form-label">Amount <span class="text-danger">*</span></label>
                                 <div class="input-group">
-                                    <span class="input-group-text">$</span>
+                                    <span class="input-group-text">{{ currency_code_for($drive) ? \App\Helpers\CurrencyHelper::getSymbol(currency_code_for($drive)) : '$' }}</span>
                                     <input type="number" name="amount" id="amount" class="form-control" step="0.01" min="0" value="{{ old('amount', $transaction->amount) }}" required>
                                 </div>
                                 @error('amount')

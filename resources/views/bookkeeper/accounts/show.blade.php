@@ -129,7 +129,7 @@
                                             </span>
                                         </td>
                                         <td class="{{ $transaction->type === 'income' ? 'text-success' : 'text-danger' }}">
-                                            <strong>${{ number_format($transaction->amount, 2) }}</strong>
+                                            <strong>{{ currency_for($transaction->amount, $drive) }}</strong>
                                         </td>
                                         <td>
                                             <span class="badge bg-{{ $transaction->status === 'reconciled' ? 'success' : ($transaction->status === 'cleared' ? 'info' : 'warning') }}">

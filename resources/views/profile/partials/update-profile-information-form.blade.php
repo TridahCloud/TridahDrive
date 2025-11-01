@@ -31,9 +31,18 @@
         @endif
     </div>
 
-    <form id="send-verification" method="post" action="{{ route('verification.send') }}" class="d-none">
-        @csrf
-    </form>
+    <div class="mb-3">
+        <x-input-label for="currency" :value="__('Currency')" />
+        <select class="form-select @error('currency') is-invalid @enderror" id="currency" name="currency" required>
+            @foreach(\App\Helpers\CurrencyHelper::getAllCurrencies() as $code => $currency)
+                <option value="{{ $code }}" {{ old('currency', $user->currency ?? 'USD') === $code ? 'selected' : '' }}>
+                    {{ $currency['name'] }} ({{ $currency['symbol'] }})
+                </option>
+            @endforeach
+        </select>
+        <small class="text-muted">Currency used for your personal drives</small>
+        <x-input-error :messages="$errors->get('currency')" />
+    </div>
 
     <div class="d-flex align-items-center gap-3">
         <x-primary-button>{{ __('Save') }}</x-primary-button>

@@ -78,7 +78,7 @@
                     </div>
                     <div class="col-6">
                         <div class="text-center p-2 stats-card rounded">
-                            <h4 class="mb-0 text-success">${{ number_format($invoiceStats['total_amount'] ?? 0, 2) }}</h4>
+                            <h4 class="mb-0 text-success">{{ currency_for($invoiceStats['total_amount'] ?? 0, $drive) }}</h4>
                             <small class="text-muted">Revenue</small>
                         </div>
                     </div>
@@ -156,7 +156,7 @@
                                             <small class="text-muted">{{ $transaction->account->name ?? 'No Account' }}</small>
                                         </div>
                                         <span class="badge bg-{{ $transaction->type === 'income' ? 'success' : 'danger' }}">
-                                            ${{ number_format(abs($transaction->amount), 2) }}
+                                            {{ currency_for(abs($transaction->amount), $drive) }}
                                         </span>
                                     </div>
                                 </a>

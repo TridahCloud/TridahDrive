@@ -46,6 +46,27 @@
                         @enderror
                     </div>
 
+                    <div class="mb-3">
+                        <label for="currency" class="form-label">Currency</label>
+                        <select class="form-select @error('currency') is-invalid @enderror" id="currency" name="currency">
+                            @foreach(\App\Helpers\CurrencyHelper::getAllCurrencies() as $code => $currency)
+                                <option value="{{ $code }}" {{ old('currency', $drive->currency ?? (auth()->user()->currency ?? 'USD')) === $code ? 'selected' : '' }}>
+                                    {{ $currency['name'] }} ({{ $currency['symbol'] }})
+                                </option>
+                            @endforeach
+                        </select>
+                        <small class="text-muted">
+                            @if($drive->type === 'shared')
+                                Currency used for transactions in this drive
+                            @else
+                                Currency used for transactions in your personal drive (defaults to your profile currency)
+                            @endif
+                        </small>
+                        @error('currency')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="color" class="form-label">Color</label>

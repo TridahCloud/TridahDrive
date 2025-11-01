@@ -83,7 +83,7 @@
                             <label class="text-muted small">Amount</label>
                             <p class="mb-0">
                                 <strong class="{{ $transaction->type === 'income' ? 'text-success' : 'text-danger' }}" style="font-size: 1.25rem;">
-                                    ${{ number_format($transaction->amount, 2) }}
+                                    {{ currency_for($transaction->amount, $drive) }}
                                 </strong>
                             </p>
                         </div>

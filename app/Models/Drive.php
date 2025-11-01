@@ -20,6 +20,7 @@ class Drive extends Model
         'icon',
         'settings',
         'description',
+        'currency',
     ];
 
     protected function casts(): array

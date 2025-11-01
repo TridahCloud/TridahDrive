@@ -70,14 +70,14 @@
     <div class="row mb-4">
         <div class="col-md-3">
             <div class="dashboard-card text-center">
-                <h3 class="mb-0 text-success">${{ number_format($stats['total_income'], 2) }}</h3>
+                <h3 class="mb-0 text-success">{{ currency_for($stats['total_income'], $drive) }}</h3>
                 <p class="text-muted mb-0">Income This Month</p>
                 <small class="text-muted">{{ $dateFrom->format('M d') }} - {{ $dateTo->format('M d, Y') }}</small>
             </div>
         </div>
         <div class="col-md-3">
             <div class="dashboard-card text-center">
-                <h3 class="mb-0 text-danger">${{ number_format($stats['total_expense'], 2) }}</h3>
+                <h3 class="mb-0 text-danger">{{ currency_for($stats['total_expense'], $drive) }}</h3>
                 <p class="text-muted mb-0">Expenses This Month</p>
                 <small class="text-muted">{{ $dateFrom->format('M d') }} - {{ $dateTo->format('M d, Y') }}</small>
             </div>
@@ -85,7 +85,7 @@
         <div class="col-md-3">
             <div class="dashboard-card text-center">
                 <h3 class="mb-0 {{ $stats['net_income'] >= 0 ? 'text-success' : 'text-danger' }}">
-                    ${{ number_format($stats['net_income'], 2) }}
+                    {{ currency_for($stats['net_income'], $drive) }}
                 </h3>
                 <p class="text-muted mb-0">Net Income</p>
                 <small class="text-muted">This Month</small>
@@ -162,7 +162,7 @@
                                             </span>
                                         </td>
                                         <td class="{{ $transaction->type === 'income' ? 'text-success' : 'text-danger' }}">
-                                            <strong>${{ number_format($transaction->amount, 2) }}</strong>
+                                            <strong>{{ currency_for($transaction->amount, $drive) }}</strong>
                                         </td>
                                         <td>
                                             <span class="badge bg-{{ $transaction->status === 'reconciled' ? 'success' : ($transaction->status === 'cleared' ? 'info' : 'warning') }}">
@@ -245,7 +245,7 @@
                                         <small class="text-muted">
                                             {{ $recurring->next_due_date->format('M d') }} - 
                                             <span class="{{ $recurring->type === 'income' ? 'text-success' : 'text-danger' }}">
-                                                ${{ number_format($recurring->amount, 2) }}
+                                                {{ currency_for($recurring->amount, $drive) }}
                                             </span>
                                         </small>
                                     </div>

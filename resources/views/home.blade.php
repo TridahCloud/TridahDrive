@@ -9,10 +9,10 @@
         <div class="row align-items-center">
             <div class="col-lg-6">
                 <div class="hero-content">
-                    <h1 class="hero-title">Your All-in-One Organizational Platform</h1>
+                    <h1 class="hero-title">Your All-in-One Business Management Platform</h1>
                     <p class="hero-subtitle">
-                        TridahDrive is a comprehensive platform for managing drives, invoicing, and business operations. 
-                        Join us in building integrated tools that help organizations thrive.
+                        TridahDrive combines <strong>Invoicer</strong>, <strong>BookKeeper</strong>, and <strong>Project Board</strong> 
+                        into one integrated platform. Manage invoices, track finances, and organize projects all in one place.
                     </p>
                     <div class="hero-buttons">
                         <a href="{{ route('register') }}" class="btn btn-lg btn-primary">
@@ -44,26 +44,29 @@
         </div>
         
         <div class="row g-4">
+            <!-- Main Applications -->
             <div class="col-md-4">
                 <div class="feature-card">
-                    <div class="feature-icon" style="background: linear-gradient(135deg, #31d8b2 0%, #204e7e 100%);">
-                        <i class="fas fa-folder"></i>
+                    <div class="feature-icon" style="background: linear-gradient(135deg, #204e7e 0%, #31d8b2 100%);">
+                        <i class="fas fa-file-invoice-dollar"></i>
                     </div>
-                    <h4 class="fw-bold mb-3">Drive Management</h4>
+                    <h4 class="fw-bold mb-3">Invoicer</h4>
                     <p class="feature-description">
-                        Create personal or shared drives for your projects and teams with customizable settings.
+                        Create professional invoices with client management, custom branding, item catalogs, and project tracking. 
+                        Multi-currency support with customizable invoice profiles.
                     </p>
                 </div>
             </div>
             
             <div class="col-md-4">
                 <div class="feature-card">
-                    <div class="feature-icon" style="background: linear-gradient(135deg, #204e7e 0%, #31d8b2 100%);">
-                        <i class="fas fa-file-invoice-dollar"></i>
+                    <div class="feature-icon" style="background: linear-gradient(135deg, #31d8b2 0%, #204e7e 100%);">
+                        <i class="fas fa-book"></i>
                     </div>
-                    <h4 class="fw-bold mb-3">Invoicing System</h4>
+                    <h4 class="fw-bold mb-3">BookKeeper</h4>
                     <p class="feature-description">
-                        Create professional invoices with client management, custom branding, and project tracking.
+                        Complete accounting solution with transaction management, accounts, categories, recurring transactions, 
+                        tax reports, and multi-currency support. Perfect for tracking income and expenses.
                     </p>
                 </div>
             </div>
@@ -71,11 +74,26 @@
             <div class="col-md-4">
                 <div class="feature-card">
                     <div class="feature-icon" style="background: linear-gradient(135deg, #ffa91e 0%, #31d8b2 100%);">
-                        <i class="fas fa-users"></i>
+                        <i class="fas fa-project-diagram"></i>
                     </div>
-                    <h4 class="fw-bold mb-3">Team Collaboration</h4>
+                    <h4 class="fw-bold mb-3">Project Board</h4>
                     <p class="feature-description">
-                        Share drives with team members, manage permissions, and collaborate seamlessly.
+                        Manage projects with kanban boards, tasks, labels, comments, and team collaboration. 
+                        Track progress, assign tasks, and keep your team organized.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Supporting Features -->
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: linear-gradient(135deg, #31d8b2 0%, #ffa91e 100%);">
+                        <i class="fas fa-folder"></i>
+                    </div>
+                    <h4 class="fw-bold mb-3">Drive Management</h4>
+                    <p class="feature-description">
+                        Create personal or shared drives for your projects and teams with customizable settings. 
+                        Organize all your work in one place.
                     </p>
                 </div>
             </div>
@@ -83,23 +101,49 @@
             <div class="col-md-4">
                 <div class="feature-card">
                     <div class="feature-icon" style="background: linear-gradient(135deg, #204e7e 0%, #ffa91e 100%);">
-                        <i class="fas fa-palette"></i>
+                        <i class="fas fa-users"></i>
                     </div>
-                    <h4 class="fw-bold mb-3">Customizable Theming</h4>
+                    <h4 class="fw-bold mb-3">Team Collaboration</h4>
                     <p class="feature-description">
-                        Dark and light mode support with customizable accent colors for branding.
+                        Share drives with team members, manage permissions, and collaborate seamlessly across all applications.
                     </p>
                 </div>
             </div>
             
             <div class="col-md-4">
                 <div class="feature-card">
-                    <div class="feature-icon" style="background: linear-gradient(135deg, #31d8b2 0%, #ffa91e 100%);">
-                        <i class="fas fa-box"></i>
+                    <div class="feature-icon" style="background: linear-gradient(135deg, #ffa91e 0%, #204e7e 100%);">
+                        <i class="fas fa-palette"></i>
                     </div>
-                    <h4 class="fw-bold mb-3">Planned Features</h4>
+                    <h4 class="fw-bold mb-3">Customizable Theming</h4>
                     <p class="feature-description">
-                        Book Keeping, Staff Management, and more tools are coming soon.
+                        Dark and light mode support with customizable accent colors and multi-currency support for international businesses.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: linear-gradient(135deg, #31d8b2 0%, #204e7e 100%);">
+                        <i class="fas fa-sync-alt"></i>
+                    </div>
+                    <h4 class="fw-bold mb-3">Recurring Transactions</h4>
+                    <p class="feature-description">
+                        Set up automated recurring income and expenses with flexible scheduling options. 
+                        Advanced recurrence patterns for complex business needs.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: linear-gradient(135deg, #204e7e 0%, #31d8b2 100%);">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h4 class="fw-bold mb-3">Financial Reports</h4>
+                    <p class="feature-description">
+                        Generate comprehensive tax reports, track income and expenses by category, 
+                        and export data for CPA review. Perfect for tax filing.
                     </p>
                 </div>
             </div>
@@ -111,7 +155,7 @@
                     </div>
                     <h4 class="fw-bold mb-3">Open Source</h4>
                     <p class="feature-description">
-                        Built by the community, for the community. Contribute and shape the platform.
+                        Built by the community, for the community. Contribute and shape the platform to fit your needs.
                     </p>
                 </div>
             </div>
@@ -131,13 +175,15 @@
                     </div>
                     <h2 class="fw-bold mb-4">About TridahDrive</h2>
                     <p class="lead mb-4 about-text">
-                        TridahDrive is a collaborative platform designed to help organizations manage their resources, 
-                        finances, and operations all in one place. Built with Laravel and Bootstrap, it's designed to 
-                        be both powerful and easy to use.
+                        TridahDrive is a comprehensive business management platform designed to help organizations manage 
+                        their finances, projects, and operations all in one place. Built with Laravel and Bootstrap, it's 
+                        designed to be both powerful and easy to use.
                     </p>
                     <p class="about-text mb-4">
-                        This is a work in progress with new features being added regularly. We're building an 
-                        ecosystem of integrated business tools, starting with drives and invoicing.
+                        Our platform includes three main applications: <strong>Invoicer</strong> for professional invoicing 
+                        and client management, <strong>BookKeeper</strong> for complete accounting and financial tracking, 
+                        and <strong>Project Board</strong> for task management and team collaboration. All integrated seamlessly 
+                        within customizable drives.
                     </p>
                     <p class="about-text mb-4">
                         Visit our <a href="https://github.com/TridahCloud/TridahDrive" target="_blank" class="brand-link">GitHub repository</a> 
@@ -154,8 +200,8 @@
                                 <i class="fas fa-check-circle"></i>
                             </div>
                             <div>
-                                <strong>Create personal and shared drives</strong>
-                                <p class="mb-0 small">Organize your projects and collaborate with teams</p>
+                                <strong>Professional Invoicing</strong>
+                                <p class="mb-0 small">Create branded invoices, manage clients, and track payments with Invoicer</p>
                             </div>
                         </li>
                         <li class="mission-item">
@@ -163,8 +209,8 @@
                                 <i class="fas fa-check-circle"></i>
                             </div>
                             <div>
-                                <strong>Manage invoices professionally</strong>
-                                <p class="mb-0 small">Track clients, projects, and payments</p>
+                                <strong>Complete Accounting</strong>
+                                <p class="mb-0 small">Track income, expenses, generate tax reports, and manage finances with BookKeeper</p>
                             </div>
                         </li>
                         <li class="mission-item">
@@ -172,8 +218,8 @@
                                 <i class="fas fa-check-circle"></i>
                             </div>
                             <div>
-                                <strong>Collaborate and contribute</strong>
-                                <p class="mb-0 small">Help build the tools your organization needs</p>
+                                <strong>Project Management</strong>
+                                <p class="mb-0 small">Organize tasks, collaborate with teams, and track progress with Project Board</p>
                             </div>
                         </li>
                     </ul>

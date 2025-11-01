@@ -161,6 +161,7 @@ class DriveController extends Controller
             'description' => 'nullable|string|max:1000',
             'color' => 'nullable|string|max:50',
             'icon' => 'nullable|string|max:50',
+            'currency' => 'nullable|string|size:3',
         ]);
 
         $this->driveService->updateDrive($drive, Auth::user(), $validated);

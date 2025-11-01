@@ -170,19 +170,19 @@
                 <div class="col-md-4">
                     <div class="summary-box">
                         <h5 class="text-success mb-2">Total Income</h5>
-                        <h3 class="mb-0">${{ number_format($incomeTotal, 2) }}</h3>
+                        <h3 class="mb-0">{{ currency_for($incomeTotal, $drive) }}</h3>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="summary-box">
                         <h5 class="text-danger mb-2">Total Expenses</h5>
-                        <h3 class="mb-0">${{ number_format($expensesTotal, 2) }}</h3>
+                        <h3 class="mb-0">{{ currency_for($expensesTotal, $drive) }}</h3>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="summary-box">
                         <h5 class="{{ $netIncome >= 0 ? 'text-success' : 'text-danger' }} mb-2">Net Income</h5>
-                        <h3 class="mb-0">${{ number_format($netIncome, 2) }}</h3>
+                        <h3 class="mb-0">{{ currency_for($netIncome, $drive) }}</h3>
                     </div>
                 </div>
             </div>
@@ -205,13 +205,13 @@
                             <tr>
                                 <td><strong>{{ $categoryData['category'] }}</strong></td>
                                 <td style="text-align: right;">{{ $categoryData['count'] }}</td>
-                                <td style="text-align: right;">${{ number_format($categoryData['total'], 2) }}</td>
+                                <td style="text-align: right;">{{ currency_for($categoryData['total'], $drive) }}</td>
                             </tr>
                         @endforeach
                         <tr class="total-row">
                             <td><strong>TOTAL INCOME</strong></td>
                             <td style="text-align: right;"><strong>{{ count($incomeTransactions) }}</strong></td>
-                            <td style="text-align: right;"><strong>${{ number_format($incomeTotal, 2) }}</strong></td>
+                            <td style="text-align: right;"><strong>{{ currency_for($incomeTotal, $drive) }}</strong></td>
                         </tr>
                     </tbody>
                 </table>
@@ -237,13 +237,13 @@
                             <tr>
                                 <td><strong>{{ $categoryData['category'] }}</strong></td>
                                 <td style="text-align: right;">{{ $categoryData['count'] }}</td>
-                                <td style="text-align: right;">${{ number_format($categoryData['total'], 2) }}</td>
+                                <td style="text-align: right;">{{ currency_for($categoryData['total'], $drive) }}</td>
                             </tr>
                         @endforeach
                         <tr class="total-row">
                             <td><strong>TOTAL EXPENSES</strong></td>
                             <td style="text-align: right;"><strong>{{ count($expenseTransactions) }}</strong></td>
-                            <td style="text-align: right;"><strong>${{ number_format($expensesTotal, 2) }}</strong></td>
+                            <td style="text-align: right;"><strong>{{ currency_for($expensesTotal, $drive) }}</strong></td>
                         </tr>
                     </tbody>
                 </table>
@@ -267,7 +267,7 @@
                         @foreach($incomeByAccountType as $type => $amount)
                             <tr>
                                 <td><strong>{{ ucfirst($type) }}</strong></td>
-                                <td style="text-align: right;">${{ number_format($amount, 2) }}</td>
+                                <td style="text-align: right;">{{ currency_for($amount, $drive) }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -290,7 +290,7 @@
                         @foreach($expensesByAccountType as $type => $amount)
                             <tr>
                                 <td><strong>{{ ucfirst($type) }}</strong></td>
-                                <td style="text-align: right;">${{ number_format($amount, 2) }}</td>
+                                <td style="text-align: right;">{{ currency_for($amount, $drive) }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -329,7 +329,7 @@
                                 <td>{{ $transaction->account->name ?? 'N/A' }}</td>
                                 <td>{{ $transaction->category->name ?? 'Uncategorized' }}</td>
                                 <td style="text-align: right;" class="{{ $transaction->type === 'income' ? 'text-success' : 'text-danger' }}">
-                                    <strong>{{ $transaction->type === 'income' ? '+' : '-' }}${{ number_format($transaction->amount, 2) }}</strong>
+                                    <strong>{{ $transaction->type === 'income' ? '+' : '-' }}{{ currency_for($transaction->amount, $drive) }}</strong>
                                 </td>
                                 <td>{{ ucfirst($transaction->status) }}</td>
                             </tr>

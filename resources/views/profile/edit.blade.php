@@ -12,9 +12,21 @@
                 <p class="text-muted">Manage your account settings and preferences</p>
             </div>
 
-            @if(session('status'))
+            @if(session('status') === 'profile-updated' || session('success'))
                 <div class="alert alert-success alert-dismissible fade show">
-                    {{ session('status') }}
+                    <i class="fas fa-check-circle me-2"></i>{{ session('success', 'Profile updated successfully!') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+            
+            @if($errors->any())
+                <div class="alert alert-danger alert-dismissible fade show">
+                    <i class="fas fa-exclamation-circle me-2"></i>Please fix the following errors:
+                    <ul class="mb-0 mt-2">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             @endif
@@ -28,6 +40,11 @@
 
                 @include('profile.partials.update-profile-information-form')
             </div>
+            
+            <!-- Verification Form (moved outside to avoid nested forms) -->
+            <form id="send-verification" method="post" action="{{ route('verification.send') }}" class="d-none">
+                @csrf
+            </form>
 
             <!-- Update Password -->
             <div class="dashboard-card mb-4">

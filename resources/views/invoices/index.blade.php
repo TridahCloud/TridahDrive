@@ -108,7 +108,7 @@
             </div>
             <div class="col-md-3 col-sm-6 mb-3">
                 <div class="dashboard-card text-center">
-                    <h3 class="mb-0 text-success">${{ number_format($stats['total_revenue'], 2) }}</h3>
+                    <h3 class="mb-0 text-success">{{ currency_for($stats['total_revenue'], $drive) }}</h3>
                     <p class="text-muted mb-0">Revenue</p>
                 </div>
             </div>
@@ -164,7 +164,7 @@
                                     Due: {{ $invoice->due_date->format('M d, Y') }}
                                 </span>
                             @endif
-                            &bull; <i class="fas fa-dollar-sign me-1"></i>{{ number_format($invoice->total, 2) }}
+                            &bull; {{ currency_for($invoice->total, $drive) }}
                         </small>
                     </div>
                     <div class="d-flex gap-2">
