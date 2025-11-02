@@ -23,9 +23,11 @@
                     <p class="text-muted">{{ $drive->name }}</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="{{ route('drives.bookkeeper.categories.create', $drive) }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>New Category
-                    </a>
+                    @if($drive->canEdit(auth()->user()))
+                        <a href="{{ route('drives.bookkeeper.categories.create', $drive) }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>New Category
+                        </a>
+                    @endif
                     <a href="{{ route('drives.bookkeeper.transactions.index', $drive) }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-2"></i>Back to BookKeeper
                     </a>
@@ -76,16 +78,18 @@
                             <a href="{{ route('drives.bookkeeper.categories.show', [$drive, $category]) }}" class="btn btn-outline-primary">
                                 <i class="fas fa-eye"></i>
                             </a>
-                            <a href="{{ route('drives.bookkeeper.categories.edit', [$drive, $category]) }}" class="btn btn-outline-secondary">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <form action="{{ route('drives.bookkeeper.categories.destroy', [$drive, $category]) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this category?');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-outline-danger">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </form>
+                            @if($drive->canEdit(auth()->user()))
+                                <a href="{{ route('drives.bookkeeper.categories.edit', [$drive, $category]) }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form action="{{ route('drives.bookkeeper.categories.destroy', [$drive, $category]) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this category?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-outline-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -94,7 +98,7 @@
             <div class="col-12">
                 <div class="dashboard-card text-center py-5">
                     <i class="fas fa-tags fa-3x mb-3 text-muted"></i>
-                    <p class="text-muted">No categories found. <a href="{{ route('drives.bookkeeper.categories.create', $drive) }}">Create your first category</a></p>
+                    <p class="text-muted">No categories found. @if($drive->canEdit(auth()->user()))<a href="{{ route('drives.bookkeeper.categories.create', $drive) }}">Create your first category</a>@endif</p>
                 </div>
             </div>
         @endforelse

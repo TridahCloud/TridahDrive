@@ -305,9 +305,11 @@
                     @endif
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="{{ route('drives.projects.projects.edit', [$drive, $project]) }}" class="btn btn-outline-primary">
-                        <i class="fas fa-edit me-2"></i>Edit Project
-                    </a>
+                    @if($drive->canEdit(auth()->user()))
+                        <a href="{{ route('drives.projects.projects.edit', [$drive, $project]) }}" class="btn btn-outline-primary">
+                            <i class="fas fa-edit me-2"></i>Edit Project
+                        </a>
+                    @endif
                     <a href="{{ route('drives.projects.projects.index', $drive) }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-2"></i>Back
                     </a>
@@ -351,12 +353,14 @@
                         </a>
                     </div>
                     <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createLabelModal">
-                            <i class="fas fa-tag me-2"></i>Create Label
-                        </button>
-                        <a href="{{ route('drives.projects.projects.tasks.create', [$drive, $project]) }}" class="btn btn-primary">
-                            <i class="fas fa-plus me-2"></i>New Task
-                        </a>
+                        @if($drive->canEdit(auth()->user()))
+                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createLabelModal">
+                                <i class="fas fa-tag me-2"></i>Create Label
+                            </button>
+                            <a href="{{ route('drives.projects.projects.tasks.create', [$drive, $project]) }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>New Task
+                            </a>
+                        @endif
                     </div>
                 </div>
             </div>

@@ -20,9 +20,11 @@
                     <p class="text-muted">Manage your projects and tasks</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="{{ route('drives.projects.projects.create', $drive) }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>New Project
-                    </a>
+                    @if($drive->canEdit(auth()->user()))
+                        <a href="{{ route('drives.projects.projects.create', $drive) }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>New Project
+                        </a>
+                    @endif
                     <a href="{{ route('drives.projects.task-labels.index', $drive) }}" class="btn btn-outline-primary">
                         <i class="fas fa-tags me-2"></i>Labels
                     </a>
@@ -95,16 +97,18 @@
                         <a href="{{ route('drives.projects.projects.show', [$drive, $project]) }}" class="btn btn-sm btn-primary flex-fill">
                             <i class="fas fa-eye me-1"></i>View
                         </a>
-                        <a href="{{ route('drives.projects.projects.edit', [$drive, $project]) }}" class="btn btn-sm btn-outline-primary">
-                            <i class="fas fa-edit"></i>
-                        </a>
-                        <form action="{{ route('drives.projects.projects.destroy', [$drive, $project]) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this project?');">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </form>
+                        @if($drive->canEdit(auth()->user()))
+                            <a href="{{ route('drives.projects.projects.edit', [$drive, $project]) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <form action="{{ route('drives.projects.projects.destroy', [$drive, $project]) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this project?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -114,9 +118,11 @@
                     <i class="fas fa-project-diagram fa-3x text-muted mb-3"></i>
                     <h4 class="text-muted">No projects yet</h4>
                     <p class="text-muted">Create your first project to get started</p>
-                    <a href="{{ route('drives.projects.projects.create', $drive) }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>Create Project
-                    </a>
+                    @if($drive->canEdit(auth()->user()))
+                        <a href="{{ route('drives.projects.projects.create', $drive) }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Create Project
+                        </a>
+                    @endif
                 </div>
             </div>
         @endforelse

@@ -85,6 +85,11 @@ class RecurringTransactionController extends Controller
     public function create(Drive $drive)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to create
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot create recurring transactions.');
+        }
 
         $accounts = $drive->accounts()->where('is_active', true)->orderBy('name')->get();
         $categories = $drive->categories()->where('is_active', true)->orderBy('name')->get();
@@ -98,6 +103,11 @@ class RecurringTransactionController extends Controller
     public function store(Request $request, Drive $drive)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to create
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot create recurring transactions.');
+        }
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -183,6 +193,11 @@ class RecurringTransactionController extends Controller
     public function edit(Drive $drive, RecurringTransaction $recurringTransaction)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to edit
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot edit recurring transactions.');
+        }
 
         if ($recurringTransaction->drive_id !== $drive->id) {
             abort(404);
@@ -200,6 +215,11 @@ class RecurringTransactionController extends Controller
     public function update(Request $request, Drive $drive, RecurringTransaction $recurringTransaction)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to edit
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot edit recurring transactions.');
+        }
 
         if ($recurringTransaction->drive_id !== $drive->id) {
             abort(404);
@@ -284,6 +304,11 @@ class RecurringTransactionController extends Controller
     public function destroy(Drive $drive, RecurringTransaction $recurringTransaction)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to delete
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot delete recurring transactions.');
+        }
 
         if ($recurringTransaction->drive_id !== $drive->id) {
             abort(404);
@@ -301,6 +326,11 @@ class RecurringTransactionController extends Controller
     public function generate(Request $request, Drive $drive, RecurringTransaction $recurringTransaction)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to create
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot generate transactions.');
+        }
 
         if ($recurringTransaction->drive_id !== $drive->id) {
             abort(404);
@@ -345,6 +375,11 @@ class RecurringTransactionController extends Controller
     public function skip(Drive $drive, RecurringTransaction $recurringTransaction)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to modify
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot skip recurring transactions.');
+        }
 
         if ($recurringTransaction->drive_id !== $drive->id) {
             abort(404);

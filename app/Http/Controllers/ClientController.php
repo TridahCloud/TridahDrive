@@ -27,6 +27,11 @@ class ClientController extends Controller
     public function create(Drive $drive)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to create
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot create clients.');
+        }
 
         return view('clients.create', compact('drive'));
     }
@@ -37,6 +42,11 @@ class ClientController extends Controller
     public function store(Request $request, Drive $drive)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to create
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot create clients.');
+        }
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -78,6 +88,11 @@ class ClientController extends Controller
     public function edit(Drive $drive, Client $client)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to edit
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot edit clients.');
+        }
 
         if ($client->drive_id !== $drive->id) {
             abort(404);
@@ -92,6 +107,11 @@ class ClientController extends Controller
     public function update(Request $request, Drive $drive, Client $client)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to edit
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot edit clients.');
+        }
 
         if ($client->drive_id !== $drive->id) {
             abort(404);
@@ -121,6 +141,11 @@ class ClientController extends Controller
     public function destroy(Drive $drive, Client $client)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to delete
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot delete clients.');
+        }
 
         if ($client->drive_id !== $drive->id) {
             abort(404);

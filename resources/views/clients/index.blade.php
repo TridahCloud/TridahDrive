@@ -23,9 +23,11 @@
                     <p class="text-muted">{{ $drive->name }}</p>
                 </div>
                 <div>
-                    <a href="{{ route('drives.clients.create', $drive) }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>New Client
-                    </a>
+                    @if($drive->canEdit(auth()->user()))
+                        <a href="{{ route('drives.clients.create', $drive) }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>New Client
+                        </a>
+                    @endif
                     <a href="{{ route('drives.invoices.index', $drive) }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-2"></i>Back
                     </a>
@@ -61,16 +63,18 @@
                     @endif
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="{{ route('drives.clients.edit', [$drive, $client]) }}" class="btn btn-sm btn-outline-secondary">
-                        <i class="fas fa-edit"></i>
-                    </a>
-                    <form action="{{ route('drives.clients.destroy', [$drive, $client]) }}" method="POST" class="d-inline">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure?')">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </form>
+                    @if($drive->canEdit(auth()->user()))
+                        <a href="{{ route('drives.clients.edit', [$drive, $client]) }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <form action="{{ route('drives.clients.destroy', [$drive, $client]) }}" method="POST" class="d-inline">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure?')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    @endif
                 </div>
             </div>
         </div>
@@ -79,9 +83,11 @@
             <i class="fas fa-users fa-3x text-muted mb-3"></i>
             <h5>No Clients Yet</h5>
             <p class="text-muted">Add clients for faster invoice creation</p>
-            <a href="{{ route('drives.clients.create', $drive) }}" class="btn btn-primary">
-                <i class="fas fa-plus me-2"></i>Add Client
-            </a>
+            @if($drive->canEdit(auth()->user()))
+                <a href="{{ route('drives.clients.create', $drive) }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add Client
+                </a>
+            @endif
         </div>
     @endforelse
 </div>

@@ -20,9 +20,11 @@
             <a href="{{ route('drives.invoices.index', $drive) }}" class="btn btn-outline-secondary btn-sm">
                 <i class="fas fa-arrow-left me-1"></i>Back
             </a>
-            <a href="{{ route('drives.invoices.edit', [$drive, $invoice]) }}" class="btn btn-outline-primary btn-sm">
-                <i class="fas fa-edit me-1"></i>Edit
-            </a>
+            @if($drive->canEdit(auth()->user()))
+                <a href="{{ route('drives.invoices.edit', [$drive, $invoice]) }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-edit me-1"></i>Edit
+                </a>
+            @endif
             <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">
                 <i class="fas fa-print me-1"></i>Print
             </button>

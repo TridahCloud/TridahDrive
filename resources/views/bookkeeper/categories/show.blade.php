@@ -23,9 +23,11 @@
                     <p class="text-muted">{{ $drive->name }}</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="{{ route('drives.bookkeeper.categories.edit', [$drive, $category]) }}" class="btn btn-primary">
-                        <i class="fas fa-edit me-2"></i>Edit
-                    </a>
+                    @if($drive->canEdit(auth()->user()))
+                        <a href="{{ route('drives.bookkeeper.categories.edit', [$drive, $category]) }}" class="btn btn-primary">
+                            <i class="fas fa-edit me-2"></i>Edit
+                        </a>
+                    @endif
                     <a href="{{ route('drives.bookkeeper.categories.index', $drive) }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-2"></i>Back
                     </a>

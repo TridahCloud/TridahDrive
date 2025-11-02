@@ -33,6 +33,11 @@ class CategoryController extends Controller
     public function create(Drive $drive)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to create
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot create categories.');
+        }
 
         $parentCategories = $drive->categories()
             ->whereNull('parent_id')
@@ -49,6 +54,11 @@ class CategoryController extends Controller
     public function store(StoreCategoryRequest $request, Drive $drive)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to create
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot create categories.');
+        }
 
         $validated = $request->validated();
 
@@ -97,6 +107,11 @@ class CategoryController extends Controller
     public function edit(Drive $drive, Category $category)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to edit
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot edit categories.');
+        }
 
         if ($category->drive_id !== $drive->id) {
             abort(404);
@@ -118,6 +133,11 @@ class CategoryController extends Controller
     public function update(UpdateCategoryRequest $request, Drive $drive, Category $category)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to edit
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot edit categories.');
+        }
 
         if ($category->drive_id !== $drive->id) {
             abort(404);
@@ -150,6 +170,11 @@ class CategoryController extends Controller
     public function destroy(Drive $drive, Category $category)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to delete
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot delete categories.');
+        }
 
         if ($category->drive_id !== $drive->id) {
             abort(404);

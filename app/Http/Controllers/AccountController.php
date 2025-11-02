@@ -34,6 +34,11 @@ class AccountController extends Controller
     public function create(Drive $drive)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to create
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot create accounts.');
+        }
 
         $parentAccounts = $drive->accounts()
             ->whereNull('parent_id')
@@ -50,6 +55,11 @@ class AccountController extends Controller
     public function store(StoreAccountRequest $request, Drive $drive)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to create
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot create accounts.');
+        }
 
         $validated = $request->validated();
 
@@ -97,6 +107,11 @@ class AccountController extends Controller
     public function edit(Drive $drive, Account $account)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to edit
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot edit accounts.');
+        }
 
         if ($account->drive_id !== $drive->id) {
             abort(404);
@@ -118,6 +133,11 @@ class AccountController extends Controller
     public function update(UpdateAccountRequest $request, Drive $drive, Account $account)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to edit
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot edit accounts.');
+        }
 
         if ($account->drive_id !== $drive->id) {
             abort(404);
@@ -149,6 +169,11 @@ class AccountController extends Controller
     public function destroy(Drive $drive, Account $account)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to delete
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot delete accounts.');
+        }
 
         if ($account->drive_id !== $drive->id) {
             abort(404);

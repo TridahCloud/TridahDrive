@@ -21,9 +21,11 @@
                     <p class="text-muted">{{ $project->name }}</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="{{ route('drives.projects.projects.tasks.edit', [$drive, $project, $task]) }}" class="btn btn-primary">
-                        <i class="fas fa-edit me-2"></i>Edit
-                    </a>
+                    @if($drive->canEdit(auth()->user()))
+                        <a href="{{ route('drives.projects.projects.tasks.edit', [$drive, $project, $task]) }}" class="btn btn-primary">
+                            <i class="fas fa-edit me-2"></i>Edit
+                        </a>
+                    @endif
                     <a href="{{ route('drives.projects.projects.show', [$drive, $project]) }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-2"></i>Back
                     </a>

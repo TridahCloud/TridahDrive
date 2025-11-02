@@ -63,6 +63,11 @@ class InvoiceController extends Controller
     public function create(Drive $drive)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to create
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot create invoices.');
+        }
 
         $invoiceProfile = $drive->default_invoice_profile;
         $clients = $drive->clients()->orderBy('name')->get();
@@ -80,6 +85,11 @@ class InvoiceController extends Controller
     public function store(Request $request, Drive $drive)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to create
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot create invoices.');
+        }
 
         $validated = $request->validate([
             'invoice_profile_id' => 'nullable|exists:invoice_profiles,id',
@@ -189,6 +199,11 @@ class InvoiceController extends Controller
     public function edit(Drive $drive, Invoice $invoice)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to edit
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot edit invoices.');
+        }
 
         if ($invoice->drive_id !== $drive->id) {
             abort(404);
@@ -210,6 +225,11 @@ class InvoiceController extends Controller
     public function update(Request $request, Drive $drive, Invoice $invoice)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to edit
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot edit invoices.');
+        }
 
         if ($invoice->drive_id !== $drive->id) {
             abort(404);
@@ -322,6 +342,11 @@ class InvoiceController extends Controller
     public function destroy(Drive $drive, Invoice $invoice)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to delete
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot delete invoices.');
+        }
 
         if ($invoice->drive_id !== $drive->id) {
             abort(404);

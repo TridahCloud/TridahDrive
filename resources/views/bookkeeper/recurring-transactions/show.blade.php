@@ -23,21 +23,23 @@
                     <p class="text-muted">{{ $drive->name }}</p>
                 </div>
                 <div class="d-flex gap-2">
-                    @if($recurringTransaction->is_active)
-                        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#generateModal">
-                            <i class="fas fa-check me-2"></i>Generate Transaction
-                        </button>
+                    @if($drive->canEdit(auth()->user()))
+                        @if($recurringTransaction->is_active)
+                            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#generateModal">
+                                <i class="fas fa-check me-2"></i>Generate Transaction
+                            </button>
+                        @endif
+                        <a href="{{ route('drives.bookkeeper.recurring-transactions.edit', [$drive, $recurringTransaction]) }}" class="btn btn-primary">
+                            <i class="fas fa-edit me-2"></i>Edit
+                        </a>
+                        <form action="{{ route('drives.bookkeeper.recurring-transactions.destroy', [$drive, $recurringTransaction]) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this recurring transaction? This action cannot be undone.');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash me-2"></i>Delete
+                            </button>
+                        </form>
                     @endif
-                    <a href="{{ route('drives.bookkeeper.recurring-transactions.edit', [$drive, $recurringTransaction]) }}" class="btn btn-primary">
-                        <i class="fas fa-edit me-2"></i>Edit
-                    </a>
-                    <form action="{{ route('drives.bookkeeper.recurring-transactions.destroy', [$drive, $recurringTransaction]) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this recurring transaction? This action cannot be undone.');">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-danger">
-                            <i class="fas fa-trash me-2"></i>Delete
-                        </button>
-                    </form>
                     <a href="{{ route('drives.bookkeeper.recurring-transactions.index', $drive) }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-2"></i>Back
                     </a>

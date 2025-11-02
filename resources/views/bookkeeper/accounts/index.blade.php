@@ -23,9 +23,11 @@
                     <p class="text-muted">{{ $drive->name }}</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="{{ route('drives.bookkeeper.accounts.create', $drive) }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>New Account
-                    </a>
+                    @if($drive->canEdit(auth()->user()))
+                        <a href="{{ route('drives.bookkeeper.accounts.create', $drive) }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>New Account
+                        </a>
+                    @endif
                     <a href="{{ route('drives.bookkeeper.transactions.index', $drive) }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-2"></i>Back to BookKeeper
                     </a>
@@ -97,16 +99,18 @@
                                                     <a href="{{ route('drives.bookkeeper.accounts.show', [$drive, $account]) }}" class="btn btn-outline-primary">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
-                                                    <a href="{{ route('drives.bookkeeper.accounts.edit', [$drive, $account]) }}" class="btn btn-outline-secondary">
-                                                        <i class="fas fa-edit"></i>
-                                                    </a>
-                                                    <form action="{{ route('drives.bookkeeper.accounts.destroy', [$drive, $account]) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this account?');">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="btn btn-outline-danger">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
-                                                    </form>
+                                                    @if($drive->canEdit(auth()->user()))
+                                                        <a href="{{ route('drives.bookkeeper.accounts.edit', [$drive, $account]) }}" class="btn btn-outline-secondary">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                        <form action="{{ route('drives.bookkeeper.accounts.destroy', [$drive, $account]) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this account?');">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-outline-danger">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    @endif
                                                 </div>
                                             </td>
                                         </tr>
@@ -125,7 +129,7 @@
             <div class="col-12">
                 <div class="dashboard-card text-center py-5">
                     <i class="fas fa-wallet fa-3x mb-3 text-muted"></i>
-                    <p class="text-muted">No accounts found. <a href="{{ route('drives.bookkeeper.accounts.create', $drive) }}">Create your first account</a></p>
+                    <p class="text-muted">No accounts found. @if($drive->canEdit(auth()->user()))<a href="{{ route('drives.bookkeeper.accounts.create', $drive) }}">Create your first account</a>@endif</p>
                 </div>
             </div>
         </div>

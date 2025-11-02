@@ -48,9 +48,11 @@
                     <a href="{{ route('drives.bookkeeper.transactions.index', $drive) }}" class="btn btn-primary">
                         <i class="fas fa-list me-2"></i>View All Transactions
                     </a>
-                    <a href="{{ route('drives.bookkeeper.transactions.create', $drive) }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>New Transaction
-                    </a>
+                    @if($drive->canEdit(auth()->user()))
+                        <a href="{{ route('drives.bookkeeper.transactions.create', $drive) }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>New Transaction
+                        </a>
+                    @endif
                     <a href="{{ route('drives.show', $drive) }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-2"></i>Back to Drive
                     </a>
@@ -177,7 +179,7 @@
                 @else
                     <div class="text-center py-4">
                         <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">No transactions yet. <a href="{{ route('drives.bookkeeper.transactions.create', $drive) }}">Create your first transaction</a></p>
+                        <p class="text-muted">No transactions yet. @if($drive->canEdit(auth()->user()))<a href="{{ route('drives.bookkeeper.transactions.create', $drive) }}">Create your first transaction</a>@endif</p>
                     </div>
                 @endif
             </div>
@@ -271,15 +273,19 @@
             <div class="dashboard-card">
                 <h5 class="mb-3">Quick Actions</h5>
                 <div class="d-grid gap-2">
-                    <a href="{{ route('drives.bookkeeper.recurring-transactions.create', $drive) }}" class="btn btn-info">
-                        <i class="fas fa-sync-alt me-2"></i>New Recurring Transaction
-                    </a>
+                    @if($drive->canEdit(auth()->user()))
+                        <a href="{{ route('drives.bookkeeper.recurring-transactions.create', $drive) }}" class="btn btn-info">
+                            <i class="fas fa-sync-alt me-2"></i>New Recurring Transaction
+                        </a>
+                    @endif
                     <a href="{{ route('drives.bookkeeper.tax-report', $drive) }}" class="btn btn-success">
                         <i class="fas fa-file-invoice-dollar me-2"></i>Tax Report
                     </a>
-                    <a href="{{ route('drives.bookkeeper.transactions.create', $drive) }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>New Transaction
-                    </a>
+                    @if($drive->canEdit(auth()->user()))
+                        <a href="{{ route('drives.bookkeeper.transactions.create', $drive) }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>New Transaction
+                        </a>
+                    @endif
                     <a href="{{ route('drives.bookkeeper.accounts.index', $drive) }}" class="btn btn-outline-primary">
                         <i class="fas fa-wallet me-2"></i>Manage Accounts
                     </a>

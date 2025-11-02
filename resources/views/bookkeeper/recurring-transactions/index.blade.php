@@ -26,9 +26,11 @@
                     <a href="{{ route('drives.bookkeeper.recurring-transactions.upcoming', $drive) }}" class="btn btn-info">
                         <i class="fas fa-calendar-alt me-2"></i>Upcoming
                     </a>
-                    <a href="{{ route('drives.bookkeeper.recurring-transactions.create', $drive) }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>New Recurring Transaction
-                    </a>
+                    @if($drive->canEdit(auth()->user()))
+                        <a href="{{ route('drives.bookkeeper.recurring-transactions.create', $drive) }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>New Recurring Transaction
+                        </a>
+                    @endif
                     <a href="{{ route('drives.bookkeeper.dashboard', $drive) }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
                     </a>
@@ -164,16 +166,18 @@
                                             <a href="{{ route('drives.bookkeeper.recurring-transactions.show', [$drive, $recurringTransaction]) }}" class="btn btn-outline-primary">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            <a href="{{ route('drives.bookkeeper.recurring-transactions.edit', [$drive, $recurringTransaction]) }}" class="btn btn-outline-secondary">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            @if($recurringTransaction->is_active)
-                                                <form action="{{ route('drives.bookkeeper.recurring-transactions.generate', [$drive, $recurringTransaction]) }}" method="POST" class="d-inline">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-outline-success" title="Generate Transaction">
-                                                        <i class="fas fa-check"></i>
-                                                    </button>
-                                                </form>
+                                            @if($drive->canEdit(auth()->user()))
+                                                <a href="{{ route('drives.bookkeeper.recurring-transactions.edit', [$drive, $recurringTransaction]) }}" class="btn btn-outline-secondary">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                @if($recurringTransaction->is_active)
+                                                    <form action="{{ route('drives.bookkeeper.recurring-transactions.generate', [$drive, $recurringTransaction]) }}" method="POST" class="d-inline">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-outline-success" title="Generate Transaction">
+                                                            <i class="fas fa-check"></i>
+                                                        </button>
+                                                    </form>
+                                                @endif
                                             @endif
                                         </div>
                                     </td>

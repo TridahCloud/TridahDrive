@@ -40,6 +40,11 @@ class TaskController extends Controller
     public function create(Drive $drive, Project $project)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to create
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot create tasks.');
+        }
 
         if ($project->drive_id !== $drive->id) {
             abort(404);
@@ -58,6 +63,11 @@ class TaskController extends Controller
     public function store(Request $request, Drive $drive, Project $project)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to create
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot create tasks.');
+        }
 
         if ($project->drive_id !== $drive->id) {
             abort(404);
@@ -166,6 +176,11 @@ class TaskController extends Controller
     public function edit(Drive $drive, Project $project, Task $task)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to edit
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot edit tasks.');
+        }
 
         if ($project->drive_id !== $drive->id || $task->project_id !== $project->id) {
             abort(404);
@@ -190,6 +205,11 @@ class TaskController extends Controller
     public function update(Request $request, Drive $drive, Project $project, Task $task)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to edit
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot edit tasks.');
+        }
 
         if ($project->drive_id !== $drive->id || $task->project_id !== $project->id) {
             abort(404);
@@ -269,6 +289,11 @@ class TaskController extends Controller
     public function destroy(Drive $drive, Project $project, Task $task)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to delete
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot delete tasks.');
+        }
 
         if ($project->drive_id !== $drive->id || $task->project_id !== $project->id) {
             abort(404);
@@ -286,6 +311,11 @@ class TaskController extends Controller
     public function updateStatus(Request $request, Drive $drive, Project $project, Task $task)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to modify
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot modify tasks.');
+        }
 
         if ($project->drive_id !== $drive->id || $task->project_id !== $project->id) {
             abort(404);

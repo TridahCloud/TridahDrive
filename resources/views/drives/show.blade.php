@@ -103,9 +103,11 @@
                         </div>
                     </div>
                 @endif
-                <a href="{{ route('drives.invoices.create', $drive) }}" class="btn btn-primary btn-sm w-100">
-                    <i class="fas fa-plus me-1"></i>New Invoice
-                </a>
+                @if($drive->canEdit(auth()->user()))
+                    <a href="{{ route('drives.invoices.create', $drive) }}" class="btn btn-primary btn-sm w-100">
+                        <i class="fas fa-plus me-1"></i>New Invoice
+                    </a>
+                @endif
             </div>
         </div>
 
@@ -164,9 +166,11 @@
                         </div>
                     </div>
                 @endif
-                <a href="{{ route('drives.bookkeeper.transactions.create', $drive) }}" class="btn btn-primary btn-sm w-100">
-                    <i class="fas fa-plus me-1"></i>New Transaction
-                </a>
+                @if($drive->canEdit(auth()->user()))
+                    <a href="{{ route('drives.bookkeeper.transactions.create', $drive) }}" class="btn btn-primary btn-sm w-100">
+                        <i class="fas fa-plus me-1"></i>New Transaction
+                    </a>
+                @endif
             </div>
         </div>
 
@@ -225,9 +229,11 @@
                         </div>
                     </div>
                 @endif
-                <a href="{{ route('drives.projects.projects.create', $drive) }}" class="btn btn-primary btn-sm w-100">
-                    <i class="fas fa-plus me-1"></i>New Project
-                </a>
+                @if($drive->canEdit(auth()->user()))
+                    <a href="{{ route('drives.projects.projects.create', $drive) }}" class="btn btn-primary btn-sm w-100">
+                        <i class="fas fa-plus me-1"></i>New Project
+                    </a>
+                @endif
             </div>
         </div>
     </div>
@@ -241,15 +247,17 @@
                     <h4 class="mb-2">Get Started</h4>
                     <p class="text-muted">Create your first invoice, transaction, or project to get started</p>
                     <div class="mt-3 d-flex gap-2 justify-content-center">
-                        <a href="{{ route('drives.invoices.create', $drive) }}" class="btn btn-primary">
-                            <i class="fas fa-file-invoice me-2"></i>New Invoice
-                        </a>
-                        <a href="{{ route('drives.bookkeeper.transactions.create', $drive) }}" class="btn btn-primary">
-                            <i class="fas fa-book me-2"></i>New Transaction
-                        </a>
-                        <a href="{{ route('drives.projects.projects.create', $drive) }}" class="btn btn-primary">
-                            <i class="fas fa-tasks me-2"></i>New Project
-                        </a>
+                        @if($drive->canEdit(auth()->user()))
+                            <a href="{{ route('drives.invoices.create', $drive) }}" class="btn btn-primary">
+                                <i class="fas fa-file-invoice me-2"></i>New Invoice
+                            </a>
+                            <a href="{{ route('drives.bookkeeper.transactions.create', $drive) }}" class="btn btn-primary">
+                                <i class="fas fa-book me-2"></i>New Transaction
+                            </a>
+                            <a href="{{ route('drives.projects.projects.create', $drive) }}" class="btn btn-primary">
+                                <i class="fas fa-tasks me-2"></i>New Project
+                            </a>
+                        @endif
                     </div>
                 </div>
             </div>

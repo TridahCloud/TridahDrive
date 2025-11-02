@@ -170,6 +170,11 @@ class BookTransactionController extends Controller
     public function create(Drive $drive)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to create
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot create transactions.');
+        }
 
         $accounts = $drive->accounts()->where('is_active', true)->orderBy('name')->get();
         $categories = $drive->categories()->where('is_active', true)->orderBy('name')->get();
@@ -183,6 +188,11 @@ class BookTransactionController extends Controller
     public function store(StoreTransactionRequest $request, Drive $drive)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to create
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot create transactions.');
+        }
 
         $validated = $request->validated();
 
@@ -248,6 +258,11 @@ class BookTransactionController extends Controller
     public function edit(Drive $drive, BookTransaction $transaction)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to edit
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot edit transactions.');
+        }
 
         if ($transaction->drive_id !== $drive->id) {
             abort(404);
@@ -268,6 +283,11 @@ class BookTransactionController extends Controller
     public function update(UpdateTransactionRequest $request, Drive $drive, BookTransaction $transaction)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to edit
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot edit transactions.');
+        }
 
         if ($transaction->drive_id !== $drive->id) {
             abort(404);
@@ -321,6 +341,11 @@ class BookTransactionController extends Controller
     public function destroy(Drive $drive, BookTransaction $transaction)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to delete
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot delete transactions.');
+        }
 
         if ($transaction->drive_id !== $drive->id) {
             abort(404);

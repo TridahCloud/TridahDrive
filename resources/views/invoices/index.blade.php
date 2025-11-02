@@ -39,9 +39,11 @@
                             </a></li>
                         </ul>
                     </div>
-                    <a href="{{ route('drives.invoices.create', $drive) }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>New Invoice
-                    </a>
+                    @if($drive->canEdit(auth()->user()))
+                        <a href="{{ route('drives.invoices.create', $drive) }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>New Invoice
+                        </a>
+                    @endif
                     <a href="{{ route('drives.show', $drive) }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-2"></i>Back to Drive
                     </a>
@@ -60,27 +62,29 @@
     <!-- Setup Alerts -->
     <div class="row mb-4">
         <div class="col-12">
-            @if(!$hasProfile)
-                <div class="alert alert-warning alert-dismissible fade show">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>Setup Required:</strong> Create an invoice profile to set up your company information and defaults.
-                    <a href="{{ route('drives.invoice-profiles.create', $drive) }}" class="btn btn-sm btn-warning ms-2">Create Profile</a>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            @elseif(!$hasClients || !$hasItems)
-                <div class="alert alert-info alert-dismissible fade show">
-                    <i class="fas fa-info-circle me-2"></i>
-                    <strong>Quick Tip:</strong> 
-                    @if(!$hasClients)
-                        Add clients for faster invoice creation.
-                        <a href="{{ route('drives.clients.create', $drive) }}" class="btn btn-sm btn-info ms-2">Add Clients</a>
-                    @endif
-                    @if(!$hasItems)
-                        Add reusable line items for quicker invoicing.
-                        <a href="{{ route('drives.user-items.create', $drive) }}" class="btn btn-sm btn-info ms-2">Add Items</a>
-                    @endif
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
+            @if($drive->canEdit(auth()->user()))
+                @if(!$hasProfile)
+                    <div class="alert alert-warning alert-dismissible fade show">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Setup Required:</strong> Create an invoice profile to set up your company information and defaults.
+                        <a href="{{ route('drives.invoice-profiles.create', $drive) }}" class="btn btn-sm btn-warning ms-2">Create Profile</a>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                @elseif(!$hasClients || !$hasItems)
+                    <div class="alert alert-info alert-dismissible fade show">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Quick Tip:</strong> 
+                        @if(!$hasClients)
+                            Add clients for faster invoice creation.
+                            <a href="{{ route('drives.clients.create', $drive) }}" class="btn btn-sm btn-info ms-2">Add Clients</a>
+                        @endif
+                        @if(!$hasItems)
+                            Add reusable line items for quicker invoicing.
+                            <a href="{{ route('drives.user-items.create', $drive) }}" class="btn btn-sm btn-info ms-2">Add Items</a>
+                        @endif
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                @endif
             @endif
         </div>
     </div>
@@ -168,30 +172,34 @@
                         </small>
                     </div>
                     <div class="d-flex gap-2">
-                        <form action="{{ route('drives.invoices.update', [$drive, $invoice]) }}" method="POST" class="d-inline" id="statusForm-{{ $invoice->id }}">
-                            @csrf
-                            @method('PATCH')
-                            <select name="status" class="form-select form-select-sm" style="width: auto;" onchange="document.getElementById('statusForm-{{ $invoice->id }}').submit();">
-                                <option value="draft" {{ $invoice->status === 'draft' ? 'selected' : '' }}>Draft</option>
-                                <option value="sent" {{ $invoice->status === 'sent' ? 'selected' : '' }}>Sent</option>
-                                <option value="paid" {{ $invoice->status === 'paid' ? 'selected' : '' }}>Paid</option>
-                                <option value="overdue" {{ $invoice->status === 'overdue' ? 'selected' : '' }}>Overdue</option>
-                                <option value="cancelled" {{ $invoice->status === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
-                            </select>
-                        </form>
+                        @if($drive->canEdit(auth()->user()))
+                            <form action="{{ route('drives.invoices.update', [$drive, $invoice]) }}" method="POST" class="d-inline" id="statusForm-{{ $invoice->id }}">
+                                @csrf
+                                @method('PATCH')
+                                <select name="status" class="form-select form-select-sm" style="width: auto;" onchange="document.getElementById('statusForm-{{ $invoice->id }}').submit();">
+                                    <option value="draft" {{ $invoice->status === 'draft' ? 'selected' : '' }}>Draft</option>
+                                    <option value="sent" {{ $invoice->status === 'sent' ? 'selected' : '' }}>Sent</option>
+                                    <option value="paid" {{ $invoice->status === 'paid' ? 'selected' : '' }}>Paid</option>
+                                    <option value="overdue" {{ $invoice->status === 'overdue' ? 'selected' : '' }}>Overdue</option>
+                                    <option value="cancelled" {{ $invoice->status === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                                </select>
+                            </form>
+                        @endif
                         <a href="{{ route('drives.invoices.show', [$drive, $invoice]) }}" class="btn btn-sm btn-outline-primary">
                             <i class="fas fa-eye"></i>
                         </a>
-                        <a href="{{ route('drives.invoices.edit', [$drive, $invoice]) }}" class="btn btn-sm btn-outline-secondary">
-                            <i class="fas fa-edit"></i>
-                        </a>
-                        <form action="{{ route('drives.invoices.destroy', [$drive, $invoice]) }}" method="POST" class="d-inline">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure?')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </form>
+                        @if($drive->canEdit(auth()->user()))
+                            <a href="{{ route('drives.invoices.edit', [$drive, $invoice]) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <form action="{{ route('drives.invoices.destroy', [$drive, $invoice]) }}" method="POST" class="d-inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure?')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -200,9 +208,11 @@
                 <i class="fas fa-file-invoice fa-3x text-muted mb-3"></i>
                 <h5>No Invoices Yet</h5>
                 <p class="text-muted">Create your first invoice to get started!</p>
-                <a href="{{ route('drives.invoices.create', $drive) }}" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Create Invoice
-                </a>
+                @if($drive->canEdit(auth()->user()))
+                    <a href="{{ route('drives.invoices.create', $drive) }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create Invoice
+                    </a>
+                @endif
             </div>
         @endforelse
 

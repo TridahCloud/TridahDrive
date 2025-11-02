@@ -39,9 +39,11 @@
                     <a href="{{ route('drives.bookkeeper.tax-report', $drive) }}" class="btn btn-success">
                         <i class="fas fa-file-invoice-dollar me-2"></i>Tax Report
                     </a>
-                    <a href="{{ route('drives.bookkeeper.transactions.create', $drive) }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>New Transaction
-                    </a>
+                    @if($drive->canEdit(auth()->user()))
+                        <a href="{{ route('drives.bookkeeper.transactions.create', $drive) }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>New Transaction
+                        </a>
+                    @endif
                     <a href="{{ route('drives.bookkeeper.dashboard', $drive) }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
                     </a>
@@ -193,9 +195,11 @@
                                             <a href="{{ route('drives.bookkeeper.transactions.show', [$drive, $transaction]) }}" class="btn btn-outline-primary">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            <a href="{{ route('drives.bookkeeper.transactions.edit', [$drive, $transaction]) }}" class="btn btn-outline-secondary">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
+                                            @if($drive->canEdit(auth()->user()))
+                                                <a href="{{ route('drives.bookkeeper.transactions.edit', [$drive, $transaction]) }}" class="btn btn-outline-secondary">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>
@@ -203,7 +207,7 @@
                                 <tr>
                                     <td colspan="9" class="text-center text-muted py-5">
                                         <i class="fas fa-inbox fa-3x mb-3"></i>
-                                        <p>No transactions found. <a href="{{ route('drives.bookkeeper.transactions.create', $drive) }}">Create your first transaction</a></p>
+                                        <p>No transactions found. @if($drive->canEdit(auth()->user()))<a href="{{ route('drives.bookkeeper.transactions.create', $drive) }}">Create your first transaction</a>@endif</p>
                                     </td>
                                 </tr>
                             @endforelse

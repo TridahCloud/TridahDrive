@@ -23,9 +23,11 @@
                     <p class="text-muted">{{ $drive->name }}</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="{{ route('drives.bookkeeper.recurring-transactions.create', $drive) }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>New Recurring Transaction
-                    </a>
+                    @if($drive->canEdit(auth()->user()))
+                        <a href="{{ route('drives.bookkeeper.recurring-transactions.create', $drive) }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>New Recurring Transaction
+                        </a>
+                    @endif
                     <a href="{{ route('drives.bookkeeper.recurring-transactions.index', $drive) }}" class="btn btn-outline-secondary">
                         <i class="fas fa-list me-2"></i>All Recurring Transactions
                     </a>
@@ -111,15 +113,17 @@
                                         </td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
-                                                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#generateModal{{ $recurringTransaction->id }}">
-                                                    <i class="fas fa-check me-1"></i>Generate
-                                                </button>
-                                                <form action="{{ route('drives.bookkeeper.recurring-transactions.skip', [$drive, $recurringTransaction]) }}" method="POST" class="d-inline" onsubmit="return confirm('Skip this occurrence? The next due date will be updated.');">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-warning" title="Skip this occurrence">
-                                                        <i class="fas fa-forward"></i>
+                                                @if($drive->canEdit(auth()->user()))
+                                                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#generateModal{{ $recurringTransaction->id }}">
+                                                        <i class="fas fa-check me-1"></i>Generate
                                                     </button>
-                                                </form>
+                                                    <form action="{{ route('drives.bookkeeper.recurring-transactions.skip', [$drive, $recurringTransaction]) }}" method="POST" class="d-inline" onsubmit="return confirm('Skip this occurrence? The next due date will be updated.');">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-warning" title="Skip this occurrence">
+                                                            <i class="fas fa-forward"></i>
+                                                        </button>
+                                                    </form>
+                                                @endif
                                                 <a href="{{ route('drives.bookkeeper.recurring-transactions.show', [$drive, $recurringTransaction]) }}" class="btn btn-outline-primary">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
@@ -195,15 +199,17 @@
                                         </td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
-                                                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#generateModal{{ $recurringTransaction->id }}">
-                                                    <i class="fas fa-check me-1"></i>Generate
-                                                </button>
-                                                <form action="{{ route('drives.bookkeeper.recurring-transactions.skip', [$drive, $recurringTransaction]) }}" method="POST" class="d-inline" onsubmit="return confirm('Skip this occurrence? The next due date will be updated.');">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-warning" title="Skip this occurrence">
-                                                        <i class="fas fa-forward"></i>
+                                                @if($drive->canEdit(auth()->user()))
+                                                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#generateModal{{ $recurringTransaction->id }}">
+                                                        <i class="fas fa-check me-1"></i>Generate
                                                     </button>
-                                                </form>
+                                                    <form action="{{ route('drives.bookkeeper.recurring-transactions.skip', [$drive, $recurringTransaction]) }}" method="POST" class="d-inline" onsubmit="return confirm('Skip this occurrence? The next due date will be updated.');">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-warning" title="Skip this occurrence">
+                                                            <i class="fas fa-forward"></i>
+                                                        </button>
+                                                    </form>
+                                                @endif
                                                 <a href="{{ route('drives.bookkeeper.recurring-transactions.show', [$drive, $recurringTransaction]) }}" class="btn btn-outline-primary">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
