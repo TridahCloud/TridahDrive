@@ -319,7 +319,12 @@
                         @foreach($transactions as $transaction)
                             <tr>
                                 <td>{{ $transaction->date->format('M d, Y') }}</td>
-                                <td><code>{{ $transaction->transaction_number }}</code></td>
+                                <td>
+                                    <code>{{ $transaction->transaction_number }}</code>
+                                    @if($transaction->drive && $transaction->drive->id !== $drive->id)
+                                        <br><small class="badge bg-info" style="font-size: 0.6rem;">{{ $transaction->drive->name }}</small>
+                                    @endif
+                                </td>
                                 <td>
                                     <span class="badge bg-{{ $transaction->type === 'income' ? 'success' : ($transaction->type === 'expense' ? 'danger' : 'secondary') }}">
                                         {{ ucfirst($transaction->type) }}

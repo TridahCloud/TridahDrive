@@ -19,6 +19,7 @@ class DriveService
                 'name' => $data['name'],
                 'type' => 'shared',
                 'owner_id' => $user->id,
+                'parent_drive_id' => $data['parent_drive_id'] ?? null,
                 'color' => $data['color'] ?? null,
                 'icon' => $data['icon'] ?? null,
                 'description' => $data['description'] ?? null,
@@ -32,6 +33,43 @@ class DriveService
             ]);
 
             return $drive->fresh(['owner', 'users']);
+        });
+    }
+
+    /**
+     * Create a sub-drive
+     */
+    public function createSubDrive(Drive $parentDrive, User $user, array $data): Drive
+    {
+        // Check permissions
+        if (!$parentDrive->isOwnerOrAdmin($user)) {
+            throw new \Exception('You do not have permission to create sub-drives.');
+        }
+
+        // Ensure parent is not itself a sub-drive
+        if ($parentDrive->isSubDrive()) {
+            throw new \Exception('Cannot create sub-drives within sub-drives.');
+        }
+
+        return DB::transaction(function () use ($parentDrive, $user, $data) {
+            $subDrive = Drive::create([
+                'name' => $data['name'],
+                'type' => 'shared',
+                'owner_id' => $user->id,
+                'parent_drive_id' => $parentDrive->id,
+                'color' => $data['color'] ?? null,
+                'icon' => $data['icon'] ?? null,
+                'description' => $data['description'] ?? null,
+                'settings' => $data['settings'] ?? [],
+            ]);
+
+            // Add creator as owner
+            $subDrive->users()->attach($user->id, [
+                'role' => 'owner',
+                'joined_at' => now(),
+            ]);
+
+            return $subDrive->fresh(['owner', 'users', 'parentDrive']);
         });
     }
 
@@ -157,7 +195,17 @@ class DriveService
             throw new \Exception('You do not have permission to update this drive.');
         }
 
+        // Handle settings update separately
+        $settings = $data['settings'] ?? $drive->settings ?? [];
+        unset($data['settings']);
+
         $drive->update($data);
+        
+        // Update settings if provided
+        if (isset($data['settings'])) {
+            $drive->settings = $settings;
+            $drive->save();
+        }
 
         return $drive->fresh();
     }

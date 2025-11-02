@@ -16,6 +16,7 @@ class Drive extends Model
         'name',
         'type',
         'owner_id',
+        'parent_drive_id',
         'color',
         'icon',
         'settings',
@@ -36,6 +37,22 @@ class Drive extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    /**
+     * Get the parent drive (if this is a sub-drive)
+     */
+    public function parentDrive(): BelongsTo
+    {
+        return $this->belongsTo(Drive::class, 'parent_drive_id');
+    }
+
+    /**
+     * Get all sub-drives of this drive
+     */
+    public function subDrives(): HasMany
+    {
+        return $this->hasMany(Drive::class, 'parent_drive_id');
     }
 
     /**
@@ -203,5 +220,79 @@ class Drive extends Model
     {
         $role = $this->getUserRole($user);
         return in_array($role, ['owner', 'admin', 'member']);
+    }
+
+    /**
+     * Get all drive IDs including this drive and sub-drives
+     */
+    public function getDriveIdsIncludingSubDrives(bool $includeHidden = false): array
+    {
+        $driveIds = [$this->id];
+
+        $subDriveIds = $this->subDrives()
+            ->when(!$includeHidden, function($query) {
+                $settings = $this->settings ?? [];
+                $hiddenSubDrives = $settings['hidden_sub_drives'] ?? [];
+                if (!empty($hiddenSubDrives)) {
+                    $query->whereNotIn('id', $hiddenSubDrives);
+                }
+            })
+            ->pluck('id')
+            ->toArray();
+
+        return array_merge($driveIds, $subDriveIds);
+    }
+
+    /**
+     * Get all invoices including from sub-drives
+     */
+    public function getInvoicesIncludingSubDrives(bool $includeHidden = false)
+    {
+        $driveIds = $this->getDriveIdsIncludingSubDrives($includeHidden);
+        return Invoice::whereIn('drive_id', $driveIds);
+    }
+
+    /**
+     * Get all transactions including from sub-drives
+     */
+    public function getTransactionsIncludingSubDrives(bool $includeHidden = false)
+    {
+        $driveIds = $this->getDriveIdsIncludingSubDrives($includeHidden);
+        return BookTransaction::whereIn('drive_id', $driveIds);
+    }
+
+    /**
+     * Get all projects including from sub-drives
+     */
+    public function getProjectsIncludingSubDrives(bool $includeHidden = false)
+    {
+        $driveIds = $this->getDriveIdsIncludingSubDrives($includeHidden);
+        return Project::whereIn('drive_id', $driveIds);
+    }
+
+    /**
+     * Check if this is a sub-drive
+     */
+    public function isSubDrive(): bool
+    {
+        return !is_null($this->parent_drive_id);
+    }
+
+    /**
+     * Get a short identifier for sub-drive transaction numbers
+     */
+    public function getSubDrivePrefix(): ?string
+    {
+        if (!$this->isSubDrive()) {
+            return null;
+        }
+        
+        // Use first 3 uppercase letters of drive name or drive ID as fallback
+        $name = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $this->name));
+        if (strlen($name) >= 3) {
+            return substr($name, 0, 3);
+        }
+        
+        return str_pad($this->id, 3, '0', STR_PAD_LEFT);
     }
 }

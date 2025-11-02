@@ -34,9 +34,11 @@
                     <p class="text-muted">{{ $drive->name }}</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="{{ route('drives.bookkeeper.transactions.edit', [$drive, $transaction]) }}" class="btn btn-primary">
-                        <i class="fas fa-edit me-2"></i>Edit
-                    </a>
+                    @if($drive->canEdit(auth()->user()))
+                        <a href="{{ route('drives.bookkeeper.transactions.edit', [$drive, $transaction]) }}" class="btn btn-primary">
+                            <i class="fas fa-edit me-2"></i>Edit
+                        </a>
+                    @endif
                     <a href="{{ route('drives.bookkeeper.transactions.index', $drive) }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-2"></i>Back
                     </a>
@@ -53,7 +55,12 @@
                     <div class="col-md-6">
                         <div class="mb-3">
                             <label class="text-muted small">Transaction Number</label>
-                            <p class="mb-0"><code>{{ $transaction->transaction_number }}</code></p>
+                            <p class="mb-0">
+                                <code>{{ $transaction->transaction_number }}</code>
+                                @if($transaction->drive && $transaction->drive->id !== $drive->id)
+                                    <br><span class="badge bg-info mt-1">From: {{ $transaction->drive->name }}</span>
+                                @endif
+                            </p>
                         </div>
                     </div>
                     <div class="col-md-6">

@@ -251,6 +251,137 @@
                 @endif
             </div>
             @endif
+
+            @if($drive->type === 'shared' && $drive->isOwnerOrAdmin(auth()->user()) && !$drive->isSubDrive())
+            <!-- Sub-Drives Section -->
+            <div class="dashboard-card mt-4">
+                <h4 class="mb-3 brand-teal">
+                    <i class="fas fa-folder-tree me-2"></i>Sub-Drives
+                    <small class="text-muted">(Teams & Departments)</small>
+                </h4>
+                <p class="text-muted mb-3">
+                    Create sub-drives to organize different teams or departments within your organization. 
+                    Sub-drive transactions will appear in your main drive reports.
+                </p>
+
+                @if(session('sub_drive_success'))
+                    <div class="alert alert-success alert-dismissible fade show">
+                        <i class="fas fa-check-circle me-2"></i>{{ session('sub_drive_success') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                @endif
+
+                @if($drive->subDrives->count() > 0)
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Owner</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($drive->subDrives as $subDrive)
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-{{ $subDrive->icon ?? 'folder' }} me-2" style="color: {{ $subDrive->color ?? '#31d8b2' }};"></i>
+                                        <a href="{{ route('drives.show', $subDrive) }}" class="text-decoration-none">{{ $subDrive->name }}</a>
+                                    </td>
+                                    <td>{{ $subDrive->description }}</td>
+                                    <td>{{ $subDrive->owner->name }}</td>
+                                    <td>
+                                        <a href="{{ route('drives.show', $subDrive) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                @endif
+
+                <!-- Create Sub-Drive Form -->
+                <div class="mt-4 pt-4 border-top">
+                    <h5 class="mb-3">Create New Sub-Drive</h5>
+                    <form action="{{ route('drives.sub-drives.store', $drive) }}" method="POST">
+                        @csrf
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <input type="text" class="form-control" name="name" placeholder="Sub-drive name" value="{{ old('name') }}" required>
+                                @error('name')
+                                    <div class="text-danger small">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <input type="text" class="form-control" name="description" placeholder="Description (optional)" value="{{ old('description') }}">
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-plus me-1"></i>Create
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <input type="color" class="form-control form-control-color" name="color" value="{{ old('color', '#31d8b2') }}" title="Choose color">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <select class="form-select" name="icon">
+                                    <option value="folder" {{ old('icon') === 'folder' ? 'selected' : '' }}>Folder</option>
+                                    <option value="building" {{ old('icon') === 'building' ? 'selected' : '' }}>Building</option>
+                                    <option value="users" {{ old('icon') === 'users' ? 'selected' : '' }}>Team</option>
+                                    <option value="briefcase" {{ old('icon') === 'briefcase' ? 'selected' : '' }}>Briefcase</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Hide Sub-Drives Settings -->
+            <div class="dashboard-card mt-4">
+                <h4 class="mb-3 brand-teal">
+                    <i class="fas fa-cog me-2"></i>Sub-Drive Visibility
+                </h4>
+                <p class="text-muted mb-3">
+                    Hide specific sub-drives from appearing in your main drive reports. 
+                    This does not affect the sub-drive's own data.
+                </p>
+
+                <form action="{{ route('drives.settings.update', $drive) }}" method="POST">
+                    @csrf
+                    @php
+                        $hiddenSubDrives = $drive->settings['hidden_sub_drives'] ?? [];
+                    @endphp
+
+                    @if($drive->subDrives->count() > 0)
+                        @foreach($drive->subDrives as $subDrive)
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="hidden_sub_drives[]" 
+                                       value="{{ $subDrive->id }}" id="hide_{{ $subDrive->id }}"
+                                       {{ in_array($subDrive->id, $hiddenSubDrives) ? 'checked' : '' }}>
+                                <label class="form-check-label" for="hide_{{ $subDrive->id }}">
+                                    {{ $subDrive->name }}
+                                </label>
+                            </div>
+                        @endforeach
+                    @else
+                        <p class="text-muted">No sub-drives to manage</p>
+                    @endif
+
+                    @if($drive->subDrives->count() > 0)
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Update Visibility
+                            </button>
+                        </div>
+                    @endif
+                </form>
+            </div>
+            @endif
         </div>
     </div>
 </div>

@@ -27,36 +27,43 @@ class BookTransactionController extends Controller
         $dateFrom = now()->startOfMonth();
         $dateTo = now()->endOfMonth();
 
+        // Use aggregate methods if this is a parent drive (include sub-drives)
+        if (!$drive->isSubDrive()) {
+            $baseQuery = $drive->getTransactionsIncludingSubDrives();
+        } else {
+            $baseQuery = $drive->bookTransactions();
+        }
+
         $stats = [
-            'total_income' => $drive->bookTransactions()
+            'total_income' => (clone $baseQuery)
                 ->where('type', 'income')
                 ->whereBetween('date', [$dateFrom, $dateTo])
                 ->where('status', '!=', 'pending')
                 ->sum('amount'),
-            'total_expense' => $drive->bookTransactions()
+            'total_expense' => (clone $baseQuery)
                 ->where('type', 'expense')
                 ->whereBetween('date', [$dateFrom, $dateTo])
                 ->where('status', '!=', 'pending')
                 ->sum('amount'),
-            'total_transactions' => $drive->bookTransactions()
+            'total_transactions' => (clone $baseQuery)
                 ->whereBetween('date', [$dateFrom, $dateTo])
                 ->count(),
-            'pending_transactions' => $drive->bookTransactions()
+            'pending_transactions' => (clone $baseQuery)
                 ->where('status', 'pending')
                 ->count(),
-            'cleared_transactions' => $drive->bookTransactions()
+            'cleared_transactions' => (clone $baseQuery)
                 ->where('status', 'cleared')
                 ->whereBetween('date', [$dateFrom, $dateTo])
                 ->count(),
-            'reconciled_transactions' => $drive->bookTransactions()
+            'reconciled_transactions' => (clone $baseQuery)
                 ->where('status', 'reconciled')
                 ->whereBetween('date', [$dateFrom, $dateTo])
                 ->count(),
         ];
 
         // Get recent transactions
-        $recentTransactions = $drive->bookTransactions()
-            ->with(['account', 'category', 'creator'])
+        $recentTransactions = (clone $baseQuery)
+            ->with(['account', 'category', 'creator', 'drive'])
             ->orderBy('date', 'desc')
             ->orderBy('created_at', 'desc')
             ->limit(10)
@@ -104,8 +111,14 @@ class BookTransactionController extends Controller
     {
         $this->authorize('view', $drive);
 
-        $query = $drive->bookTransactions()
-            ->with(['account', 'category', 'creator']);
+        // Use aggregate methods if this is a parent drive (include sub-drives)
+        if (!$drive->isSubDrive()) {
+            $query = $drive->getTransactionsIncludingSubDrives()
+                ->with(['account', 'category', 'creator', 'drive']);
+        } else {
+            $query = $drive->bookTransactions()
+                ->with(['account', 'category', 'creator', 'drive']);
+        }
 
         // Apply filters
         if ($request->filled('type')) {
@@ -137,16 +150,23 @@ class BookTransactionController extends Controller
             ->paginate(50);
 
         // Get stats
+        // Use aggregate methods if this is a parent drive
+        if (!$drive->isSubDrive()) {
+            $baseStatsQuery = $drive->getTransactionsIncludingSubDrives();
+        } else {
+            $baseStatsQuery = $drive->bookTransactions();
+        }
+
         $stats = [
-            'total_income' => $drive->bookTransactions()
+            'total_income' => (clone $baseStatsQuery)
                 ->where('type', 'income')
                 ->where('status', '!=', 'pending')
                 ->sum('amount'),
-            'total_expense' => $drive->bookTransactions()
+            'total_expense' => (clone $baseStatsQuery)
                 ->where('type', 'expense')
                 ->where('status', '!=', 'pending')
                 ->sum('amount'),
-            'total_pending' => $drive->bookTransactions()
+            'total_pending' => (clone $baseStatsQuery)
                 ->where('status', 'pending')
                 ->count(),
         ];
@@ -243,11 +263,21 @@ class BookTransactionController extends Controller
     {
         $this->authorize('view', $drive);
 
-        if ($transaction->drive_id !== $drive->id) {
-            abort(404);
+        // Allow if transaction is from this drive or from one of its sub-drives
+        $transactionDriveId = $transaction->drive_id;
+        if ($transactionDriveId !== $drive->id) {
+            // Check if transaction is from a sub-drive
+            if (!$drive->isSubDrive()) {
+                $driveIds = $drive->getDriveIdsIncludingSubDrives();
+                if (!in_array($transactionDriveId, $driveIds)) {
+                    abort(404);
+                }
+            } else {
+                abort(404);
+            }
         }
 
-        $transaction->load(['account', 'category', 'creator', 'attachments']);
+        $transaction->load(['account', 'category', 'creator', 'attachments', 'drive']);
 
         return view('bookkeeper.transactions.show', compact('drive', 'transaction'));
     }
@@ -264,8 +294,18 @@ class BookTransactionController extends Controller
             abort(403, 'Viewers cannot edit transactions.');
         }
 
-        if ($transaction->drive_id !== $drive->id) {
-            abort(404);
+        // Allow if transaction is from this drive or from one of its sub-drives
+        $transactionDriveId = $transaction->drive_id;
+        if ($transactionDriveId !== $drive->id) {
+            // Check if transaction is from a sub-drive
+            if (!$drive->isSubDrive()) {
+                $driveIds = $drive->getDriveIdsIncludingSubDrives();
+                if (!in_array($transactionDriveId, $driveIds)) {
+                    abort(404);
+                }
+            } else {
+                abort(404);
+            }
         }
 
         // Load attachments relationship
@@ -289,8 +329,18 @@ class BookTransactionController extends Controller
             abort(403, 'Viewers cannot edit transactions.');
         }
 
-        if ($transaction->drive_id !== $drive->id) {
-            abort(404);
+        // Allow if transaction is from this drive or from one of its sub-drives
+        $transactionDriveId = $transaction->drive_id;
+        if ($transactionDriveId !== $drive->id) {
+            // Check if transaction is from a sub-drive
+            if (!$drive->isSubDrive()) {
+                $driveIds = $drive->getDriveIdsIncludingSubDrives();
+                if (!in_array($transactionDriveId, $driveIds)) {
+                    abort(404);
+                }
+            } else {
+                abort(404);
+            }
         }
 
         $validated = $request->validated();
@@ -347,8 +397,18 @@ class BookTransactionController extends Controller
             abort(403, 'Viewers cannot delete transactions.');
         }
 
-        if ($transaction->drive_id !== $drive->id) {
-            abort(404);
+        // Allow if transaction is from this drive or from one of its sub-drives
+        $transactionDriveId = $transaction->drive_id;
+        if ($transactionDriveId !== $drive->id) {
+            // Check if transaction is from a sub-drive
+            if (!$drive->isSubDrive()) {
+                $driveIds = $drive->getDriveIdsIncludingSubDrives();
+                if (!in_array($transactionDriveId, $driveIds)) {
+                    abort(404);
+                }
+            } else {
+                abort(404);
+            }
         }
 
         $transaction->delete();
@@ -394,8 +454,22 @@ class BookTransactionController extends Controller
     {
         $this->authorize('view', $drive);
 
-        if ($transaction->drive_id !== $drive->id || $attachment->transaction_id !== $transaction->id) {
+        // Check attachment belongs to transaction
+        if ($attachment->transaction_id !== $transaction->id) {
             abort(404);
+        }
+
+        // Allow if transaction is from this drive or from one of its sub-drives
+        $transactionDriveId = $transaction->drive_id;
+        if ($transactionDriveId !== $drive->id) {
+            if (!$drive->isSubDrive()) {
+                $driveIds = $drive->getDriveIdsIncludingSubDrives();
+                if (!in_array($transactionDriveId, $driveIds)) {
+                    abort(404);
+                }
+            } else {
+                abort(404);
+            }
         }
 
         if (!Storage::disk('public')->exists($attachment->file_path)) {
@@ -411,9 +485,23 @@ class BookTransactionController extends Controller
     public function destroyAttachment(Drive $drive, BookTransaction $transaction, TransactionAttachment $attachment)
     {
         $this->authorize('view', $drive);
-
-        if ($transaction->drive_id !== $drive->id || $attachment->transaction_id !== $transaction->id) {
+        
+        // Check attachment belongs to transaction
+        if ($attachment->transaction_id !== $transaction->id) {
             abort(404);
+        }
+
+        // Allow if transaction is from this drive or from one of its sub-drives
+        $transactionDriveId = $transaction->drive_id;
+        if ($transactionDriveId !== $drive->id) {
+            if (!$drive->isSubDrive()) {
+                $driveIds = $drive->getDriveIdsIncludingSubDrives();
+                if (!in_array($transactionDriveId, $driveIds)) {
+                    abort(404);
+                }
+            } else {
+                abort(404);
+            }
         }
 
         // Delete file from storage
@@ -445,10 +533,18 @@ class BookTransactionController extends Controller
             : now()->endOfYear();
 
         // Get all transactions in date range (excluding pending transactions)
-        $query = $drive->bookTransactions()
-            ->with(['account', 'category'])
-            ->whereBetween('date', [$dateFrom, $dateTo])
-            ->where('status', '!=', 'pending');
+        // Use aggregate methods if this is a parent drive (include sub-drives)
+        if (!$drive->isSubDrive()) {
+            $query = $drive->getTransactionsIncludingSubDrives()
+                ->with(['account', 'category', 'drive'])
+                ->whereBetween('date', [$dateFrom, $dateTo])
+                ->where('status', '!=', 'pending');
+        } else {
+            $query = $drive->bookTransactions()
+                ->with(['account', 'category', 'drive'])
+                ->whereBetween('date', [$dateFrom, $dateTo])
+                ->where('status', '!=', 'pending');
+        }
 
         // Apply additional filters
         if ($request->filled('account_id')) {

@@ -51,6 +51,28 @@ class BookTransaction extends Model
      */
     public static function generateTransactionNumber($driveId): string
     {
+        $drive = Drive::find($driveId);
+        
+        // Use sub-drive prefix if available, otherwise use standard TXN prefix
+        if ($drive && $drive->isSubDrive()) {
+            $subPrefix = $drive->getSubDrivePrefix();
+            $prefix = 'TXN-' . $subPrefix;
+            
+            $lastTransaction = static::where('drive_id', $driveId)
+                ->orderBy('id', 'desc')
+                ->first();
+            
+            // Extract number after the sub-drive prefix
+            if ($lastTransaction && preg_match('/TXN-' . preg_quote($subPrefix, '/') . '-(\d+)/', $lastTransaction->transaction_number, $matches)) {
+                $nextNumber = (int) $matches[1] + 1;
+            } else {
+                $nextNumber = 1;
+            }
+            
+            return sprintf('%s-%06d', $prefix, $nextNumber);
+        }
+        
+        // Standard TXN numbering for parent drives
         $prefix = 'TXN';
         $lastTransaction = static::where('drive_id', $driveId)
             ->orderBy('id', 'desc')

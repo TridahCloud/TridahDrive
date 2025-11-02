@@ -42,6 +42,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('drives/{drive}/members/{user}', [DriveMemberController::class, 'remove'])->name('drives.members.remove');
     Route::post('drives/{drive}/leave', [DriveMemberController::class, 'leave'])->name('drives.members.leave');
     
+    // Sub-drive routes
+    Route::post('drives/{drive}/sub-drives', [DriveController::class, 'storeSubDrive'])->name('drives.sub-drives.store');
+    Route::post('drives/{drive}/settings', [DriveController::class, 'updateSettings'])->name('drives.settings.update');
+    
     // Drive item routes
     Route::post('drives/{drive}/items', [DriveItemController::class, 'store'])->name('drives.items.store');
     Route::patch('drives/{drive}/items/{item}', [DriveItemController::class, 'update'])->name('drives.items.update');

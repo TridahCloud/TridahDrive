@@ -67,7 +67,7 @@ class DriveController extends Controller
         $this->authorize('view', $drive);
 
         // Load relationships
-        $drive->load(['items', 'users', 'toolProfiles', 'invoices', 'projects', 'accounts']);
+        $drive->load(['items', 'users', 'toolProfiles', 'invoices', 'projects', 'accounts', 'subDrives', 'parentDrive']);
 
         // Group items by tool type (legacy support)
         $itemsByType = $drive->items()
@@ -76,53 +76,104 @@ class DriveController extends Controller
             ->get()
             ->groupBy('tool_type');
 
-        // Invoice stats
-        $invoiceStats = [
-            'total' => $drive->invoices()->count(),
-            'draft' => $drive->invoices()->where('status', 'draft')->count(),
-            'paid' => $drive->invoices()->where('status', 'paid')->count(),
-            'total_amount' => $drive->invoices()->where('status', 'paid')->sum('total'),
-        ];
-        
-        // Recent invoices (last 5)
-        $recentInvoices = $drive->invoices()
-            ->with(['client', 'user'])
-            ->latest()
-            ->take(5)
-            ->get();
-        
-        // BookKeeper stats
-        $bookkeeperStats = [
-            'total_transactions' => $drive->bookTransactions()->count(),
-            'total_accounts' => $drive->accounts()->where('is_active', true)->count(),
-            'total_categories' => $drive->categories()->where('is_active', true)->count(),
-        ];
-        
-        // Recent transactions (last 5)
-        $recentTransactions = $drive->bookTransactions()
-            ->with(['account', 'category', 'creator'])
-            ->latest()
-            ->take(5)
-            ->get();
-        
-        // Project Board stats
-        $projectStats = [
-            'total_projects' => $drive->projects()->whereNull('deleted_at')->count(),
-            'active_projects' => $drive->projects()->whereNull('deleted_at')->where('status', 'active')->count(),
-            'total_tasks' => Task::whereHas('project', function($query) use ($drive) {
-                $query->where('drive_id', $drive->id)->whereNull('deleted_at');
-            })->whereNull('deleted_at')->count(),
-        ];
-        
-        // Recent projects (last 5)
-        $recentProjects = $drive->projects()
-            ->whereNull('deleted_at')
-            ->with(['creator', 'tasks' => function($query) {
-                $query->whereNull('deleted_at');
-            }])
-            ->latest()
-            ->take(5)
-            ->get();
+        // Invoice stats (include sub-drives if this is a parent drive)
+        if (!$drive->isSubDrive()) {
+            $invoiceStats = [
+                'total' => $drive->getInvoicesIncludingSubDrives()->count(),
+                'draft' => $drive->getInvoicesIncludingSubDrives()->where('status', 'draft')->count(),
+                'paid' => $drive->getInvoicesIncludingSubDrives()->where('status', 'paid')->count(),
+                'total_amount' => $drive->getInvoicesIncludingSubDrives()->where('status', 'paid')->sum('total'),
+            ];
+            
+            // Recent invoices (last 5) including sub-drives
+            $recentInvoices = $drive->getInvoicesIncludingSubDrives()
+                ->with(['client', 'user'])
+                ->latest()
+                ->take(5)
+                ->get();
+            
+            // BookKeeper stats including sub-drives
+            $bookkeeperStats = [
+                'total_transactions' => $drive->getTransactionsIncludingSubDrives()->count(),
+                'total_accounts' => $drive->accounts()->where('is_active', true)->count(),
+                'total_categories' => $drive->categories()->where('is_active', true)->count(),
+            ];
+            
+            // Recent transactions (last 5) including sub-drives
+            $recentTransactions = $drive->getTransactionsIncludingSubDrives()
+                ->with(['account', 'category', 'creator'])
+                ->latest()
+                ->take(5)
+                ->get();
+            
+            // Project Board stats including sub-drives
+            $projectStats = [
+                'total_projects' => $drive->getProjectsIncludingSubDrives()->whereNull('deleted_at')->count(),
+                'active_projects' => $drive->getProjectsIncludingSubDrives()->whereNull('deleted_at')->where('status', 'active')->count(),
+                'total_tasks' => Task::whereHas('project', function($query) use ($drive) {
+                    $driveIds = $drive->getDriveIdsIncludingSubDrives();
+                    $query->whereIn('drive_id', $driveIds)->whereNull('deleted_at');
+                })->whereNull('deleted_at')->count(),
+            ];
+            
+            // Recent projects (last 5) including sub-drives
+            $recentProjects = $drive->getProjectsIncludingSubDrives()
+                ->whereNull('deleted_at')
+                ->with(['creator', 'tasks' => function($query) {
+                    $query->whereNull('deleted_at');
+                }])
+                ->latest()
+                ->take(5)
+                ->get();
+        } else {
+            // For sub-drives, don't include parent or siblings
+            $invoiceStats = [
+                'total' => $drive->invoices()->count(),
+                'draft' => $drive->invoices()->where('status', 'draft')->count(),
+                'paid' => $drive->invoices()->where('status', 'paid')->count(),
+                'total_amount' => $drive->invoices()->where('status', 'paid')->sum('total'),
+            ];
+            
+            // Recent invoices (last 5)
+            $recentInvoices = $drive->invoices()
+                ->with(['client', 'user'])
+                ->latest()
+                ->take(5)
+                ->get();
+            
+            // BookKeeper stats
+            $bookkeeperStats = [
+                'total_transactions' => $drive->bookTransactions()->count(),
+                'total_accounts' => $drive->accounts()->where('is_active', true)->count(),
+                'total_categories' => $drive->categories()->where('is_active', true)->count(),
+            ];
+            
+            // Recent transactions (last 5)
+            $recentTransactions = $drive->bookTransactions()
+                ->with(['account', 'category', 'creator'])
+                ->latest()
+                ->take(5)
+                ->get();
+            
+            // Project Board stats
+            $projectStats = [
+                'total_projects' => $drive->projects()->whereNull('deleted_at')->count(),
+                'active_projects' => $drive->projects()->whereNull('deleted_at')->where('status', 'active')->count(),
+                'total_tasks' => Task::whereHas('project', function($query) use ($drive) {
+                    $query->where('drive_id', $drive->id)->whereNull('deleted_at');
+                })->whereNull('deleted_at')->count(),
+            ];
+            
+            // Recent projects (last 5)
+            $recentProjects = $drive->projects()
+                ->whereNull('deleted_at')
+                ->with(['creator', 'tasks' => function($query) {
+                    $query->whereNull('deleted_at');
+                }])
+                ->latest()
+                ->take(5)
+                ->get();
+        }
 
         return view('drives.show', compact(
             'drive', 
@@ -181,5 +232,54 @@ class DriveController extends Controller
 
         return redirect()->route('drives.index')
             ->with('success', 'Drive deleted successfully!');
+    }
+
+    /**
+     * Store a new sub-drive
+     */
+    public function storeSubDrive(Request $request, Drive $drive)
+    {
+        $this->authorize('update', $drive);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:1000',
+            'color' => 'nullable|string|max:50',
+            'icon' => 'nullable|string|max:50',
+        ]);
+
+        try {
+            $subDrive = $this->driveService->createSubDrive($drive, Auth::user(), $validated);
+            return redirect()->route('drives.show', $subDrive)
+                ->with('success', 'Sub-drive created successfully!');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withErrors(['error' => $e->getMessage()])
+                ->withInput();
+        }
+    }
+
+    /**
+     * Update drive settings including hidden sub-drives
+     */
+    public function updateSettings(Request $request, Drive $drive)
+    {
+        $this->authorize('update', $drive);
+
+        $validated = $request->validate([
+            'hidden_sub_drives' => 'nullable|array',
+            'hidden_sub_drives.*' => 'exists:drives,id',
+        ]);
+
+        $settings = $drive->settings ?? [];
+        
+        if (isset($validated['hidden_sub_drives'])) {
+            $settings['hidden_sub_drives'] = $validated['hidden_sub_drives'];
+        }
+
+        $drive->update(['settings' => $settings]);
+
+        return redirect()->back()
+            ->with('success', 'Settings updated successfully!');
     }
 }

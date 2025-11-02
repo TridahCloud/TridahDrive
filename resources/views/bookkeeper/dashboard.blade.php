@@ -155,7 +155,12 @@
                                 @foreach($recentTransactions as $transaction)
                                     <tr>
                                         <td>{{ $transaction->date->format('M d') }}</td>
-                                        <td><code>{{ $transaction->transaction_number }}</code></td>
+                                        <td>
+                                            <code>{{ $transaction->transaction_number }}</code>
+                                            @if($transaction->drive && $transaction->drive->id !== $drive->id)
+                                                <br><small class="badge bg-info" style="font-size: 0.65rem;">{{ $transaction->drive->name }}</small>
+                                            @endif
+                                        </td>
                                         <td>{{ Str::limit($transaction->description, 40) }}</td>
                                         <td>{{ Str::limit($transaction->account->name, 20) }}</td>
                                         <td>

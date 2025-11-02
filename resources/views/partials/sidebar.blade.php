@@ -44,13 +44,18 @@
         
         @auth
             @php
-                $sharedDrives = auth()->user()->sharedDrives()->limit(5)->get();
+                // Get only parent drives (non-sub drives) and limit to 5
+                $parentDrives = auth()->user()->sharedDrives()
+                    ->whereNull('parent_drive_id')
+                    ->with('subDrives')
+                    ->limit(5)
+                    ->get();
             @endphp
-            @if($sharedDrives->count() > 0)
+            @if($parentDrives->count() > 0)
             <div class="nav-section mt-4">
                 <p class="nav-section-title text-muted text-uppercase small mb-3">Shared Drives</p>
                 <ul class="nav flex-column">
-                    @foreach($sharedDrives as $drive)
+                    @foreach($parentDrives as $drive)
                         @php
                             $isActive = request()->routeIs('drives.show') && request()->route('drive') && request()->route('drive')->id == $drive->id;
                             $iconColor = $drive->color ?? '#31d8b2';
@@ -65,6 +70,24 @@
                                 @endif
                             </a>
                         </li>
+                        
+                        {{-- Show sub-drives indented --}}
+                        @if($drive->subDrives->count() > 0)
+                            @foreach($drive->subDrives as $subDrive)
+                                @php
+                                    $isSubActive = request()->routeIs('drives.show') && request()->route('drive') && request()->route('drive')->id == $subDrive->id;
+                                    $subIconColor = $subDrive->color ?? '#31d8b2';
+                                    $subIconName = $subDrive->icon ?? 'folder';
+                                @endphp
+                                <li class="nav-item" style="padding-left: 1.5rem;">
+                                    <a href="{{ route('drives.show', $subDrive) }}" class="nav-link {{ $isSubActive ? 'active' : '' }}">
+                                        <i class="fas fa-{{ $subIconName }} me-2" style="color: {{ $subIconColor }};"></i>
+                                        <span>{{ Str::limit($subDrive->name, 20) }}</span>
+                                        <span class="badge bg-info ms-auto" style="font-size: 0.6rem;">Sub</span>
+                                    </a>
+                                </li>
+                            @endforeach
+                        @endif
                     @endforeach
                 </ul>
             </div>
