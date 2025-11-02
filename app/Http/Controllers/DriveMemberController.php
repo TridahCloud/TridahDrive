@@ -123,4 +123,35 @@ class DriveMemberController extends Controller
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
     }
+
+    /**
+     * Transfer ownership of a drive
+     */
+    public function transferOwnership(Request $request, Drive $drive, User $user)
+    {
+        // Only owner can transfer ownership
+        if ($drive->owner_id !== Auth::id()) {
+            abort(403, 'Only the drive owner can transfer ownership.');
+        }
+
+        $validated = $request->validate([
+            'confirm_transfer' => 'required|accepted',
+        ]);
+
+        try {
+            $this->driveService->transferOwnership($drive, Auth::user(), $user);
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Ownership transferred successfully!']);
+            }
+
+            return redirect()->back()->with('success', 'Ownership transferred successfully!');
+        } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => $e->getMessage()], 422);
+            }
+
+            return redirect()->back()->withErrors(['error' => $e->getMessage()]);
+        }
+    }
 }

@@ -41,6 +41,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('drives/{drive}/members/{user}/role', [DriveMemberController::class, 'updateRole'])->name('drives.members.update-role');
     Route::delete('drives/{drive}/members/{user}', [DriveMemberController::class, 'remove'])->name('drives.members.remove');
     Route::post('drives/{drive}/leave', [DriveMemberController::class, 'leave'])->name('drives.members.leave');
+    Route::post('drives/{drive}/members/{user}/transfer-ownership', [DriveMemberController::class, 'transferOwnership'])->name('drives.members.transfer-ownership');
     
     // Sub-drive routes
     Route::post('drives/{drive}/sub-drives', [DriveController::class, 'storeSubDrive'])->name('drives.sub-drives.store');

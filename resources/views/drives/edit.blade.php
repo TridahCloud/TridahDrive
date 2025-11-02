@@ -194,9 +194,16 @@
                                     </td>
                                     @if($drive->isOwnerOrAdmin(auth()->user()) && $member->id !== auth()->id())
                                         <td>
-                                            <button class="btn btn-sm btn-outline-danger" onclick="removeMember({{ $member->id }}, '{{ $member->name }}')">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
+                                            <div class="btn-group btn-group-sm">
+                                                @if($drive->owner_id === auth()->id())
+                                                    <button class="btn btn-sm btn-outline-warning" onclick="transferOwnership({{ $member->id }}, '{{ $member->name }}')" title="Transfer Ownership">
+                                                        <i class="fas fa-crown"></i>
+                                                    </button>
+                                                @endif
+                                                <button class="btn btn-sm btn-outline-danger" onclick="removeMember({{ $member->id }}, '{{ $member->name }}')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
                                         </td>
                                     @else
                                         <td></td>
@@ -549,6 +556,33 @@ function removeMember(userId, userName) {
         .catch(error => {
             console.error('Error:', error);
             alert('Failed to remove member. Please try again.');
+        });
+    }
+}
+
+function transferOwnership(userId, userName) {
+    if (confirm(`Transfer ownership of this drive to ${userName}? This will make them the owner and downgrade you to admin. This action cannot be undone.`)) {
+        const url = `{{ url('drives') }}/{{ $drive->id }}/members/${userId}/transfer-ownership`;
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ confirm_transfer: true })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                location.reload();
+            } else if (data.error) {
+                alert(data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to transfer ownership. Please try again.');
         });
     }
 }

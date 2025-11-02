@@ -69,6 +69,25 @@ class DriveService
                 'joined_at' => now(),
             ]);
 
+            // Add parent drive owners/admins as admins of the sub-drive (if not already owner)
+            $parentOwnersAndAdmins = $parentDrive->memberships()
+                ->with('user')
+                ->whereIn('role', ['owner', 'admin'])
+                ->get();
+            
+            foreach ($parentOwnersAndAdmins as $membership) {
+                // Skip if this is the creator (already owner) or if already added
+                if ($membership->user_id === $user->id || $subDrive->hasMember($membership->user)) {
+                    continue;
+                }
+                
+                // Add as admin
+                $subDrive->users()->attach($membership->user_id, [
+                    'role' => 'admin',
+                    'joined_at' => now(),
+                ]);
+            }
+
             return $subDrive->fresh(['owner', 'users', 'parentDrive']);
         });
     }
@@ -242,10 +261,122 @@ class DriveService
             throw new \Exception('Cannot leave your own drive. Transfer ownership or delete the drive instead.');
         }
 
-        // Remove user from drive
-        $drive->users()->detach($user->id);
+        return DB::transaction(function () use ($drive, $user) {
+            // Check if user owns any sub-drives of this drive
+            $subDrivesOwnedByUser = $drive->subDrives()
+                ->where('owner_id', $user->id)
+                ->get();
+            
+            // Transfer ownership to parent drive owner
+            if ($subDrivesOwnedByUser->count() > 0) {
+                $parentOwner = $drive->owner;
+                foreach ($subDrivesOwnedByUser as $subDrive) {
+                    // Update ownership
+                    $subDrive->owner_id = $parentOwner->id;
+                    $subDrive->save();
+                    
+                    // Update or add membership
+                    if ($subDrive->hasMember($parentOwner)) {
+                        // Update role to owner
+                        $subDrive->users()->updateExistingPivot($parentOwner->id, [
+                            'role' => 'owner',
+                        ]);
+                    } else {
+                        // Add as owner
+                        $subDrive->users()->attach($parentOwner->id, [
+                            'role' => 'owner',
+                            'joined_at' => now(),
+                        ]);
+                    }
+                }
+            }
 
-        return true;
+            // Remove user from drive
+            $drive->users()->detach($user->id);
+
+            return true;
+        });
+    }
+
+    /**
+     * Transfer ownership of a drive to another user
+     */
+    public function transferOwnership(Drive $drive, User $currentOwner, User $newOwner): bool
+    {
+        // Verify current owner
+        if ($drive->owner_id !== $currentOwner->id) {
+            throw new \Exception('Only the current owner can transfer ownership.');
+        }
+
+        // Cannot transfer to yourself
+        if ($currentOwner->id === $newOwner->id) {
+            throw new \Exception('Cannot transfer ownership to yourself.');
+        }
+
+        // Verify new owner is a member of the drive
+        if (!$drive->hasMember($newOwner)) {
+            throw new \Exception('New owner must be a member of the drive.');
+        }
+
+        return DB::transaction(function () use ($drive, $currentOwner, $newOwner) {
+            // Update ownership
+            $drive->owner_id = $newOwner->id;
+            $drive->save();
+
+            // Update or add membership
+            if ($drive->hasMember($newOwner)) {
+                // Update role to owner
+                $drive->users()->updateExistingPivot($newOwner->id, [
+                    'role' => 'owner',
+                ]);
+            } else {
+                // Add as owner
+                $drive->users()->attach($newOwner->id, [
+                    'role' => 'owner',
+                    'joined_at' => now(),
+                ]);
+            }
+
+            // Downgrade current owner to admin if not already a different role
+            if ($drive->hasMember($currentOwner)) {
+                $currentRole = $drive->getUserRole($currentOwner);
+                if ($currentRole === 'owner') {
+                    $drive->users()->updateExistingPivot($currentOwner->id, [
+                        'role' => 'admin',
+                    ]);
+                }
+            }
+
+            // Create notification for new owner
+            Notification::create([
+                'user_id' => $newOwner->id,
+                'type' => 'drive_ownership_transferred',
+                'title' => 'Drive Ownership Transferred',
+                'message' => "You are now the owner of \"{$drive->name}\". Ownership was transferred by {$currentOwner->name}.",
+                'data' => [
+                    'drive_id' => $drive->id,
+                    'drive_name' => $drive->name,
+                    'previous_owner_id' => $currentOwner->id,
+                    'previous_owner_name' => $currentOwner->name,
+                ],
+            ]);
+
+            // Create notification for old owner
+            Notification::create([
+                'user_id' => $currentOwner->id,
+                'type' => 'drive_ownership_transferred',
+                'title' => 'Drive Ownership Transferred',
+                'message' => "You have transferred ownership of \"{$drive->name}\" to {$newOwner->name}.",
+                'data' => [
+                    'drive_id' => $drive->id,
+                    'drive_name' => $drive->name,
+                    'new_owner_id' => $newOwner->id,
+                    'new_owner_name' => $newOwner->name,
+                ],
+            ]);
+
+            return true;
+        });
     }
 }
 
