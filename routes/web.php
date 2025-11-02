@@ -21,7 +21,20 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('home');
-});
+})->name('home');
+
+// Landing pages
+Route::get('/invoicer', function () {
+    return view('landing.invoicer');
+})->name('landing.invoicer');
+
+Route::get('/bookkeeper', function () {
+    return view('landing.bookkeeper');
+})->name('landing.bookkeeper');
+
+Route::get('/project-board', function () {
+    return view('landing.project-board');
+})->name('landing.project-board');
 
 Route::get('/dashboard', function () {
     return redirect()->route('drives.index');
