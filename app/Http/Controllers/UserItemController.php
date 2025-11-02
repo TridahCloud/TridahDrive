@@ -28,6 +28,11 @@ class UserItemController extends Controller
     {
         $this->authorize('view', $drive);
 
+        // Check if user has permission to create
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot create items.');
+        }
+
         return view('user-items.create', compact('drive'));
     }
 
@@ -37,6 +42,11 @@ class UserItemController extends Controller
     public function store(Request $request, Drive $drive)
     {
         $this->authorize('view', $drive);
+
+        // Check if user has permission to create
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot create items.');
+        }
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -74,6 +84,11 @@ class UserItemController extends Controller
     {
         $this->authorize('view', $drive);
 
+        // Check if user has permission to edit
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot edit items.');
+        }
+
         if ($userItem->drive_id !== $drive->id) {
             abort(404);
         }
@@ -87,6 +102,11 @@ class UserItemController extends Controller
     public function update(Request $request, Drive $drive, UserItem $userItem)
     {
         $this->authorize('view', $drive);
+
+        // Check if user has permission to update
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot update items.');
+        }
 
         if ($userItem->drive_id !== $drive->id) {
             abort(404);
@@ -111,6 +131,11 @@ class UserItemController extends Controller
     public function destroy(Drive $drive, UserItem $userItem)
     {
         $this->authorize('view', $drive);
+
+        // Check if user has permission to delete
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot delete items.');
+        }
 
         if ($userItem->drive_id !== $drive->id) {
             abort(404);

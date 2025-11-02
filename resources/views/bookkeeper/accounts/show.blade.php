@@ -151,9 +151,11 @@
             <div class="dashboard-card mb-4">
                 <h5 class="mb-3">Quick Actions</h5>
                 <div class="d-grid gap-2">
-                    <a href="{{ route('drives.bookkeeper.transactions.create', $drive) }}?account_id={{ $account->id }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>New Transaction
-                    </a>
+                    @if($drive->canEdit(auth()->user()))
+                        <a href="{{ route('drives.bookkeeper.transactions.create', $drive) }}?account_id={{ $account->id }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>New Transaction
+                        </a>
+                    @endif
                     <a href="{{ route('drives.bookkeeper.transactions.index', [$drive, 'account_id' => $account->id]) }}" class="btn btn-outline-primary">
                         <i class="fas fa-list me-2"></i>View All Transactions
                     </a>

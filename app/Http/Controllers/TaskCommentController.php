@@ -20,6 +20,11 @@ class TaskCommentController extends Controller
     {
         $this->authorize('view', $drive);
         
+        // Check if user has permission to create
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot create comments.');
+        }
+        
         if ($project->drive_id !== $drive->id || $task->project_id !== $project->id) {
             abort(404);
         }
@@ -109,6 +114,11 @@ class TaskCommentController extends Controller
     {
         $this->authorize('view', $drive);
         
+        // Check if user has permission to edit
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot edit comments.');
+        }
+        
         if ($project->drive_id !== $drive->id || 
             $task->project_id !== $project->id || 
             $comment->task_id !== $task->id) {
@@ -155,6 +165,11 @@ class TaskCommentController extends Controller
     public function destroy(Drive $drive, Project $project, Task $task, TaskComment $comment): RedirectResponse
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to delete
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot delete comments.');
+        }
         
         if ($project->drive_id !== $drive->id || 
             $task->project_id !== $project->id || 

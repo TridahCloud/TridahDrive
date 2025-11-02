@@ -23,9 +23,11 @@
                     <p class="text-muted">{{ $drive->name }}</p>
                 </div>
                 <div>
-                    <a href="{{ route('drives.user-items.create', $drive) }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>New Item
-                    </a>
+                    @if($drive->canEdit(auth()->user()))
+                        <a href="{{ route('drives.user-items.create', $drive) }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>New Item
+                        </a>
+                    @endif
                     <a href="{{ route('drives.invoices.index', $drive) }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-2"></i>Back
                     </a>
@@ -54,18 +56,20 @@
                         Default Price: <strong>{{ currency_for($item->default_price, $drive) }}</strong>
                     </p>
                 </div>
-                <div class="d-flex gap-2">
-                    <a href="{{ route('drives.user-items.edit', [$drive, $item]) }}" class="btn btn-sm btn-outline-secondary">
-                        <i class="fas fa-edit"></i>
-                    </a>
-                    <form action="{{ route('drives.user-items.destroy', [$drive, $item]) }}" method="POST" class="d-inline">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure?')">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </form>
-                </div>
+                @if($drive->canEdit(auth()->user()))
+                    <div class="d-flex gap-2">
+                        <a href="{{ route('drives.user-items.edit', [$drive, $item]) }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <form action="{{ route('drives.user-items.destroy', [$drive, $item]) }}" method="POST" class="d-inline">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure?')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                @endif
             </div>
         </div>
     @empty
@@ -73,9 +77,11 @@
             <i class="fas fa-boxes fa-3x text-muted mb-3"></i>
             <h5>No Line Items Yet</h5>
             <p class="text-muted">Create reusable line items for faster invoice creation</p>
-            <a href="{{ route('drives.user-items.create', $drive) }}" class="btn btn-primary">
-                <i class="fas fa-plus me-2"></i>Add Item
-            </a>
+            @if($drive->canEdit(auth()->user()))
+                <a href="{{ route('drives.user-items.create', $drive) }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add Item
+                </a>
+            @endif
         </div>
     @endforelse
 </div>

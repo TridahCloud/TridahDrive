@@ -260,18 +260,20 @@
                 <h5 class="mb-3" style="color: var(--text-color);">Comments</h5>
 
                 <!-- Add Comment Form -->
-                <form action="{{ route('drives.projects.projects.tasks.comments.store', [$drive, $project, $task]) }}" method="POST" class="mb-4">
-                    @csrf
-                    <div class="mb-3">
-                        <label for="comment" class="form-label">Add a comment</label>
-                        <textarea class="form-control" id="comment" name="comment" rows="3" 
-                                  placeholder="Type @username to mention someone..." required></textarea>
-                        <small class="text-muted">Type @username to mention drive members</small>
-                    </div>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-comment me-2"></i>Post Comment
-                    </button>
-                </form>
+                @if($drive->canEdit(auth()->user()))
+                    <form action="{{ route('drives.projects.projects.tasks.comments.store', [$drive, $project, $task]) }}" method="POST" class="mb-4">
+                        @csrf
+                        <div class="mb-3">
+                            <label for="comment" class="form-label">Add a comment</label>
+                            <textarea class="form-control" id="comment" name="comment" rows="3" 
+                                      placeholder="Type @username to mention someone..." required></textarea>
+                            <small class="text-muted">Type @username to mention drive members</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-comment me-2"></i>Post Comment
+                        </button>
+                    </form>
+                @endif
 
                 <!-- Comments List -->
                 @if($task->comments->count() > 0)
@@ -291,7 +293,7 @@
                                                 <strong style="color: var(--text-color);">{{ $comment->user->name }}</strong>
                                                 <small class="text-muted ms-2">{{ $comment->created_at->diffForHumans() }}</small>
                                             </div>
-                                            @if($comment->user_id === Auth::id() || $task->owner_id === Auth::id())
+                                            @if($drive->canEdit(auth()->user()) && ($comment->user_id === Auth::id() || $task->owner_id === Auth::id()))
                                                 <div class="dropdown">
                                                     <button class="btn btn-sm btn-link text-muted" type="button" data-bs-toggle="dropdown">
                                                         <i class="fas fa-ellipsis-v"></i>
@@ -333,11 +335,13 @@
                                                 </div>
                                             </form>
                                         </div>
-                                        <div class="mt-2">
-                                            <button class="btn btn-sm btn-link text-muted p-0" onclick="replyToComment({{ $comment->id }})">
-                                                <i class="fas fa-reply me-1"></i>Reply
-                                            </button>
-                                        </div>
+                                        @if($drive->canEdit(auth()->user()))
+                                            <div class="mt-2">
+                                                <button class="btn btn-sm btn-link text-muted p-0" onclick="replyToComment({{ $comment->id }})">
+                                                    <i class="fas fa-reply me-1"></i>Reply
+                                                </button>
+                                            </div>
+                                        @endif
 
                                         <!-- Replies -->
                                         @if($comment->replies->count() > 0)
@@ -357,7 +361,7 @@
                                                                         <strong class="small" style="color: var(--text-color);">{{ $reply->user->name }}</strong>
                                                                         <small class="text-muted ms-2">{{ $reply->created_at->diffForHumans() }}</small>
                                                                     </div>
-                                                                    @if($reply->user_id === Auth::id() || $task->owner_id === Auth::id())
+                                                                    @if($drive->canEdit(auth()->user()) && ($reply->user_id === Auth::id() || $task->owner_id === Auth::id()))
                                                                         <form action="{{ route('drives.projects.projects.tasks.comments.destroy', [$drive, $project, $task, $reply]) }}" 
                                                                               method="POST" 
                                                                               class="d-inline"

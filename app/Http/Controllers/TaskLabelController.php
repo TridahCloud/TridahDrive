@@ -30,6 +30,12 @@ class TaskLabelController extends Controller
     public function create(Drive $drive)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to create
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot create task labels.');
+        }
+        
         return view('task-labels.create', compact('drive'));
     }
 
@@ -39,6 +45,11 @@ class TaskLabelController extends Controller
     public function store(Request $request, Drive $drive)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to create
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot create task labels.');
+        }
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -96,6 +107,11 @@ class TaskLabelController extends Controller
     public function edit(Drive $drive, TaskLabel $taskLabel)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to edit
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot edit task labels.');
+        }
 
         if ($taskLabel->drive_id !== $drive->id) {
             abort(404);
@@ -110,6 +126,11 @@ class TaskLabelController extends Controller
     public function update(Request $request, Drive $drive, TaskLabel $taskLabel)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to edit
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot edit task labels.');
+        }
 
         if ($taskLabel->drive_id !== $drive->id) {
             abort(404);
@@ -139,6 +160,11 @@ class TaskLabelController extends Controller
     public function destroy(Drive $drive, TaskLabel $taskLabel)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to delete
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot delete task labels.');
+        }
 
         if ($taskLabel->drive_id !== $drive->id) {
             abort(404);

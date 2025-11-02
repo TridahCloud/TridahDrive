@@ -23,9 +23,11 @@
                     <p class="text-muted">{{ $drive->name }}</p>
                 </div>
                 <div>
-                    <a href="{{ route('drives.invoice-profiles.create', $drive) }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>New Profile
-                    </a>
+                    @if($drive->canEdit(auth()->user()))
+                        <a href="{{ route('drives.invoice-profiles.create', $drive) }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>New Profile
+                        </a>
+                    @endif
                     <a href="{{ route('drives.invoices.index', $drive) }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-2"></i>Back
                     </a>
@@ -61,18 +63,20 @@
                         Next Number: <strong>{{ $profile->next_invoice_number }}</strong>
                     </p>
                 </div>
-                <div class="d-flex gap-2">
-                    <a href="{{ route('drives.invoice-profiles.edit', [$drive, $profile]) }}" class="btn btn-sm btn-outline-secondary">
-                        <i class="fas fa-edit"></i>
-                    </a>
-                    <form action="{{ route('drives.invoice-profiles.destroy', [$drive, $profile]) }}" method="POST" class="d-inline">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure?')">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </form>
-                </div>
+                @if($drive->canEdit(auth()->user()))
+                    <div class="d-flex gap-2">
+                        <a href="{{ route('drives.invoice-profiles.edit', [$drive, $profile]) }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <form action="{{ route('drives.invoice-profiles.destroy', [$drive, $profile]) }}" method="POST" class="d-inline">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure?')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                @endif
             </div>
         </div>
     @empty
@@ -80,9 +84,11 @@
             <i class="fas fa-building fa-3x text-muted mb-3"></i>
             <h5>No Invoice Profiles Yet</h5>
             <p class="text-muted">Create your first invoice profile to set up company information</p>
-            <a href="{{ route('drives.invoice-profiles.create', $drive) }}" class="btn btn-primary">
-                <i class="fas fa-plus me-2"></i>Create Profile
-            </a>
+            @if($drive->canEdit(auth()->user()))
+                <a href="{{ route('drives.invoice-profiles.create', $drive) }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Create Profile
+                </a>
+            @endif
         </div>
     @endforelse
 </div>

@@ -28,6 +28,11 @@ class InvoiceProfileController extends Controller
     {
         $this->authorize('view', $drive);
 
+        // Check if user has permission to create
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot create invoice profiles.');
+        }
+
         return view('invoice-profiles.create', compact('drive'));
     }
 
@@ -37,6 +42,11 @@ class InvoiceProfileController extends Controller
     public function store(Request $request, Drive $drive)
     {
         $this->authorize('view', $drive);
+
+        // Check if user has permission to create
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot create invoice profiles.');
+        }
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -88,6 +98,11 @@ class InvoiceProfileController extends Controller
     {
         $this->authorize('view', $drive);
 
+        // Check if user has permission to edit
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot edit invoice profiles.');
+        }
+
         if ($invoiceProfile->drive_id !== $drive->id) {
             abort(404);
         }
@@ -101,6 +116,11 @@ class InvoiceProfileController extends Controller
     public function update(Request $request, Drive $drive, InvoiceProfile $invoiceProfile)
     {
         $this->authorize('view', $drive);
+
+        // Check if user has permission to update
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot update invoice profiles.');
+        }
 
         if ($invoiceProfile->drive_id !== $drive->id) {
             abort(404);
@@ -142,6 +162,11 @@ class InvoiceProfileController extends Controller
     public function destroy(Drive $drive, InvoiceProfile $invoiceProfile)
     {
         $this->authorize('view', $drive);
+
+        // Check if user has permission to delete
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot delete invoice profiles.');
+        }
 
         if ($invoiceProfile->drive_id !== $drive->id) {
             abort(404);
