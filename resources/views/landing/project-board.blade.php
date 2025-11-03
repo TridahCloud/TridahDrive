@@ -1,6 +1,8 @@
 @extends('layouts.homepage')
 
-@section('title', 'Project Board - Team Collaboration & Task Management')
+@section('title', 'Project Board')
+@section('description', 'Organize projects, manage tasks, and collaborate with your team. Kanban boards, task tracking, labels, comments, and team communication all in one place. Perfect for project management and team collaboration.')
+@section('keywords', 'project management, task management, kanban board, team collaboration, project tracking, task tracking, team communication')
 
 @section('content')
 <!-- Hero Section -->

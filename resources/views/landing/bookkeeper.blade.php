@@ -1,6 +1,8 @@
 @extends('layouts.homepage')
 
-@section('title', 'BookKeeper - Complete Accounting Solution')
+@section('title', 'BookKeeper')
+@section('description', 'Complete accounting solution with transaction management, accounts, categories, recurring transactions, tax reports, and multi-currency support. Perfect for tracking income and expenses. Generate CPA-friendly tax reports.')
+@section('keywords', 'accounting software, bookkeeping, expense tracking, income tracking, tax reports, financial management, accounting solution')
 
 @section('content')
 <!-- Hero Section -->

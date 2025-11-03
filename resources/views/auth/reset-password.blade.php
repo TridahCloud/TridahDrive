@@ -1,3 +1,5 @@
+@section('title', 'Reset Password')
+@section('description', 'Set a new password for your TridahDrive account.')
 <x-guest-layout>
     <form method="POST" action="{{ route('password.store') }}">
         @csrf

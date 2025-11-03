@@ -5,7 +5,14 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+        <!-- SEO Meta Tags -->
+        <title>@yield('title', 'TridahDrive') - Business Management Platform</title>
+        <meta name="description" content="@yield('description', 'Manage your business with TridahDrive')">
+        <meta name="robots" content="noindex, nofollow">
+        
+        <!-- Favicon -->
+        <link rel="icon" type="image/png" href="{{ asset('images/tridah icon.png') }}">
+        <link rel="apple-touch-icon" href="{{ asset('images/tridah icon.png') }}">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">

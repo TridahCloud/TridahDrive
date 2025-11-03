@@ -1,6 +1,8 @@
 @extends('layouts.homepage')
 
 @section('title', 'Home')
+@section('description', 'TridahDrive is a comprehensive business management platform combining Invoicer, BookKeeper, and Project Board into one integrated solution. Manage invoices, track finances, and organize projects all in one place. Open source and free forever.')
+@section('keywords', 'business management, invoicing software, accounting software, project management, finance tracking, bookkeeping software, team collaboration, open source')
 
 @section('content')
 <!-- Hero Section -->
@@ -1370,5 +1372,47 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 3000 + Math.random() * 2000);
     });
 });
+</script>
+<!-- JSON-LD Structured Data for SEO -->
+<script type="application/ld+json">
+{!! json_encode([
+  '@context' => 'https://schema.org',
+  '@type' => 'SoftwareApplication',
+  'name' => 'TridahDrive',
+  'applicationCategory' => 'BusinessApplication',
+  'operatingSystem' => 'Web',
+  'offers' => [
+    '@type' => 'Offer',
+    'price' => '0',
+    'priceCurrency' => 'USD'
+  ],
+  'description' => 'Comprehensive business management platform combining Invoicer, BookKeeper, and Project Board into one integrated solution.',
+  'featureList' => [
+    'Professional Invoicing',
+    'Complete Accounting & Bookkeeping',
+    'Project Management & Task Tracking',
+    'Multi-Currency Support',
+    'Team Collaboration',
+    'Tax Report Generation',
+    'Recurring Transactions',
+    'Client Management'
+  ],
+  'aggregateRating' => [
+    '@type' => 'AggregateRating',
+    'ratingValue' => '5',
+    'ratingCount' => '1'
+  ],
+  'softwareVersion' => '1.0',
+  'releaseNotes' => 'Open source business management platform',
+  'author' => [
+    '@type' => 'Organization',
+    'name' => 'TridahCloud',
+    'url' => 'https://tridah.cloud'
+  ],
+  'url' => url('/'),
+  'sameAs' => [
+    'https://github.com/TridahCloud/TridahDrive'
+  ]
+], JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) !!}
 </script>
 @endsection

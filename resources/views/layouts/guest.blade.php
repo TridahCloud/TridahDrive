@@ -5,7 +5,27 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+        <!-- SEO Meta Tags -->
+        <title>@yield('title', 'TridahDrive') - Business Management Platform</title>
+        <meta name="description" content="@yield('description', 'TridahDrive is a comprehensive business management platform combining Invoicer, BookKeeper, and Project Board into one integrated solution.')">
+        <meta name="keywords" content="@yield('keywords', 'business management, invoicing, accounting, project management, finance tracking, bookkeeping')">
+        <meta name="author" content="TridahCloud">
+        <meta name="robots" content="index, follow">
+        
+        <!-- Open Graph Meta Tags -->
+        <meta property="og:title" content="@yield('title', 'TridahDrive') - Business Management Platform">
+        <meta property="og:description" content="@yield('description', 'All-in-One Business Management Platform')">
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="{{ url()->current() }}">
+        <meta property="og:image" content="{{ asset('images/tridah icon.png') }}">
+        <meta property="og:site_name" content="TridahDrive">
+        
+        <!-- Favicon -->
+        <link rel="icon" type="image/png" href="{{ asset('images/tridah icon.png') }}">
+        <link rel="apple-touch-icon" href="{{ asset('images/tridah icon.png') }}">
+        
+        <!-- Canonical URL -->
+        <link rel="canonical" href="{{ url()->current() }}">
 
         <!-- Bootstrap 5.3.x CSS -->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">

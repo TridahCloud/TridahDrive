@@ -1,6 +1,8 @@
 @extends('layouts.homepage')
 
-@section('title', 'Invoicer - Professional Invoicing Made Simple')
+@section('title', 'Invoicer')
+@section('description', 'Create professional invoices with client management, custom branding, item catalogs, and project tracking. Multi-currency support with customizable invoice profiles. Get paid faster with TridahDrive Invoicer.')
+@section('keywords', 'invoice software, invoicing, professional invoices, client management, invoice generation, billing software, invoice templates')
 
 @section('content')
 <!-- Hero Section -->

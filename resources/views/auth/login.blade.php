@@ -1,3 +1,5 @@
+@section('title', 'Login')
+@section('description', 'Login to your TridahDrive account to access your invoices, accounting, and projects.')
 <x-guest-layout>
     <h2 class="text-center mb-4 fw-bold">Login</h2>
     <p class="text-center text-muted mb-4">Welcome back! Please login to your account.</p>

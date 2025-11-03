@@ -1,3 +1,5 @@
+@section('title', 'Register')
+@section('description', 'Create your free TridahDrive account and start managing your business with our all-in-one platform.')
 <x-guest-layout>
     <h2 class="text-center mb-4 fw-bold">Create Account</h2>
     <p class="text-center text-muted mb-4">Join us and start building the future with open source.</p>
