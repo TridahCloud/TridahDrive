@@ -648,6 +648,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
             
+            // Collect all customization states before submitting
+            const customizations = {
+                show_company_name: document.getElementById('show-company-name')?.checked ?? true,
+                show_company_address: document.getElementById('show-company-address')?.checked ?? true,
+                show_company_phone: document.getElementById('show-company-phone')?.checked ?? true,
+                show_company_email: document.getElementById('show-company-email')?.checked ?? true,
+                show_invoice_title: document.getElementById('show-invoice-title')?.checked ?? true,
+                show_invoice_number: document.getElementById('show-invoice-number')?.checked ?? true,
+                show_invoice_date: document.getElementById('show-invoice-date')?.checked ?? true,
+                show_invoice_due_date: document.getElementById('show-invoice-due-date')?.checked ?? true,
+                show_invoice_status: document.getElementById('show-invoice-status')?.checked ?? true,
+                show_client_name: document.getElementById('show-client-name')?.checked ?? true,
+                show_client_address: document.getElementById('show-client-address')?.checked ?? true,
+                show_client_email: document.getElementById('show-client-email')?.checked ?? true,
+                show_project: document.getElementById('show-project')?.checked ?? true,
+                show_items_table: document.getElementById('show-items-table')?.checked ?? true,
+                show_payment_details: document.getElementById('show-payment-details')?.checked ?? true,
+                show_totals: document.getElementById('show-totals')?.checked ?? true,
+                accent_color: document.getElementById('invoice-color')?.value ?? initialAccentColor,
+            };
+            
+            // Add hidden input for customizations
+            let customizationsInput = document.getElementById('customizations-input');
+            if (!customizationsInput) {
+                customizationsInput = document.createElement('input');
+                customizationsInput.type = 'hidden';
+                customizationsInput.id = 'customizations-input';
+                customizationsInput.name = 'customizations';
+                invoiceForm.appendChild(customizationsInput);
+            }
+            customizationsInput.value = JSON.stringify(customizations);
+            
             invoiceForm.submit();
         });
     } else {

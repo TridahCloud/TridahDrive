@@ -107,6 +107,7 @@ class InvoiceController extends Controller
             'due_date' => 'nullable|date',
             'notes' => 'nullable|string',
             'tax_rate' => 'nullable|numeric|min:0|max:100',
+            'customizations' => 'nullable|string', // JSON string
             'items' => 'required|array|min:1',
             'items.*.description' => 'required|string',
             'items.*.quantity' => 'required|numeric|min:0',
@@ -128,6 +129,12 @@ class InvoiceController extends Controller
             // Generate invoice number
             $invoiceNumber = $profile->getNextInvoiceNumber();
 
+            // Parse customizations JSON if provided
+            $customizations = null;
+            if ($request->has('customizations') && !empty($request->customizations)) {
+                $customizations = json_decode($request->customizations, true);
+            }
+
             // Create invoice
             $invoice = Invoice::create([
                 'drive_id' => $drive->id,
@@ -143,6 +150,7 @@ class InvoiceController extends Controller
                 'due_date' => $validated['due_date'] ?? $validated['issue_date'],
                 'notes' => $validated['notes'] ?? '',
                 'tax_rate' => $validated['tax_rate'] ?? 0,
+                'customizations' => $customizations,
                 'status' => 'draft',
             ]);
 
@@ -272,6 +280,7 @@ class InvoiceController extends Controller
             'due_date' => 'required|date',
             'notes' => 'nullable|string',
             'tax_rate' => 'nullable|numeric|min:0|max:100',
+            'customizations' => 'nullable|string', // JSON string
             'status' => 'required|in:draft,sent,paid,overdue,cancelled',
             'items' => 'required|array|min:1',
             'items.*.description' => 'required|string',
@@ -291,6 +300,12 @@ class InvoiceController extends Controller
                     ->withErrors(['error' => 'Please create an invoice profile first.']);
             }
 
+            // Parse customizations JSON if provided
+            $customizations = null;
+            if ($request->has('customizations') && !empty($request->customizations)) {
+                $customizations = json_decode($request->customizations, true);
+            }
+
             $invoice->update([
                 'client_id' => $validated['client_id'] ?? null,
                 'invoice_profile_id' => $profile->id,
@@ -302,6 +317,7 @@ class InvoiceController extends Controller
                 'due_date' => $validated['due_date'],
                 'notes' => $validated['notes'] ?? '',
                 'tax_rate' => $validated['tax_rate'] ?? 0,
+                'customizations' => $customizations,
                 'status' => $validated['status'],
             ]);
 

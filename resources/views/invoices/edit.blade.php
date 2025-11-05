@@ -49,69 +49,69 @@
         <div class="customize-panel-body">
             <div class="customize-section">
                 <h6 class="section-title">Company Information</h6>
-                <div class="customize-item">
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="show-company-name" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <span class="toggle-label">Company Name</span>
-                </div>
-                <div class="customize-item">
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="show-company-address" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <span class="toggle-label">Company Address</span>
-                </div>
-                <div class="customize-item">
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="show-company-phone" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <span class="toggle-label">Company Phone</span>
-                </div>
-                <div class="customize-item">
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="show-company-email" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <span class="toggle-label">Company Email</span>
-                </div>
+                            <div class="customize-item">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="show-company-name" {{ old('customizations.show_company_name', $invoice->customizations['show_company_name'] ?? true) ? 'checked' : '' }}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span class="toggle-label">Company Name</span>
+                            </div>
+                            <div class="customize-item">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="show-company-address" {{ old('customizations.show_company_address', $invoice->customizations['show_company_address'] ?? true) ? 'checked' : '' }}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span class="toggle-label">Company Address</span>
+                            </div>
+                            <div class="customize-item">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="show-company-phone" {{ old('customizations.show_company_phone', $invoice->customizations['show_company_phone'] ?? true) ? 'checked' : '' }}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span class="toggle-label">Company Phone</span>
+                            </div>
+                            <div class="customize-item">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="show-company-email" {{ old('customizations.show_company_email', $invoice->customizations['show_company_email'] ?? true) ? 'checked' : '' }}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span class="toggle-label">Company Email</span>
+                            </div>
             </div>
 
             <div class="customize-section">
                 <h6 class="section-title">Invoice Details</h6>
                 <div class="customize-item">
                     <label class="toggle-switch">
-                        <input type="checkbox" id="show-invoice-number" checked>
+                        <input type="checkbox" id="show-invoice-number" {{ old('customizations.show_invoice_number', $invoice->customizations['show_invoice_number'] ?? true) ? 'checked' : '' }}>
                         <span class="toggle-slider"></span>
                     </label>
                     <span class="toggle-label">Invoice Number</span>
                 </div>
                 <div class="customize-item">
                     <label class="toggle-switch">
-                        <input type="checkbox" id="show-invoice-date" checked>
+                        <input type="checkbox" id="show-invoice-date" {{ old('customizations.show_invoice_date', $invoice->customizations['show_invoice_date'] ?? true) ? 'checked' : '' }}>
                         <span class="toggle-slider"></span>
                     </label>
                     <span class="toggle-label">Invoice Date</span>
                 </div>
                 <div class="customize-item">
                     <label class="toggle-switch">
-                        <input type="checkbox" id="show-invoice-due-date" checked>
+                        <input type="checkbox" id="show-invoice-due-date" {{ old('customizations.show_invoice_due_date', $invoice->customizations['show_invoice_due_date'] ?? true) ? 'checked' : '' }}>
                         <span class="toggle-slider"></span>
                     </label>
                     <span class="toggle-label">Due Date</span>
                 </div>
                 <div class="customize-item">
                     <label class="toggle-switch">
-                        <input type="checkbox" id="show-invoice-status" checked>
+                        <input type="checkbox" id="show-invoice-status" {{ old('customizations.show_invoice_status', $invoice->customizations['show_invoice_status'] ?? true) ? 'checked' : '' }}>
                         <span class="toggle-slider"></span>
                     </label>
                     <span class="toggle-label">Invoice Status</span>
                 </div>
                 <div class="customize-item">
                     <label class="toggle-switch">
-                        <input type="checkbox" id="show-invoice-title" checked>
+                        <input type="checkbox" id="show-invoice-title" {{ old('customizations.show_invoice_title', $invoice->customizations['show_invoice_title'] ?? true) ? 'checked' : '' }}>
                         <span class="toggle-slider"></span>
                     </label>
                     <span class="toggle-label">Invoice Title</span>
@@ -122,7 +122,7 @@
                 <h6 class="section-title">Customization</h6>
                 <div class="customize-item">
                     <label for="invoice-color" class="form-label">Invoice Accent Color:</label>
-                    <input type="color" class="form-control form-control-color" id="invoice-color" value="{{ $invoiceProfile?->accent_color ?? '#31d8b2' }}" title="Choose color">
+                    <input type="color" class="form-control form-control-color" id="invoice-color" value="{{ old('customizations.accent_color', $invoice->customizations['accent_color'] ?? $invoiceProfile?->accent_color ?? '#31d8b2') }}" title="Choose color">
                 </div>
             </div>
 
@@ -130,28 +130,28 @@
                 <h6 class="section-title">Client Information</h6>
                 <div class="customize-item">
                     <label class="toggle-switch">
-                        <input type="checkbox" id="show-client-name" checked>
+                        <input type="checkbox" id="show-client-name" {{ old('customizations.show_client_name', $invoice->customizations['show_client_name'] ?? true) ? 'checked' : '' }}>
                         <span class="toggle-slider"></span>
                     </label>
                     <span class="toggle-label">Client Name</span>
                 </div>
                 <div class="customize-item">
                     <label class="toggle-switch">
-                        <input type="checkbox" id="show-client-address" checked>
+                        <input type="checkbox" id="show-client-address" {{ old('customizations.show_client_address', $invoice->customizations['show_client_address'] ?? true) ? 'checked' : '' }}>
                         <span class="toggle-slider"></span>
                     </label>
                     <span class="toggle-label">Client Address</span>
                 </div>
                 <div class="customize-item">
                     <label class="toggle-switch">
-                        <input type="checkbox" id="show-client-email" checked>
+                        <input type="checkbox" id="show-client-email" {{ old('customizations.show_client_email', $invoice->customizations['show_client_email'] ?? true) ? 'checked' : '' }}>
                         <span class="toggle-slider"></span>
                     </label>
                     <span class="toggle-label">Client Email</span>
                 </div>
                 <div class="customize-item">
                     <label class="toggle-switch">
-                        <input type="checkbox" id="show-project" checked>
+                        <input type="checkbox" id="show-project" {{ old('customizations.show_project', $invoice->customizations['show_project'] ?? true) ? 'checked' : '' }}>
                         <span class="toggle-slider"></span>
                     </label>
                     <span class="toggle-label">Project Name</span>
@@ -162,21 +162,21 @@
                 <h6 class="section-title">Other Sections</h6>
                 <div class="customize-item">
                     <label class="toggle-switch">
-                        <input type="checkbox" id="show-items-table" checked>
+                        <input type="checkbox" id="show-items-table" {{ old('customizations.show_items_table', $invoice->customizations['show_items_table'] ?? true) ? 'checked' : '' }}>
                         <span class="toggle-slider"></span>
                     </label>
                     <span class="toggle-label">Items Table</span>
                 </div>
                 <div class="customize-item">
                     <label class="toggle-switch">
-                        <input type="checkbox" id="show-payment-details" checked>
+                        <input type="checkbox" id="show-payment-details" {{ old('customizations.show_payment_details', $invoice->customizations['show_payment_details'] ?? true) ? 'checked' : '' }}>
                         <span class="toggle-slider"></span>
                     </label>
                     <span class="toggle-label">Payment Details</span>
                 </div>
                 <div class="customize-item">
                     <label class="toggle-switch">
-                        <input type="checkbox" id="show-totals" checked>
+                        <input type="checkbox" id="show-totals" {{ old('customizations.show_totals', $invoice->customizations['show_totals'] ?? true) ? 'checked' : '' }}>
                         <span class="toggle-slider"></span>
                     </label>
                     <span class="toggle-label">Totals</span>
@@ -445,6 +445,56 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize with profile's accent color
     initializeAccentColor(initialAccentColor);
     
+    // Get saved customizations or use defaults
+    const savedCustomizations = @json($invoice->customizations ?? []);
+    const savedAccentColor = savedCustomizations?.accent_color || initialAccentColor;
+    
+    // Initialize with saved accent color if available
+    if (savedAccentColor && savedAccentColor !== initialAccentColor) {
+        initializeAccentColor(savedAccentColor);
+        document.getElementById('invoice-color').value = savedAccentColor;
+    }
+    
+    // Apply saved customizations on page load
+    const fieldMappings = {
+        'show-company-name': 'company-name',
+        'show-company-address': 'company-address',
+        'show-company-phone': 'company-phone',
+        'show-company-email': 'company-email',
+        'show-invoice-title': 'invoice-title',
+        'show-invoice-number': 'invoice-number',
+        'show-invoice-date': 'invoice-date',
+        'show-invoice-due-date': 'invoice-due-date',
+        'show-invoice-status': 'invoice-status',
+        'show-client-name': 'client-name',
+        'show-client-address': 'client-address',
+        'show-client-email': 'client-email',
+        'show-project': 'project',
+        'show-items-table': 'items-table',
+        'show-payment-details': 'payment-details',
+        'show-totals': 'totals'
+    };
+    
+    // Apply saved customizations
+    Object.keys(fieldMappings).forEach(checkboxId => {
+        const checkbox = document.getElementById(checkboxId);
+        const fieldName = fieldMappings[checkboxId];
+        const customizationKey = checkboxId.replace('show-', 'show_').replace(/-/g, '_');
+        const isChecked = savedCustomizations?.[customizationKey] ?? true;
+        
+        if (checkbox) {
+            // Apply display state based on saved customization
+            const targetElements = document.querySelectorAll(`[data-field="${fieldName}"]`);
+            targetElements.forEach(element => {
+                if (isChecked) {
+                    element.style.display = '';
+                } else {
+                    element.style.display = 'none';
+                }
+            });
+        }
+    });
+    
     // Set default dates
     const today = new Date().toISOString().split('T')[0];
     const dueDate = new Date();
@@ -640,9 +690,59 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('tax_rate').addEventListener('input', calculateTotals);
     
     // Save button
-    document.getElementById('saveBtn').addEventListener('click', function() {
-        document.getElementById('invoiceForm').submit();
-    });
+    const saveBtn = document.getElementById('saveBtn');
+    const invoiceForm = document.getElementById('invoiceForm');
+    
+    if (saveBtn && invoiceForm) {
+        saveBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Re-index items array before submission
+            const itemRows = document.querySelectorAll('.item-row');
+            itemRows.forEach((row, index) => {
+                const inputs = row.querySelectorAll('input[name^="items["]');
+                inputs.forEach(input => {
+                    const name = input.name;
+                    const newName = name.replace(/items\[\d+\]/, `items[${index}]`);
+                    input.name = newName;
+                });
+            });
+            
+            // Collect all customization states before submitting
+            const customizations = {
+                show_company_name: document.getElementById('show-company-name')?.checked ?? true,
+                show_company_address: document.getElementById('show-company-address')?.checked ?? true,
+                show_company_phone: document.getElementById('show-company-phone')?.checked ?? true,
+                show_company_email: document.getElementById('show-company-email')?.checked ?? true,
+                show_invoice_title: document.getElementById('show-invoice-title')?.checked ?? true,
+                show_invoice_number: document.getElementById('show-invoice-number')?.checked ?? true,
+                show_invoice_date: document.getElementById('show-invoice-date')?.checked ?? true,
+                show_invoice_due_date: document.getElementById('show-invoice-due-date')?.checked ?? true,
+                show_invoice_status: document.getElementById('show-invoice-status')?.checked ?? true,
+                show_client_name: document.getElementById('show-client-name')?.checked ?? true,
+                show_client_address: document.getElementById('show-client-address')?.checked ?? true,
+                show_client_email: document.getElementById('show-client-email')?.checked ?? true,
+                show_project: document.getElementById('show-project')?.checked ?? true,
+                show_items_table: document.getElementById('show-items-table')?.checked ?? true,
+                show_payment_details: document.getElementById('show-payment-details')?.checked ?? true,
+                show_totals: document.getElementById('show-totals')?.checked ?? true,
+                accent_color: document.getElementById('invoice-color')?.value ?? initialAccentColor,
+            };
+            
+            // Add hidden input for customizations
+            let customizationsInput = document.getElementById('customizations-input');
+            if (!customizationsInput) {
+                customizationsInput = document.createElement('input');
+                customizationsInput.type = 'hidden';
+                customizationsInput.id = 'customizations-input';
+                customizationsInput.name = 'customizations';
+                invoiceForm.appendChild(customizationsInput);
+            }
+            customizationsInput.value = JSON.stringify(customizations);
+            
+            invoiceForm.submit();
+        });
+    }
     
     // Initial calculation
     calculateTotals();
@@ -709,26 +809,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.documentElement.style.setProperty('--invoice-accent-color', color);
     });
 
-    // Field toggles
-    const fieldMappings = {
-        'show-company-name': 'company-name',
-        'show-company-address': 'company-address',
-        'show-company-phone': 'company-phone',
-        'show-company-email': 'company-email',
-        'show-invoice-title': 'invoice-title',
-        'show-invoice-number': 'invoice-number',
-        'show-invoice-date': 'invoice-date',
-        'show-invoice-due-date': 'invoice-due-date',
-        'show-invoice-status': 'invoice-status',
-        'show-client-name': 'client-name',
-        'show-client-address': 'client-address',
-        'show-client-email': 'client-email',
-        'show-project': 'project',
-        'show-items-table': 'items-table',
-        'show-payment-details': 'payment-details',
-        'show-totals': 'totals'
-    };
-
+    // Field toggles - reuse the fieldMappings declared earlier
     document.querySelectorAll('#customizePanel input[type="checkbox"]').forEach(checkbox => {
         checkbox.addEventListener('change', function() {
             const fieldKey = this.id;

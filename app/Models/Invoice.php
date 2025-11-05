@@ -25,6 +25,7 @@ class Invoice extends Model
         'due_date',
         'status',
         'notes',
+        'customizations',
         'subtotal',
         'tax_rate',
         'tax_amount',
@@ -38,6 +39,7 @@ class Invoice extends Model
         'tax_rate' => 'decimal:2',
         'tax_amount' => 'decimal:2',
         'total' => 'decimal:2',
+        'customizations' => 'array',
     ];
 
     /**
