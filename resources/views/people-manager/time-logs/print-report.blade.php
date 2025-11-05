@@ -118,7 +118,7 @@
         @if($person->job_title)
             <p><strong>Job Title:</strong> {{ $person->job_title }}</p>
         @endif
-        <p><strong>Report Period:</strong> {{ $startDate->format('M d, Y') }} to {{ $endDate->format('M d, Y') }}</p>
+        <p><strong>Report Period:</strong> {{ ($startDateForDisplay ?? $startDate)->format('M d, Y') }} to {{ ($endDateForDisplay ?? $endDate)->format('M d, Y') }}</p>
         <p><strong>Generated:</strong> {{ now()->format('M d, Y h:i A') }}</p>
     </div>
 
@@ -141,9 +141,9 @@
             <tbody>
                 @foreach($timeLogs as $timeLog)
                     <tr>
-                        <td>{{ $timeLog->work_date->format('M d, Y') }}</td>
-                        <td>{{ $timeLog->clock_in ? $timeLog->clock_in->format('h:i A') : '-' }}</td>
-                        <td>{{ $timeLog->clock_out ? $timeLog->clock_out->format('h:i A') : '-' }}</td>
+                        <td>{{ $drive->formatForUser(\Carbon\Carbon::parse($timeLog->work_date), 'M d, Y', auth()->user()) }}</td>
+                        <td>{{ $timeLog->clock_in ? $drive->formatForUser($timeLog->clock_in->copy()->setTimezone('UTC'), 'h:i A', auth()->user()) : '-' }}</td>
+                        <td>{{ $timeLog->clock_out ? $drive->formatForUser($timeLog->clock_out->copy()->setTimezone('UTC'), 'h:i A', auth()->user()) : '-' }}</td>
                         <td>{{ number_format($timeLog->regular_hours ?? 0, 2) }}</td>
                         <td>{{ number_format($timeLog->overtime_hours ?? 0, 2) }}</td>
                         <td>{{ number_format($timeLog->total_hours ?? 0, 2) }}</td>

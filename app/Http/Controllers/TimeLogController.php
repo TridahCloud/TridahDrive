@@ -31,6 +31,25 @@ class TimeLogController extends Controller
             $query->where('person_id', $request->person_id);
         }
 
+        // Filter by date range
+        if ($request->filled('start_date')) {
+            $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
+            $startDate = \Carbon\Carbon::parse($request->start_date, $userTimezone)
+                ->setTimezone('UTC')
+                ->startOfDay()
+                ->format('Y-m-d');
+            $query->where('work_date', '>=', $startDate);
+        }
+
+        if ($request->filled('end_date')) {
+            $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
+            $endDate = \Carbon\Carbon::parse($request->end_date, $userTimezone)
+                ->setTimezone('UTC')
+                ->endOfDay()
+                ->format('Y-m-d');
+            $query->where('work_date', '<=', $endDate);
+        }
+
         $timeLogs = $query->orderBy('work_date', 'desc')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -56,17 +75,30 @@ class TimeLogController extends Controller
             abort(404);
         }
 
-        $startDate = $request->input('start_date') 
-            ? \Carbon\Carbon::parse($request->input('start_date'))
-            : \Carbon\Carbon::now()->startOfMonth();
+        // Get user timezone for parsing dates
+        $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
+        $driveTimezone = $drive->getEffectiveTimezone();
 
-        $endDate = $request->input('end_date')
-            ? \Carbon\Carbon::parse($request->input('end_date'))
-            : \Carbon\Carbon::now()->endOfMonth();
+        // Parse dates from user input (assumed in user's timezone) and convert to UTC for query
+        if ($request->has('start_date') && $request->input('start_date')) {
+            $startDate = \Carbon\Carbon::parse($request->input('start_date'), $userTimezone)
+                ->setTimezone('UTC')
+                ->startOfDay();
+        } else {
+            $startDate = \Carbon\Carbon::now()->startOfMonth()->setTimezone('UTC')->startOfDay();
+        }
+
+        if ($request->has('end_date') && $request->input('end_date')) {
+            $endDate = \Carbon\Carbon::parse($request->input('end_date'), $userTimezone)
+                ->setTimezone('UTC')
+                ->endOfDay();
+        } else {
+            $endDate = \Carbon\Carbon::now()->endOfMonth()->setTimezone('UTC')->endOfDay();
+        }
 
         $timeLogs = $drive->timeLogs()
             ->where('person_id', $person->id)
-            ->whereBetween('work_date', [$startDate, $endDate])
+            ->whereBetween('work_date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
             ->orderBy('work_date', 'asc')
             ->get();
 
@@ -75,12 +107,18 @@ class TimeLogController extends Controller
         $totalOvertimeHours = $timeLogs->sum('overtime_hours');
         $totalPay = $timeLogs->sum('total_pay');
 
+        // Convert dates back to user timezone for display
+        $startDateForDisplay = $startDate->copy()->setTimezone($userTimezone);
+        $endDateForDisplay = $endDate->copy()->setTimezone($userTimezone);
+
         return view('people-manager.time-logs.print-report', compact(
             'drive',
             'person',
             'timeLogs',
             'startDate',
             'endDate',
+            'startDateForDisplay',
+            'endDateForDisplay',
             'totalHours',
             'totalRegularHours',
             'totalOvertimeHours',
