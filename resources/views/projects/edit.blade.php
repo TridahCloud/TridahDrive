@@ -128,35 +128,32 @@
                 </button>
             </div>
             
-            <!-- Assigned People Section -->
-            @if(isset($availablePeople))
+            <!-- Assigned Users Section -->
+            @if(isset($availableUsers))
             <div class="dashboard-card">
                 <h5 class="mb-3">
-                    <i class="fas fa-users me-2 brand-teal"></i>Assigned People
+                    <i class="fas fa-users me-2 brand-teal"></i>Assigned Users
                 </h5>
-                <p class="text-muted small mb-3">Assign people from your Drive to this project.</p>
+                <p class="text-muted small mb-3">Assign users from your Drive to this project.</p>
                 
                 <form action="{{ route('drives.projects.projects.assign-people', [$drive, $project]) }}" method="POST" id="assignPeopleForm">
                     @csrf
                     
-                    @if($availablePeople->count() > 0)
+                    @if($availableUsers->count() > 0)
                         <div class="mb-3">
                             <div class="list-group" style="max-height: 400px; overflow-y: auto;">
-                                @foreach($availablePeople as $person)
+                                @foreach($availableUsers as $user)
                                     <label class="list-group-item list-group-item-action">
                                         <div class="d-flex align-items-center">
                                             <input type="checkbox" 
                                                    class="form-check-input me-3" 
-                                                   name="person_ids[]" 
-                                                   value="{{ $person->id }}"
-                                                   {{ $project->people->contains($person->id) ? 'checked' : '' }}>
+                                                   name="user_ids[]" 
+                                                   value="{{ $user->id }}"
+                                                   {{ $project->users->contains($user->id) ? 'checked' : '' }}>
                                             <div class="flex-grow-1">
-                                                <div class="fw-bold">{{ $person->full_name }}</div>
-                                                @if($person->job_title)
-                                                    <small class="text-muted">{{ $person->job_title }}</small>
-                                                @endif
-                                                @if($person->type)
-                                                    <span class="badge bg-info ms-2">{{ ucfirst($person->type) }}</span>
+                                                <div class="fw-bold">{{ $user->name }}</div>
+                                                @if($user->email)
+                                                    <small class="text-muted">{{ $user->email }}</small>
                                                 @endif
                                             </div>
                                         </div>
@@ -170,8 +167,7 @@
                     @else
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
-                            No active people available in this Drive. 
-                            <a href="{{ route('drives.people-manager.people.create', $drive) }}" class="alert-link">Add people</a> to assign them to projects.
+                            No users available in this Drive.
                         </div>
                     @endif
                 </form>

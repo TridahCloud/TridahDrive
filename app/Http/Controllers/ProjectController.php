@@ -26,7 +26,7 @@ class ProjectController extends Controller
 
         // Get all projects and filter based on user permissions
         $allProjects = $drive->projects()
-            ->with(['creator', 'tasks' => function($query) {
+            ->with(['creator', 'users', 'tasks' => function($query) {
                 $query->whereNull('deleted_at');
             }])
             ->withCount(['tasks as total_tasks', 'tasks as completed_tasks' => function($query) {
@@ -159,7 +159,7 @@ class ProjectController extends Controller
 
         $view = $request->get('view', 'list'); // list, kanban, gantt, calendar, workload
 
-        $project->load(['tasks.members', 'tasks.labels', 'tasks.owner', 'tasks.creator', 'tasks.attachments', 'people']);
+        $project->load(['tasks.members', 'tasks.labels', 'tasks.owner', 'tasks.creator', 'tasks.attachments', 'users']);
 
         // Get tasks by status for kanban view
         $tasksByStatus = [
@@ -173,8 +173,8 @@ class ProjectController extends Controller
         // Get drive members for task assignment
         $driveMembers = $drive->users()->get();
         
-        // Get available people for project assignment
-        $availablePeople = $drive->people()->where('status', 'active')->orderBy('first_name')->orderBy('last_name')->get();
+        // Get available users for project assignment
+        $availableUsers = $drive->users()->orderBy('name')->get();
         
         // Get task labels
         $labels = $drive->taskLabels()->where('is_active', true)->get();
@@ -205,7 +205,7 @@ class ProjectController extends Controller
             }
         }
 
-        return view('projects.show', compact('drive', 'project', 'view', 'tasksByStatus', 'driveMembers', 'availablePeople', 'labels', 'memberStats'));
+        return view('projects.show', compact('drive', 'project', 'view', 'tasksByStatus', 'driveMembers', 'availableUsers', 'labels', 'memberStats'));
     }
 
     /**
@@ -224,13 +224,13 @@ class ProjectController extends Controller
             abort(404);
         }
 
-        // Load people relationship
-        $project->load('people');
+        // Load users relationship
+        $project->load('users');
 
         // Get available people for assignment
-        $availablePeople = $drive->people()->where('status', 'active')->orderBy('first_name')->orderBy('last_name')->get();
+        $availableUsers = $drive->users()->orderBy('name')->get();
 
-        return view('projects.edit', compact('drive', 'project', 'availablePeople'));
+        return view('projects.edit', compact('drive', 'project', 'availableUsers'));
     }
 
     /**
@@ -299,7 +299,7 @@ class ProjectController extends Controller
     }
 
     /**
-     * Assign people to a project
+     * Assign users to a project
      */
     public function assignPeople(Request $request, Drive $drive, Project $project)
     {
@@ -307,7 +307,7 @@ class ProjectController extends Controller
         
         // Check if user has permission to edit
         if (!$drive->canEdit(auth()->user())) {
-            abort(403, 'You do not have permission to assign people to projects.');
+            abort(403, 'You do not have permission to assign users to projects.');
         }
 
         if ($project->drive_id !== $drive->id) {
@@ -315,19 +315,19 @@ class ProjectController extends Controller
         }
 
         $validated = $request->validate([
-            'person_ids' => 'nullable|array',
-            'person_ids.*' => 'exists:people,id',
+            'user_ids' => 'nullable|array',
+            'user_ids.*' => 'exists:users,id',
         ]);
 
-        // Sync assigned people (only people from this drive)
-        $personIds = $validated['person_ids'] ?? [];
+        // Sync assigned users (only users from this drive)
+        $userIds = $validated['user_ids'] ?? [];
         
-        // Verify all people belong to this drive
-        $validPersonIds = $drive->people()->whereIn('id', $personIds)->pluck('id')->toArray();
+        // Verify all users belong to this drive
+        $validUserIds = $drive->users()->whereIn('users.id', $userIds)->pluck('users.id')->toArray();
         
-        $project->people()->sync($validPersonIds);
+        $project->users()->sync($validUserIds);
 
-        return redirect()->back()->with('success', 'People assigned to project successfully!');
+        return redirect()->back()->with('success', 'Users assigned to project successfully!');
     }
 
     /**

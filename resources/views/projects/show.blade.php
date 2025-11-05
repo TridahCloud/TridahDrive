@@ -367,35 +367,35 @@
         </div>
     </div>
 
-    <!-- Assigned People Section -->
-    @if($drive->canEdit(auth()->user()) && isset($availablePeople))
+    <!-- Assigned Users Section -->
+    @if($drive->canEdit(auth()->user()) && isset($availableUsers))
     <div class="row mb-4">
         <div class="col-12">
             <div class="dashboard-card">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="mb-0">
-                        <i class="fas fa-users me-2 brand-teal"></i>Assigned People
+                        <i class="fas fa-users me-2 brand-teal"></i>Assigned Users
                     </h5>
                     <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#assignPeopleModal">
-                        <i class="fas fa-user-plus me-1"></i>Assign People
+                        <i class="fas fa-user-plus me-1"></i>Assign Users
                     </button>
                 </div>
                 
-                @if($project->people->count() > 0)
+                @if($project->users->count() > 0)
                     <div class="d-flex flex-wrap gap-2">
-                        @foreach($project->people as $person)
+                        @foreach($project->users as $user)
                             <div class="badge bg-primary p-2 d-flex align-items-center gap-2">
                                 <i class="fas fa-user"></i>
-                                <span>{{ $person->full_name }}</span>
-                                @if($person->job_title)
-                                    <small class="opacity-75">({{ $person->job_title }})</small>
+                                <span>{{ $user->name }}</span>
+                                @if($user->email)
+                                    <small class="opacity-75">({{ $user->email }})</small>
                                 @endif
                             </div>
                         @endforeach
                     </div>
                 @else
                     <p class="text-muted mb-0">
-                        <i class="fas fa-info-circle me-1"></i>No people assigned to this project yet.
+                        <i class="fas fa-info-circle me-1"></i>No users assigned to this project yet.
                     </p>
                 @endif
             </div>
@@ -403,39 +403,36 @@
     </div>
     @endif
 
-    <!-- Assign People Modal -->
-    @if($drive->canEdit(auth()->user()) && isset($availablePeople))
+    <!-- Assign Users Modal -->
+    @if($drive->canEdit(auth()->user()) && isset($availableUsers))
     <div class="modal fade" id="assignPeopleModal" tabindex="-1" aria-labelledby="assignPeopleModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="assignPeopleModalLabel">
-                        <i class="fas fa-user-plus me-2"></i>Assign People to Project
+                        <i class="fas fa-user-plus me-2"></i>Assign Users to Project
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form action="{{ route('drives.projects.projects.assign-people', [$drive, $project]) }}" method="POST">
                     @csrf
                     <div class="modal-body">
-                        <p class="text-muted small mb-3">Select people from your Drive to assign to this project.</p>
+                        <p class="text-muted small mb-3">Select users from your Drive to assign to this project.</p>
                         
-                        @if($availablePeople->count() > 0)
+                        @if($availableUsers->count() > 0)
                             <div class="list-group">
-                                @foreach($availablePeople as $person)
+                                @foreach($availableUsers as $user)
                                     <label class="list-group-item list-group-item-action">
                                         <div class="d-flex align-items-center">
                                             <input type="checkbox" 
                                                    class="form-check-input me-3" 
-                                                   name="person_ids[]" 
-                                                   value="{{ $person->id }}"
-                                                   {{ $project->people->contains($person->id) ? 'checked' : '' }}>
+                                                   name="user_ids[]" 
+                                                   value="{{ $user->id }}"
+                                                   {{ $project->users->contains($user->id) ? 'checked' : '' }}>
                                             <div class="flex-grow-1">
-                                                <div class="fw-bold">{{ $person->full_name }}</div>
-                                                @if($person->job_title)
-                                                    <small class="text-muted">{{ $person->job_title }}</small>
-                                                @endif
-                                                @if($person->type)
-                                                    <span class="badge bg-info ms-2">{{ ucfirst($person->type) }}</span>
+                                                <div class="fw-bold">{{ $user->name }}</div>
+                                                @if($user->email)
+                                                    <small class="text-muted">{{ $user->email }}</small>
                                                 @endif
                                             </div>
                                         </div>
@@ -445,14 +442,13 @@
                         @else
                             <div class="alert alert-info">
                                 <i class="fas fa-info-circle me-2"></i>
-                                No active people available in this Drive. 
-                                <a href="{{ route('drives.people-manager.people.create', $drive) }}" class="alert-link">Add people</a> to assign them to projects.
+                                No users available in this Drive.
                             </div>
                         @endif
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                        @if($availablePeople->count() > 0)
+                        @if($availableUsers->count() > 0)
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save me-2"></i>Save Assignments
                             </button>

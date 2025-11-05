@@ -82,4 +82,13 @@ class Project extends Model
         return $this->belongsToMany(Person::class, 'person_project')
             ->withTimestamps();
     }
+
+    /**
+     * Get all users assigned to this project
+     */
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'project_user')
+            ->withTimestamps();
+    }
 }

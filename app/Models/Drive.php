@@ -522,12 +522,21 @@ class Drive extends Model
                 return true;
             }
             
-            // Check if user is assigned to any task in this project
-            $permissionValue = $role->getPermissionValue('project.view_assigned');
-            if ($permissionValue === true) {
-                return $project->tasks()->whereHas('members', function($query) use ($user) {
+            // Check if user is assigned to any task in this project OR assigned to the project itself
+            if ($role->hasPermission('project.view_assigned')) {
+                // Check if user is assigned to any task in this project
+                $hasTaskAssignment = $project->tasks()->whereHas('members', function($query) use ($user) {
                     $query->where('user_id', $user->id);
                 })->exists();
+                
+                // Check if user is assigned to the project itself
+                // Load users relationship if not already loaded to avoid N+1 queries
+                if (!$project->relationLoaded('users')) {
+                    $project->load('users');
+                }
+                $hasProjectAssignment = $project->users->pluck('id')->contains($user->id);
+                
+                return $hasTaskAssignment || $hasProjectAssignment;
             }
         }
         
