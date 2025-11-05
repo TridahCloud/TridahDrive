@@ -389,6 +389,146 @@
                 </form>
             </div>
             @endif
+
+            <!-- Role Assignments Section -->
+            @if($drive->type === 'shared' && $drive->isOwnerOrAdmin(auth()->user()))
+            <div class="dashboard-card mt-4">
+                <h4 class="mb-3 brand-teal">
+                    <i class="fas fa-user-shield me-2"></i>Role Assignments
+                </h4>
+                <p class="text-muted small mb-3">
+                    Assign roles to people and users to control their access to different apps and features within this Drive.
+                    Roles are managed separately in <a href="{{ route('drives.roles.index', $drive) }}">Roles & Permissions</a>.
+                </p>
+                
+                @if(isset($roles) && $roles->count() > 0)
+                    <!-- Assign roles to People -->
+                    @if($people->count() > 0)
+                        <div class="mb-4">
+                            <h5 class="mb-3">People</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Current Role</th>
+                                            <th>Assign Role</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($people as $person)
+                                            @php
+                                                $currentRole = $drive->getRoleForPerson($person);
+                                            @endphp
+                                            <tr>
+                                                <td>
+                                                    {{ $person->full_name }}
+                                                    @if($person->user_id)
+                                                        <span class="badge bg-info ms-1">Linked User</span>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if($currentRole)
+                                                        <span class="badge bg-primary">{{ $currentRole->name }}</span>
+                                                    @else
+                                                        <span class="text-muted">No role</span>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    <form action="{{ route('drives.roles.assign', $drive) }}" method="POST" class="d-inline">
+                                                        @csrf
+                                                        <input type="hidden" name="assignable_type" value="App\Models\Person">
+                                                        <input type="hidden" name="assignable_id" value="{{ $person->id }}">
+                                                        <select name="drive_role_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                                                            <option value="">No role</option>
+                                                            @foreach($roles as $role)
+                                                                <option value="{{ $role->id }}" {{ $currentRole && $currentRole->id == $role->id ? 'selected' : '' }}>
+                                                                    {{ $role->name }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    @endif
+                    
+                    <!-- Assign roles to Drive Users (excluding owner) -->
+                    @if($driveUsers->count() > 0)
+                        <div class="mb-4">
+                            <h5 class="mb-3">Drive Users</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Email</th>
+                                            <th>Legacy Role</th>
+                                            <th>Assigned Role</th>
+                                            <th>Assign Role</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($driveUsers as $user)
+                                            @php
+                                                $currentRole = $drive->getRoleForUser($user);
+                                                $legacyRole = $drive->getUserRole($user);
+                                            @endphp
+                                            <tr>
+                                                <td>{{ $user->name }}</td>
+                                                <td>{{ $user->email }}</td>
+                                                <td>
+                                                    <span class="badge bg-secondary">{{ ucfirst($legacyRole) }}</span>
+                                                </td>
+                                                <td>
+                                                    @if($currentRole)
+                                                        <span class="badge bg-primary">{{ $currentRole->name }}</span>
+                                                    @else
+                                                        <span class="text-muted">No role</span>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    <form action="{{ route('drives.roles.assign', $drive) }}" method="POST" class="d-inline">
+                                                        @csrf
+                                                        <input type="hidden" name="assignable_type" value="App\Models\User">
+                                                        <input type="hidden" name="assignable_id" value="{{ $user->id }}">
+                                                        <select name="drive_role_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                                                            <option value="">No role</option>
+                                                            @foreach($roles as $role)
+                                                                <option value="{{ $role->id }}" {{ $currentRole && $currentRole->id == $role->id ? 'selected' : '' }}>
+                                                                    {{ $role->name }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    @endif
+                    
+                    @if($people->count() === 0 && $driveUsers->count() === 0)
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No people or users available to assign roles. Add people in People Manager or invite users to the Drive.
+                        </div>
+                    @endif
+                @else
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        No roles have been created yet. 
+                        <a href="{{ route('drives.roles.index', $drive) }}">Create roles</a> to assign permissions.
+                    </div>
+                @endif
+            </div>
+            @endif
         </div>
     </div>
 </div>

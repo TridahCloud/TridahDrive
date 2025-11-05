@@ -179,12 +179,61 @@ class Drive extends Model
     }
 
     /**
+     * Get people manager profiles for this drive
+     */
+    public function peopleManagerProfiles(): HasMany
+    {
+        return $this->hasMany(PeopleManagerProfile::class);
+    }
+
+    /**
+     * Get people (employees/volunteers) for this drive
+     */
+    public function people(): HasMany
+    {
+        return $this->hasMany(Person::class);
+    }
+
+    /**
+     * Get schedules for this drive
+     */
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(Schedule::class);
+    }
+
+    /**
+     * Get time logs for this drive
+     */
+    public function timeLogs(): HasMany
+    {
+        return $this->hasMany(TimeLog::class);
+    }
+
+    /**
+     * Get payroll entries for this drive
+     */
+    public function payrollEntries(): HasMany
+    {
+        return $this->hasMany(PayrollEntry::class);
+    }
+
+    /**
      * Get the default invoice profile
      */
     public function getDefaultInvoiceProfileAttribute(): ?InvoiceProfile
     {
         return $this->invoiceProfiles()->where('is_default', true)->first() 
             ?? $this->invoiceProfiles()->first();
+    }
+
+    /**
+     * Get the default people manager profile
+     */
+    public function getDefaultPeopleManagerProfileAttribute(): ?PeopleManagerProfile
+    {
+        return $this->peopleManagerProfiles()->where('is_default', true)->first() 
+            ?? $this->peopleManagerProfiles()->first();
     }
 
     /**
@@ -268,6 +317,362 @@ class Drive extends Model
     {
         $driveIds = $this->getDriveIdsIncludingSubDrives($includeHidden);
         return Project::whereIn('drive_id', $driveIds);
+    }
+
+    /**
+     * Get all people including from sub-drives
+     */
+    public function getPeopleIncludingSubDrives(bool $includeHidden = false)
+    {
+        $driveIds = $this->getDriveIdsIncludingSubDrives($includeHidden);
+        return Person::whereIn('drive_id', $driveIds);
+    }
+
+    /**
+     * Get all schedules including from sub-drives
+     */
+    public function getSchedulesIncludingSubDrives(bool $includeHidden = false)
+    {
+        $driveIds = $this->getDriveIdsIncludingSubDrives($includeHidden);
+        return Schedule::whereIn('drive_id', $driveIds);
+    }
+
+    /**
+     * Get all time logs including from sub-drives
+     */
+    public function getTimeLogsIncludingSubDrives(bool $includeHidden = false)
+    {
+        $driveIds = $this->getDriveIdsIncludingSubDrives($includeHidden);
+        return TimeLog::whereIn('drive_id', $driveIds);
+    }
+
+    /**
+     * Get all payroll entries including from sub-drives
+     */
+    public function getPayrollEntriesIncludingSubDrives(bool $includeHidden = false)
+    {
+        $driveIds = $this->getDriveIdsIncludingSubDrives($includeHidden);
+        return PayrollEntry::whereIn('drive_id', $driveIds);
+    }
+
+    /**
+     * Get all roles for this drive
+     */
+    public function roles(): HasMany
+    {
+        return $this->hasMany(DriveRole::class)->orderBy('sort_order');
+    }
+
+    /**
+     * Get all role assignments for this drive
+     */
+    public function roleAssignments(): HasMany
+    {
+        return $this->hasMany(DriveRoleAssignment::class);
+    }
+
+    /**
+     * Get roles from parent drive (for inheritance)
+     */
+    public function getParentRoles()
+    {
+        if (!$this->parentDrive) {
+            return collect([]);
+        }
+        
+        return $this->parentDrive->roles()->get();
+    }
+
+    /**
+     * Get role assigned to a user (via Person or directly)
+     */
+    public function getRoleForUser(User $user): ?DriveRole
+    {
+        // Check if user is directly assigned to a role
+        $directAssignment = $this->roleAssignments()
+            ->where('assignable_type', User::class)
+            ->where('assignable_id', $user->id)
+            ->with('role')
+            ->first();
+        
+        if ($directAssignment) {
+            return $directAssignment->role;
+        }
+        
+        // Check if user is linked to a Person who has a role assigned
+        $person = $this->people()->where('user_id', $user->id)->first();
+        if ($person) {
+            $personAssignment = $this->roleAssignments()
+                ->where('assignable_type', Person::class)
+                ->where('assignable_id', $person->id)
+                ->with('role')
+                ->first();
+            
+            if ($personAssignment) {
+                return $personAssignment->role;
+            }
+        }
+        
+        // Check parent drive for inherited roles
+        if ($this->parentDrive) {
+            return $this->parentDrive->getRoleForUser($user);
+        }
+        
+        return null;
+    }
+
+    /**
+     * Get role assigned to a person
+     */
+    public function getRoleForPerson(Person $person): ?DriveRole
+    {
+        $assignment = $this->roleAssignments()
+            ->where('assignable_type', Person::class)
+            ->where('assignable_id', $person->id)
+            ->with('role')
+            ->first();
+        
+        if ($assignment) {
+            return $assignment->role;
+        }
+        
+        // Check parent drive for inherited roles
+        if ($this->parentDrive) {
+            return $this->parentDrive->getRoleForPerson($person);
+        }
+        
+        return null;
+    }
+
+    /**
+     * Check if user has a specific permission
+     */
+    public function userHasPermission(User $user, string $permissionKey): bool
+    {
+        // Owner always has all permissions
+        if ($this->owner_id === $user->id) {
+            return true;
+        }
+        
+        // Check drive_users role (legacy system)
+        $legacyRole = $this->getUserRole($user);
+        if ($legacyRole === 'admin') {
+            return true; // Admins have all permissions
+        }
+        
+        // Check assigned role
+        $role = $this->getRoleForUser($user);
+        if ($role) {
+            return $role->hasPermission($permissionKey);
+        }
+        
+        // Default permissions based on legacy role
+        return match($legacyRole) {
+            'member' => true, // Members can do most things
+            'viewer' => in_array($permissionKey, [
+                'mytime.view_own_schedules',
+                'mytime.view_own_time_logs',
+                'project.view_assigned',
+            ]),
+            default => false,
+        };
+    }
+
+    /**
+     * Check if person has a specific permission
+     */
+    public function personHasPermission(Person $person, string $permissionKey): bool
+    {
+        // If person is linked to a user, check user permissions
+        if ($person->user_id) {
+            return $this->userHasPermission($person->user, $permissionKey);
+        }
+        
+        // Check assigned role
+        $role = $this->getRoleForPerson($person);
+        if ($role) {
+            return $role->hasPermission($permissionKey);
+        }
+        
+        return false;
+    }
+
+    /**
+     * Check if user has permission to view a specific project
+     */
+    public function userCanViewProject(User $user, Project $project): bool
+    {
+        // Owner and admin can view all
+        if ($this->owner_id === $user->id || $this->getUserRole($user) === 'admin') {
+            return true;
+        }
+        
+        // Check role permission
+        $role = $this->getRoleForUser($user);
+        if ($role) {
+            $permissionValue = $role->getPermissionValue('project.view_all');
+            if ($permissionValue === true) {
+                return true;
+            }
+            
+            // Check specific project IDs
+            $projectIds = $role->getPermissionValue('project.view_specific');
+            if (is_array($projectIds) && in_array($project->id, $projectIds)) {
+                return true;
+            }
+            
+            // Check if user is assigned to any task in this project
+            $permissionValue = $role->getPermissionValue('project.view_assigned');
+            if ($permissionValue === true) {
+                return $project->tasks()->whereHas('members', function($query) use ($user) {
+                    $query->where('user_id', $user->id);
+                })->exists();
+            }
+        }
+        
+        // Legacy: members can view all projects
+        if ($this->getUserRole($user) === 'member') {
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
+     * Check if user has permission to view a specific app/section
+     */
+    public function userCanViewApp(User $user, string $appName): bool
+    {
+        // Owner always has access to all apps
+        if ($this->owner_id === $user->id) {
+            return true;
+        }
+        
+        // Check drive_users role (legacy system)
+        $legacyRole = $this->getUserRole($user);
+        if ($legacyRole === 'admin') {
+            return true; // Admins have access to all apps
+        }
+        
+        // Check assigned role
+        $role = $this->getRoleForUser($user);
+        if ($role) {
+            return $role->hasPermission("{$appName}.view");
+        }
+        
+        // Default permissions based on legacy role
+        return match($legacyRole) {
+            'member' => true, // Members can access all apps by default
+            'viewer' => in_array($appName, ['mytime', 'project_board']), // Viewers can only access MyTime and Project Board
+            default => false,
+        };
+    }
+
+    /**
+     * Check if user can view BookKeeper
+     */
+    public function userCanViewBookKeeper(User $user): bool
+    {
+        return $this->userCanViewApp($user, 'bookkeeper');
+    }
+
+    /**
+     * Check if user can view Invoicer
+     */
+    public function userCanViewInvoicer(User $user): bool
+    {
+        return $this->userCanViewApp($user, 'invoicer');
+    }
+
+    /**
+     * Check if user can view People Manager
+     */
+    public function userCanViewPeopleManager(User $user): bool
+    {
+        return $this->userCanViewApp($user, 'people_manager');
+    }
+
+    /**
+     * Check if user can view MyTime
+     */
+    public function userCanViewMyTime(User $user): bool
+    {
+        // Owner always has access
+        if ($this->owner_id === $user->id) {
+            return true;
+        }
+        
+        // Check drive_users role (legacy system)
+        $legacyRole = $this->getUserRole($user);
+        if ($legacyRole === 'admin') {
+            return true; // Admins have access to all apps
+        }
+        
+        // Check assigned role
+        $role = $this->getRoleForUser($user);
+        if ($role) {
+            // Check app-level permission
+            if ($role->hasPermission('mytime.view')) {
+                return true;
+            }
+            // Also check if they have any MyTime-specific permissions
+            if ($role->hasPermission('mytime.view_own_schedules') || $role->hasPermission('mytime.view_own_time_logs')) {
+                return true;
+            }
+        }
+        
+        // Default permissions based on legacy role
+        return match($legacyRole) {
+            'member' => true, // Members can access all apps by default
+            'viewer' => true, // Viewers can access MyTime
+            default => false,
+        };
+    }
+
+    /**
+     * Check if user can view Project Board
+     */
+    public function userCanViewProjectBoard(User $user): bool
+    {
+        // Owner always has access
+        if ($this->owner_id === $user->id) {
+            return true;
+        }
+        
+        // Check drive_users role (legacy system)
+        $legacyRole = $this->getUserRole($user);
+        if ($legacyRole === 'admin') {
+            return true; // Admins have access to all apps
+        }
+        
+        // Check assigned role
+        $role = $this->getRoleForUser($user);
+        if ($role) {
+            // Check app-level permission
+            if ($role->hasPermission('project_board.view')) {
+                return true;
+            }
+            // Also check if they have any Project Board-specific permissions
+            if ($role->hasPermission('project.view_all') || $role->hasPermission('project.view_assigned') || $role->getPermissionValue('project.view_specific')) {
+                return true;
+            }
+        }
+        
+        // Default permissions based on legacy role
+        return match($legacyRole) {
+            'member' => true, // Members can access all apps by default
+            'viewer' => true, // Viewers can access Project Board
+            default => false,
+        };
+    }
+
+    /**
+     * Check if user can view their own schedules/time logs
+     */
+    public function userCanViewOwnTime(User $user): bool
+    {
+        return $this->userHasPermission($user, 'mytime.view_own_schedules') 
+            || $this->userHasPermission($user, 'mytime.view_own_time_logs');
     }
 
     /**

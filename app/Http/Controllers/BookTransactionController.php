@@ -22,6 +22,11 @@ class BookTransactionController extends Controller
     public function dashboard(Drive $drive)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to view BookKeeper
+        if (!$drive->userCanViewBookKeeper(auth()->user())) {
+            abort(403, 'You do not have permission to access BookKeeper.');
+        }
 
         // Get financial summary for current month
         $dateFrom = now()->startOfMonth();

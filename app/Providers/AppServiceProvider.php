@@ -3,6 +3,12 @@
 namespace App\Providers;
 
 use App\Models\Drive;
+use App\Models\PayrollEntry;
+use App\Models\Person;
+use App\Models\Schedule;
+use App\Models\TimeLog;
+use App\Models\DriveRole;
+use App\Models\DriveRoleAssignment;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
@@ -67,6 +73,41 @@ class AppServiceProvider extends ServiceProvider
             }
             
             return $drive;
+        });
+
+        // Custom route model binding for payroll (resource route uses 'payroll' but model is PayrollEntry)
+        Route::bind('payroll', function ($value) {
+            return PayrollEntry::findOrFail($value);
+        });
+
+        // Custom route model binding for payrollEntry (used in sync route)
+        Route::bind('payrollEntry', function ($value) {
+            return PayrollEntry::findOrFail($value);
+        });
+
+        // Custom route model binding for person (used in time log print report)
+        Route::bind('person', function ($value) {
+            return Person::findOrFail($value);
+        });
+
+        // Custom route model binding for schedule (in user self-service routes)
+        Route::bind('schedule', function ($value) {
+            return Schedule::findOrFail($value);
+        });
+
+        // Custom route model binding for timeLog (in user self-service routes)
+        Route::bind('timeLog', function ($value) {
+            return TimeLog::findOrFail($value);
+        });
+
+        // Custom route model binding for role (in drive roles routes)
+        Route::bind('role', function ($value) {
+            return DriveRole::findOrFail($value);
+        });
+
+        // Custom route model binding for assignment (in drive roles routes)
+        Route::bind('assignment', function ($value) {
+            return DriveRoleAssignment::findOrFail($value);
         });
     }
 }

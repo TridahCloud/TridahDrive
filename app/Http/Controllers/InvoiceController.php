@@ -25,6 +25,11 @@ class InvoiceController extends Controller
     public function index(Drive $drive)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to view Invoicer
+        if (!$drive->userCanViewInvoicer(auth()->user())) {
+            abort(403, 'You do not have permission to access Invoicer.');
+        }
 
         $invoices = $drive->invoices()
             ->with(['client', 'items'])

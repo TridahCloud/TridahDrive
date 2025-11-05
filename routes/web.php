@@ -17,6 +17,14 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskCommentController;
 use App\Http\Controllers\TaskLabelController;
 use App\Http\Controllers\UserItemController;
+use App\Http\Controllers\PeopleManagerController;
+use App\Http\Controllers\PeopleController;
+use App\Http\Controllers\PeopleManagerProfileController;
+use App\Http\Controllers\ScheduleController;
+use App\Http\Controllers\TimeLogController;
+use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\UserSelfServiceController;
+use App\Http\Controllers\DriveRoleController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -35,6 +43,10 @@ Route::get('/bookkeeper', function () {
 Route::get('/project-board', function () {
     return view('landing.project-board');
 })->name('landing.project-board');
+
+Route::get('/people-manager', function () {
+    return view('landing.people-manager');
+})->name('landing.people-manager');
 
 Route::get('/dashboard', function () {
     return redirect()->route('drives.index');
@@ -102,9 +114,56 @@ Route::middleware('auth')->group(function () {
                    Route::post('tasks/{task}/comments', [TaskCommentController::class, 'store'])->name('tasks.comments.store');
                    Route::patch('tasks/{task}/comments/{comment}', [TaskCommentController::class, 'update'])->name('tasks.comments.update');
                    Route::delete('tasks/{task}/comments/{comment}', [TaskCommentController::class, 'destroy'])->name('tasks.comments.destroy');
+                   
+                   // Project people assignment
+                   Route::post('assign-people', [ProjectController::class, 'assignPeople'])->name('assign-people');
                });
         
         Route::resource('task-labels', TaskLabelController::class);
+    });
+    
+    // People Manager routes
+    Route::prefix('drives/{drive}/people-manager')->name('drives.people-manager.')->group(function () {
+        Route::get('/', [PeopleManagerController::class, 'dashboard'])->name('dashboard');
+        Route::resource('profiles', PeopleManagerProfileController::class);
+        Route::resource('people', PeopleController::class);
+        Route::get('schedules/builder', [ScheduleController::class, 'builder'])->name('schedules.builder');
+        Route::post('schedules/bulk-create', [ScheduleController::class, 'bulkCreate'])->name('schedules.bulk-create');
+        Route::resource('schedules', ScheduleController::class);
+        Route::resource('time-logs', TimeLogController::class);
+        Route::post('time-logs/{timeLog}/approve', [TimeLogController::class, 'approve'])->name('time-logs.approve');
+        Route::post('time-logs/{timeLog}/reject', [TimeLogController::class, 'reject'])->name('time-logs.reject');
+        Route::get('time-logs/{person}/print-report', [TimeLogController::class, 'printReport'])->name('time-logs.print-report');
+        Route::resource('payroll', PayrollController::class);
+        Route::post('payroll/{payrollEntry}/sync', [PayrollController::class, 'syncToBookKeeper'])->name('payroll.sync');
+        Route::post('payroll/{payroll}/mark-paid', [PayrollController::class, 'markAsPaid'])->name('payroll.mark-paid');
+        Route::post('payroll/{payroll}/mark-unpaid', [PayrollController::class, 'markAsUnpaid'])->name('payroll.mark-unpaid');
+        Route::post('payroll/{payrollEntry}/mark-paid-and-sync', [PayrollController::class, 'markAsPaidAndSync'])->name('payroll.mark-paid-and-sync');
+        Route::post('payroll/generate-from-time-logs', [PayrollController::class, 'generateFromTimeLogs'])->name('payroll.generate-from-time-logs');
+    });
+    
+    // Drive roles and permissions
+    Route::prefix('drives/{drive}/roles')->name('drives.roles.')->group(function () {
+        Route::get('/', [DriveRoleController::class, 'index'])->name('index');
+        Route::get('create', [DriveRoleController::class, 'create'])->name('create');
+        Route::post('/', [DriveRoleController::class, 'store'])->name('store');
+        Route::get('{role}', [DriveRoleController::class, 'show'])->name('show');
+        Route::get('{role}/edit', [DriveRoleController::class, 'edit'])->name('edit');
+        Route::patch('{role}', [DriveRoleController::class, 'update'])->name('update');
+        Route::delete('{role}', [DriveRoleController::class, 'destroy'])->name('destroy');
+        Route::post('assign', [DriveRoleController::class, 'assignRole'])->name('assign');
+        Route::delete('assignments/{assignment}', [DriveRoleController::class, 'removeAssignment'])->name('remove-assignment');
+    });
+    
+    // User Self-Service routes (for users linked to People records)
+    Route::prefix('drives/{drive}/my-time')->name('user-self-service.')->group(function () {
+        Route::get('schedules', [UserSelfServiceController::class, 'schedules'])->name('schedules');
+        Route::get('time-logs', [UserSelfServiceController::class, 'timeLogs'])->name('time-logs');
+        Route::post('schedules/{schedule}/clock-in', [UserSelfServiceController::class, 'clockIn'])->name('clock-in');
+        Route::post('schedules/{schedule}/clock-out', [UserSelfServiceController::class, 'clockOut'])->name('clock-out');
+        Route::get('schedules/{schedule}/create-time-log', [UserSelfServiceController::class, 'createTimeLogForSchedule'])->name('create-time-log-for-schedule');
+        Route::get('time-logs/{timeLog}/edit', [UserSelfServiceController::class, 'editTimeLog'])->name('edit-time-log');
+        Route::patch('time-logs/{timeLog}', [UserSelfServiceController::class, 'updateTimeLog'])->name('update-time-log');
     });
     
     // Notification routes

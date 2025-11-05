@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -71,5 +72,14 @@ class Project extends Model
     public function activeTasks(): HasMany
     {
         return $this->hasMany(Task::class)->whereNull('deleted_at')->orderBy('sort_order');
+    }
+
+    /**
+     * Get all people assigned to this project
+     */
+    public function people(): BelongsToMany
+    {
+        return $this->belongsToMany(Person::class, 'person_project')
+            ->withTimestamps();
     }
 }

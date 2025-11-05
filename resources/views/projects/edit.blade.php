@@ -35,7 +35,7 @@
     <div class="row">
         <div class="col-lg-8">
             <div class="dashboard-card">
-                <form action="{{ route('drives.projects.projects.update', [$drive, $project]) }}" method="POST" enctype="multipart/form-data">
+                <form action="{{ route('drives.projects.projects.update', [$drive, $project]) }}" method="POST" enctype="multipart/form-data" id="projectForm">
                     @csrf
                     @method('PUT')
 
@@ -117,6 +117,66 @@
                     </div>
                 </form>
             </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="dashboard-card mb-4">
+                <h5 class="mb-3">Quick Actions</h5>
+                <a href="{{ route('drives.projects.projects.show', [$drive, $project]) }}" class="btn btn-secondary w-100 mb-2">Cancel</a>
+                <button type="submit" form="projectForm" class="btn btn-primary w-100">
+                    <i class="fas fa-save me-2"></i>Update Project
+                </button>
+            </div>
+            
+            <!-- Assigned People Section -->
+            @if(isset($availablePeople))
+            <div class="dashboard-card">
+                <h5 class="mb-3">
+                    <i class="fas fa-users me-2 brand-teal"></i>Assigned People
+                </h5>
+                <p class="text-muted small mb-3">Assign people from your Drive to this project.</p>
+                
+                <form action="{{ route('drives.projects.projects.assign-people', [$drive, $project]) }}" method="POST" id="assignPeopleForm">
+                    @csrf
+                    
+                    @if($availablePeople->count() > 0)
+                        <div class="mb-3">
+                            <div class="list-group" style="max-height: 400px; overflow-y: auto;">
+                                @foreach($availablePeople as $person)
+                                    <label class="list-group-item list-group-item-action">
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" 
+                                                   class="form-check-input me-3" 
+                                                   name="person_ids[]" 
+                                                   value="{{ $person->id }}"
+                                                   {{ $project->people->contains($person->id) ? 'checked' : '' }}>
+                                            <div class="flex-grow-1">
+                                                <div class="fw-bold">{{ $person->full_name }}</div>
+                                                @if($person->job_title)
+                                                    <small class="text-muted">{{ $person->job_title }}</small>
+                                                @endif
+                                                @if($person->type)
+                                                    <span class="badge bg-info ms-2">{{ ucfirst($person->type) }}</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-save me-2"></i>Save Assignments
+                        </button>
+                    @else
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No active people available in this Drive. 
+                            <a href="{{ route('drives.people-manager.people.create', $drive) }}" class="alert-link">Add people</a> to assign them to projects.
+                        </div>
+                    @endif
+                </form>
+            </div>
+            @endif
         </div>
     </div>
 </div>

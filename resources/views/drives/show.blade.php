@@ -13,18 +13,40 @@
                     <p class="text-muted">{{ $drive->description ?? 'No description' }}</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="{{ route('drives.invoices.index', $drive) }}" class="btn btn-primary">
-                        <i class="fas fa-file-invoice me-2"></i>Invoices
-                    </a>
-                    <a href="{{ route('drives.bookkeeper.transactions.index', $drive) }}" class="btn btn-primary">
-                        <i class="fas fa-book me-2"></i>BookKeeper
-                    </a>
-                    <a href="{{ route('drives.projects.projects.index', $drive) }}" class="btn btn-primary">
-                        <i class="fas fa-tasks me-2"></i>Project Board
-                    </a>
+                    @if($drive->userCanViewInvoicer(auth()->user()))
+                        <a href="{{ route('drives.invoices.index', $drive) }}" class="btn btn-primary">
+                            <i class="fas fa-file-invoice me-2"></i>Invoices
+                        </a>
+                    @endif
+                    @if($drive->userCanViewBookKeeper(auth()->user()))
+                        <a href="{{ route('drives.bookkeeper.transactions.index', $drive) }}" class="btn btn-primary">
+                            <i class="fas fa-book me-2"></i>BookKeeper
+                        </a>
+                    @endif
+                    @if($drive->userCanViewProjectBoard(auth()->user()))
+                        <a href="{{ route('drives.projects.projects.index', $drive) }}" class="btn btn-primary">
+                            <i class="fas fa-tasks me-2"></i>Project Board
+                        </a>
+                    @endif
+                    @if($drive->userCanViewPeopleManager(auth()->user()))
+                        <a href="{{ route('drives.people-manager.dashboard', $drive) }}" class="btn btn-primary">
+                            <i class="fas fa-users me-2"></i>People Manager
+                        </a>
+                    @endif
+                    @php
+                        $linkedPerson = $drive->people()->where('user_id', auth()->id())->first();
+                    @endphp
+                    @if($linkedPerson && $drive->userCanViewMyTime(auth()->user()))
+                        <a href="{{ route('user-self-service.schedules', $drive) }}" class="btn btn-success">
+                            <i class="fas fa-clock me-2"></i>My Time
+                        </a>
+                    @endif
                     @can('update', $drive)
                         <a href="{{ route('drives.edit', $drive) }}" class="btn btn-outline-primary">
                             <i class="fas fa-cog me-2"></i>Settings
+                        </a>
+                        <a href="{{ route('drives.roles.index', $drive) }}" class="btn btn-outline-primary">
+                            <i class="fas fa-user-shield me-2"></i>Roles & Permissions
                         </a>
                     @endcan
                     @if($drive->type === 'shared')
@@ -54,7 +76,27 @@
 
     <!-- Apps Overview -->
     <div class="row mb-4">
+        @php
+            $linkedPerson = $drive->people()->where('user_id', auth()->id())->first();
+            $hasAnyAppAccess = $drive->userCanViewInvoicer(auth()->user()) 
+                || $drive->userCanViewBookKeeper(auth()->user()) 
+                || $drive->userCanViewProjectBoard(auth()->user()) 
+                || $drive->userCanViewPeopleManager(auth()->user())
+                || ($linkedPerson && $drive->userCanViewMyTime(auth()->user()));
+        @endphp
+        
+        @if(!$hasAnyAppAccess)
+            <div class="col-12">
+                <div class="dashboard-card text-center py-5">
+                    <i class="fas fa-lock fa-3x text-muted mb-3"></i>
+                    <h4 class="mb-2">No Access</h4>
+                    <p class="text-muted">You don't have permission to access any apps in this Drive.</p>
+                    <p class="text-muted small">Contact the Drive owner or administrator to request access.</p>
+                </div>
+            </div>
+        @else
         <!-- Invoicer App Card -->
+        @if($drive->userCanViewInvoicer(auth()->user()))
         <div class="col-lg-4 col-md-6 mb-4">
             <div class="dashboard-card h-100">
                 <div class="d-flex justify-content-between align-items-start mb-3">
@@ -110,8 +152,10 @@
                 @endif
             </div>
         </div>
-
+        @endif
+        
         <!-- BookKeeper App Card -->
+        @if($drive->userCanViewBookKeeper(auth()->user()))
         <div class="col-lg-4 col-md-6 mb-4">
             <div class="dashboard-card h-100">
                 <div class="d-flex justify-content-between align-items-start mb-3">
@@ -173,8 +217,10 @@
                 @endif
             </div>
         </div>
-
+        @endif
+        
         <!-- Project Board App Card -->
+        @if($drive->userCanViewProjectBoard(auth()->user()))
         <div class="col-lg-4 col-md-6 mb-4">
             <div class="dashboard-card h-100">
                 <div class="d-flex justify-content-between align-items-start mb-3">
@@ -236,17 +282,92 @@
                 @endif
             </div>
         </div>
+        @endif
+        
+        <!-- People Manager App Card -->
+        @if($drive->userCanViewPeopleManager(auth()->user()))
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="dashboard-card h-100">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="mb-1">
+                            <i class="fas fa-users me-2 brand-teal"></i>
+                            People Manager
+                        </h5>
+                        <p class="text-muted small mb-0">Manage employees and volunteers</p>
+                    </div>
+                    <a href="{{ route('drives.people-manager.dashboard', $drive) }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-external-link-alt"></i>
+                    </a>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-4">
+                        <div class="text-center p-2 stats-card rounded">
+                            <h4 class="mb-0 brand-teal">{{ $peopleManagerStats['total_people'] ?? 0 }}</h4>
+                            <small class="text-muted">People</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-center p-2 stats-card rounded">
+                            <h4 class="mb-0 text-success">{{ $peopleManagerStats['active_people'] ?? 0 }}</h4>
+                            <small class="text-muted">Active</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-center p-2 stats-card rounded">
+                            <h4 class="mb-0 text-warning">{{ $peopleManagerStats['total_schedules'] ?? 0 }}</h4>
+                            <small class="text-muted">Schedules</small>
+                        </div>
+                    </div>
+                </div>
+                @if(isset($recentPeople) && $recentPeople->count() > 0)
+                    <div class="mb-3">
+                        <small class="text-muted d-block mb-2">Recent People</small>
+                        <div class="list-group list-group-flush">
+                            @foreach($recentPeople->take(3) as $person)
+                                <a href="{{ route('drives.people-manager.people.show', [$drive, $person]) }}" class="list-group-item list-group-item-action px-0 py-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong class="small d-block">{{ $person->full_name }}</strong>
+                                            <small class="text-muted">{{ ucfirst($person->type) }}</small>
+                                        </div>
+                                        <span class="badge bg-{{ $person->status === 'active' ? 'success' : ($person->status === 'on_leave' ? 'info' : 'secondary') }}">
+                                            {{ ucfirst($person->status) }}
+                                        </span>
+                                    </div>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+                @if($peopleManagerStats['pending_time_logs'] ?? 0 > 0)
+                    <div class="mb-2">
+                        <small class="text-warning">
+                            <i class="fas fa-clock me-1"></i>
+                            {{ $peopleManagerStats['pending_time_logs'] }} pending time logs
+                        </small>
+                    </div>
+                @endif
+                @if($drive->canEdit(auth()->user()))
+                    <a href="{{ route('drives.people-manager.people.create', $drive) }}" class="btn btn-primary btn-sm w-100">
+                        <i class="fas fa-plus me-1"></i>Add Person
+                    </a>
+                @endif
+            </div>
+        </div>
+        @endif
+        @endif
     </div>
 
     <!-- Empty State (only show if all apps are empty) -->
-    @if(($invoiceStats['total'] ?? 0) == 0 && ($bookkeeperStats['total_transactions'] ?? 0) == 0 && ($projectStats['total_projects'] ?? 0) == 0)
+    @if(($invoiceStats['total'] ?? 0) == 0 && ($bookkeeperStats['total_transactions'] ?? 0) == 0 && ($projectStats['total_projects'] ?? 0) == 0 && ($peopleManagerStats['total_people'] ?? 0) == 0)
         <div class="row">
             <div class="col-12">
                 <div class="dashboard-card text-center py-5">
                     <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
                     <h4 class="mb-2">Get Started</h4>
-                    <p class="text-muted">Create your first invoice, transaction, or project to get started</p>
-                    <div class="mt-3 d-flex gap-2 justify-content-center">
+                    <p class="text-muted">Create your first invoice, transaction, project, or add people to get started</p>
+                    <div class="mt-3 d-flex gap-2 justify-content-center flex-wrap">
                         @if($drive->canEdit(auth()->user()))
                             <a href="{{ route('drives.invoices.create', $drive) }}" class="btn btn-primary">
                                 <i class="fas fa-file-invoice me-2"></i>New Invoice
@@ -256,6 +377,9 @@
                             </a>
                             <a href="{{ route('drives.projects.projects.create', $drive) }}" class="btn btn-primary">
                                 <i class="fas fa-tasks me-2"></i>New Project
+                            </a>
+                            <a href="{{ route('drives.people-manager.people.create', $drive) }}" class="btn btn-primary">
+                                <i class="fas fa-users me-2"></i>Add Person
                             </a>
                         @endif
                     </div>

@@ -6,6 +6,10 @@ use App\Models\Drive;
 use App\Models\Invoice;
 use App\Models\BookTransaction;
 use App\Models\Task;
+use App\Models\Person;
+use App\Models\Schedule;
+use App\Models\TimeLog;
+use App\Models\PayrollEntry;
 use App\Services\DriveService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -125,6 +129,34 @@ class DriveController extends Controller
                 ->latest()
                 ->take(5)
                 ->get();
+            
+            // People Manager stats including sub-drives (check if tables exist)
+            try {
+                $peopleManagerStats = [
+                    'total_people' => $drive->getPeopleIncludingSubDrives()->count(),
+                    'active_people' => $drive->getPeopleIncludingSubDrives()->where('status', 'active')->count(),
+                    'total_schedules' => $drive->getSchedulesIncludingSubDrives()
+                        ->whereBetween('start_date', [now()->startOfMonth(), now()->endOfMonth()])
+                        ->count(),
+                    'pending_time_logs' => $drive->getTimeLogsIncludingSubDrives()->where('status', 'pending')->count(),
+                ];
+                
+                // Recent people (last 5) including sub-drives
+                $recentPeople = $drive->getPeopleIncludingSubDrives()
+                    ->with(['peopleManagerProfile'])
+                    ->latest()
+                    ->take(5)
+                    ->get();
+            } catch (\Exception $e) {
+                // Tables don't exist yet - provide defaults
+                $peopleManagerStats = [
+                    'total_people' => 0,
+                    'active_people' => 0,
+                    'total_schedules' => 0,
+                    'pending_time_logs' => 0,
+                ];
+                $recentPeople = collect([]);
+            }
         } else {
             // For sub-drives, don't include parent or siblings
             $invoiceStats = [
@@ -173,6 +205,34 @@ class DriveController extends Controller
                 ->latest()
                 ->take(5)
                 ->get();
+            
+            // People Manager stats (sub-drive only) - check if tables exist
+            try {
+                $peopleManagerStats = [
+                    'total_people' => $drive->people()->count(),
+                    'active_people' => $drive->people()->where('status', 'active')->count(),
+                    'total_schedules' => $drive->schedules()
+                        ->whereBetween('start_date', [now()->startOfMonth(), now()->endOfMonth()])
+                        ->count(),
+                    'pending_time_logs' => $drive->timeLogs()->where('status', 'pending')->count(),
+                ];
+                
+                // Recent people (last 5)
+                $recentPeople = $drive->people()
+                    ->with(['peopleManagerProfile'])
+                    ->latest()
+                    ->take(5)
+                    ->get();
+            } catch (\Exception $e) {
+                // Tables don't exist yet - provide defaults
+                $peopleManagerStats = [
+                    'total_people' => 0,
+                    'active_people' => 0,
+                    'total_schedules' => 0,
+                    'pending_time_logs' => 0,
+                ];
+                $recentPeople = collect([]);
+            }
         }
 
         return view('drives.show', compact(
@@ -183,7 +243,9 @@ class DriveController extends Controller
             'bookkeeperStats',
             'recentTransactions',
             'projectStats',
-            'recentProjects'
+            'recentProjects',
+            'peopleManagerStats',
+            'recentPeople'
         ));
     }
 
@@ -196,8 +258,13 @@ class DriveController extends Controller
 
         // Load users for member management
         $drive->load('users');
+        
+        // Load roles and people for role assignment section
+        $roles = $drive->roles()->orderBy('name')->get();
+        $people = $drive->people()->with('user')->orderBy('first_name')->orderBy('last_name')->get();
+        $driveUsers = $drive->users()->where('users.id', '!=', $drive->owner_id)->orderBy('name')->get();
 
-        return view('drives.edit', compact('drive'));
+        return view('drives.edit', compact('drive', 'roles', 'people', 'driveUsers'));
     }
 
     /**
@@ -273,9 +340,8 @@ class DriveController extends Controller
 
         $settings = $drive->settings ?? [];
         
-        if (isset($validated['hidden_sub_drives'])) {
-            $settings['hidden_sub_drives'] = $validated['hidden_sub_drives'];
-        }
+        // Always set hidden_sub_drives - empty array if not present (all checkboxes unchecked)
+        $settings['hidden_sub_drives'] = $validated['hidden_sub_drives'] ?? [];
 
         $drive->update(['settings' => $settings]);
 

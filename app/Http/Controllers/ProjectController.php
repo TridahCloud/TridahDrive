@@ -18,8 +18,14 @@ class ProjectController extends Controller
     public function index(Drive $drive)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to view Project Board
+        if (!$drive->userCanViewProjectBoard(auth()->user())) {
+            abort(403, 'You do not have permission to access Project Board.');
+        }
 
-        $projects = $drive->projects()
+        // Get all projects and filter based on user permissions
+        $allProjects = $drive->projects()
             ->with(['creator', 'tasks' => function($query) {
                 $query->whereNull('deleted_at');
             }])
@@ -27,7 +33,26 @@ class ProjectController extends Controller
                 $query->where('status', 'done')->whereNull('deleted_at');
             }])
             ->orderBy('created_at', 'desc')
-            ->paginate(20);
+            ->get();
+        
+        // Filter projects based on user permissions
+        $filteredProjects = $allProjects->filter(function ($project) use ($drive) {
+            return $drive->userCanViewProject(auth()->user(), $project);
+        });
+
+        // Convert filtered collection to paginated results
+        $currentPage = request()->get('page', 1);
+        $perPage = 20;
+        $items = $filteredProjects->slice(($currentPage - 1) * $perPage, $perPage)->values();
+        $total = $filteredProjects->count();
+        
+        $projects = new \Illuminate\Pagination\LengthAwarePaginator(
+            $items,
+            $total,
+            $perPage,
+            $currentPage,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
 
         return view('projects.index', compact('drive', 'projects'));
     }
@@ -38,6 +63,11 @@ class ProjectController extends Controller
     public function create(Drive $drive)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to view Project Board
+        if (!$drive->userCanViewProjectBoard(auth()->user())) {
+            abort(403, 'You do not have permission to access Project Board.');
+        }
         
         // Check if user has permission to create
         if (!$drive->canEdit(auth()->user())) {
@@ -96,6 +126,16 @@ class ProjectController extends Controller
     public function show(Drive $drive, Project $project, Request $request)
     {
         $this->authorize('view', $drive);
+        
+        // Check if user has permission to view Project Board
+        if (!$drive->userCanViewProjectBoard(auth()->user())) {
+            abort(403, 'You do not have permission to access Project Board.');
+        }
+
+        // Check if user has permission to view this specific project
+        if (!$drive->userCanViewProject(auth()->user(), $project)) {
+            abort(403, 'You do not have permission to view this project.');
+        }
 
         if ($project->drive_id !== $drive->id) {
             abort(404);
@@ -103,7 +143,7 @@ class ProjectController extends Controller
 
         $view = $request->get('view', 'list'); // list, kanban, gantt, calendar, workload
 
-        $project->load(['tasks.members', 'tasks.labels', 'tasks.owner', 'tasks.creator', 'tasks.attachments']);
+        $project->load(['tasks.members', 'tasks.labels', 'tasks.owner', 'tasks.creator', 'tasks.attachments', 'people']);
 
         // Get tasks by status for kanban view
         $tasksByStatus = [
@@ -116,6 +156,9 @@ class ProjectController extends Controller
 
         // Get drive members for task assignment
         $driveMembers = $drive->users()->get();
+        
+        // Get available people for project assignment
+        $availablePeople = $drive->people()->where('status', 'active')->orderBy('first_name')->orderBy('last_name')->get();
         
         // Get task labels
         $labels = $drive->taskLabels()->where('is_active', true)->get();
@@ -146,7 +189,7 @@ class ProjectController extends Controller
             }
         }
 
-        return view('projects.show', compact('drive', 'project', 'view', 'tasksByStatus', 'driveMembers', 'labels', 'memberStats'));
+        return view('projects.show', compact('drive', 'project', 'view', 'tasksByStatus', 'driveMembers', 'availablePeople', 'labels', 'memberStats'));
     }
 
     /**
@@ -165,7 +208,13 @@ class ProjectController extends Controller
             abort(404);
         }
 
-        return view('projects.edit', compact('drive', 'project'));
+        // Load people relationship
+        $project->load('people');
+
+        // Get available people for assignment
+        $availablePeople = $drive->people()->where('status', 'active')->orderBy('first_name')->orderBy('last_name')->get();
+
+        return view('projects.edit', compact('drive', 'project', 'availablePeople'));
     }
 
     /**
@@ -215,6 +264,38 @@ class ProjectController extends Controller
 
         return redirect()->route('drives.projects.projects.show', [$drive, $project])
             ->with('success', 'Project updated successfully!');
+    }
+
+    /**
+     * Assign people to a project
+     */
+    public function assignPeople(Request $request, Drive $drive, Project $project)
+    {
+        $this->authorize('view', $drive);
+        
+        // Check if user has permission to edit
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'You do not have permission to assign people to projects.');
+        }
+
+        if ($project->drive_id !== $drive->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'person_ids' => 'nullable|array',
+            'person_ids.*' => 'exists:people,id',
+        ]);
+
+        // Sync assigned people (only people from this drive)
+        $personIds = $validated['person_ids'] ?? [];
+        
+        // Verify all people belong to this drive
+        $validPersonIds = $drive->people()->whereIn('id', $personIds)->pluck('id')->toArray();
+        
+        $project->people()->sync($validPersonIds);
+
+        return redirect()->back()->with('success', 'People assigned to project successfully!');
     }
 
     /**
