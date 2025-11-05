@@ -114,22 +114,32 @@ class ScheduleController extends Controller
             }
 
             try {
-                // Parse dates and times - convert from user timezone to drive timezone
-                $driveTimezone = $drive->getEffectiveTimezone();
-                $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user());
+                // Get timezones
+                $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
                 
-                // Parse date in user timezone, convert to drive timezone
-                $startDate = \Carbon\Carbon::parse($assignment['date'], $userTimezone);
-                $startDate->setTimezone($driveTimezone);
+                // Parse date in user timezone at midnight, then convert to UTC for date-only storage
+                $startDate = \Carbon\Carbon::createFromFormat('Y-m-d', $assignment['date'], $userTimezone)->startOfDay();
+                $startDate->setTimezone('UTC');
                 
-                // Parse times - combine with date first
-                $startDateTime = \Carbon\Carbon::parse($assignment['date'] . ' ' . $assignment['start_time'], $userTimezone);
-                $startDateTime->setTimezone($driveTimezone);
+                // User enters times in their timezone (e.g., "09:00" for 9am EST)
+                // Convert to UTC and store as UTC time
+                // Example: User enters 9am EST → Convert to 2pm UTC → Store "14:00:00"
                 
-                $endDateTime = \Carbon\Carbon::parse($assignment['date'] . ' ' . $assignment['end_time'], $userTimezone);
-                $endDateTime->setTimezone($driveTimezone);
-
-                $totalMinutes = $startDateTime->diffInMinutes($endDateTime);
+                // Parse user input: date + time in user's timezone
+                $userStartDateTime = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $assignment['date'] . ' ' . $assignment['start_time'] . ':00', $userTimezone);
+                $userEndDateTime = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $assignment['date'] . ' ' . $assignment['end_time'] . ':00', $userTimezone);
+                
+                // Convert to UTC for storage
+                $utcStartDateTime = $userStartDateTime->copy()->setTimezone('UTC');
+                $utcEndDateTime = $userEndDateTime->copy()->setTimezone('UTC');
+                
+                // Extract just the time portion (this is UTC time stored in database)
+                $startTime = $utcStartDateTime->format('H:i:s');
+                $endTime = $utcEndDateTime->format('H:i:s');
+                
+                // Calculate total hours based on actual datetime difference in user's timezone
+                // (this ensures we get the correct duration regardless of timezone conversions)
+                $totalMinutes = $userStartDateTime->diffInMinutes($userEndDateTime);
                 $totalHours = round($totalMinutes / 60, 2);
 
                 $schedule = $drive->schedules()->create([
@@ -138,8 +148,8 @@ class ScheduleController extends Controller
                     'type' => 'one_time',
                     'start_date' => $startDate->format('Y-m-d'),
                     'end_date' => $startDate->format('Y-m-d'),
-                    'start_time' => $startDateTime->format('H:i:s'),
-                    'end_time' => $endDateTime->format('H:i:s'),
+                    'start_time' => $startTime,
+                    'end_time' => $endTime,
                     'status' => 'scheduled',
                     'total_hours' => $totalHours,
                     'break_minutes' => 0,
@@ -232,37 +242,36 @@ class ScheduleController extends Controller
             }
         }
 
-        // Convert dates from user timezone to drive timezone
-        $driveTimezone = $drive->getEffectiveTimezone();
+        // Convert dates from user timezone to UTC for date-only storage
         $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
         
-        // Parse start_date in user timezone, convert to drive timezone
+        // Parse start_date in user timezone, convert to UTC for date-only storage
         if (isset($validated['start_date'])) {
             $startDate = \Carbon\Carbon::parse($validated['start_date'], $userTimezone);
-            $startDate->setTimezone($driveTimezone);
+            $startDate->setTimezone('UTC');
             $validated['start_date'] = $startDate->format('Y-m-d');
         }
         
-        // Parse end_date in user timezone, convert to drive timezone
+        // Parse end_date in user timezone, convert to UTC for date-only storage
         if (isset($validated['end_date'])) {
             $endDate = \Carbon\Carbon::parse($validated['end_date'], $userTimezone);
-            $endDate->setTimezone($driveTimezone);
+            $endDate->setTimezone('UTC');
             $validated['end_date'] = $endDate->format('Y-m-d');
         }
         
-        // Parse start_time and end_time - combine with date first
+        // Parse start_time and end_time - convert user input to UTC for storage
         if (isset($validated['start_date']) && isset($validated['start_time'])) {
-            $startDateTime = \Carbon\Carbon::parse($validated['start_date'] . ' ' . $validated['start_time'], $userTimezone);
-            $startDateTime->setTimezone($driveTimezone);
-            $validated['start_time'] = $startDateTime->format('H:i:s');
+            $userStartDateTime = \Carbon\Carbon::parse($validated['start_date'] . ' ' . $validated['start_time'], $userTimezone);
+            $utcStartDateTime = $userStartDateTime->copy()->setTimezone('UTC');
+            $validated['start_time'] = $utcStartDateTime->format('H:i:s');
         }
         
         if (isset($validated['end_time'])) {
             $endDate = $validated['end_date'] ?? $validated['start_date'];
             if ($endDate) {
-                $endDateTime = \Carbon\Carbon::parse($endDate . ' ' . $validated['end_time'], $userTimezone);
-                $endDateTime->setTimezone($driveTimezone);
-                $validated['end_time'] = $endDateTime->format('H:i:s');
+                $userEndDateTime = \Carbon\Carbon::parse($endDate . ' ' . $validated['end_time'], $userTimezone);
+                $utcEndDateTime = $userEndDateTime->copy()->setTimezone('UTC');
+                $validated['end_time'] = $utcEndDateTime->format('H:i:s');
             }
         }
 
@@ -368,37 +377,36 @@ class ScheduleController extends Controller
             }
         }
 
-        // Convert dates from user timezone to drive timezone
-        $driveTimezone = $drive->getEffectiveTimezone();
+        // Convert dates from user timezone to UTC for date-only storage
         $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
         
-        // Parse start_date in user timezone, convert to drive timezone
+        // Parse start_date in user timezone, convert to UTC for date-only storage
         if (isset($validated['start_date'])) {
             $startDate = \Carbon\Carbon::parse($validated['start_date'], $userTimezone);
-            $startDate->setTimezone($driveTimezone);
+            $startDate->setTimezone('UTC');
             $validated['start_date'] = $startDate->format('Y-m-d');
         }
         
-        // Parse end_date in user timezone, convert to drive timezone
+        // Parse end_date in user timezone, convert to UTC for date-only storage
         if (isset($validated['end_date'])) {
             $endDate = \Carbon\Carbon::parse($validated['end_date'], $userTimezone);
-            $endDate->setTimezone($driveTimezone);
+            $endDate->setTimezone('UTC');
             $validated['end_date'] = $endDate->format('Y-m-d');
         }
         
-        // Parse start_time and end_time - combine with date first
+        // Parse start_time and end_time - convert user input to UTC for storage
         if (isset($validated['start_date']) && isset($validated['start_time'])) {
-            $startDateTime = \Carbon\Carbon::parse($validated['start_date'] . ' ' . $validated['start_time'], $userTimezone);
-            $startDateTime->setTimezone($driveTimezone);
-            $validated['start_time'] = $startDateTime->format('H:i:s');
+            $userStartDateTime = \Carbon\Carbon::parse($validated['start_date'] . ' ' . $validated['start_time'], $userTimezone);
+            $utcStartDateTime = $userStartDateTime->copy()->setTimezone('UTC');
+            $validated['start_time'] = $utcStartDateTime->format('H:i:s');
         }
         
         if (isset($validated['end_time'])) {
             $endDate = $validated['end_date'] ?? $validated['start_date'];
             if ($endDate) {
-                $endDateTime = \Carbon\Carbon::parse($endDate . ' ' . $validated['end_time'], $userTimezone);
-                $endDateTime->setTimezone($driveTimezone);
-                $validated['end_time'] = $endDateTime->format('H:i:s');
+                $userEndDateTime = \Carbon\Carbon::parse($endDate . ' ' . $validated['end_time'], $userTimezone);
+                $utcEndDateTime = $userEndDateTime->copy()->setTimezone('UTC');
+                $validated['end_time'] = $utcEndDateTime->format('H:i:s');
             }
         }
 

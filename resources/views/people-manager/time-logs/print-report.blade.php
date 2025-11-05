@@ -141,7 +141,7 @@
             <tbody>
                 @foreach($timeLogs as $timeLog)
                     <tr>
-                        <td>{{ $drive->formatForUser(\Carbon\Carbon::parse($timeLog->work_date), 'M d, Y', auth()->user()) }}</td>
+                        <td>{{ $timeLog->work_date->format('M d, Y') }}</td>
                         <td>{{ $timeLog->clock_in ? $drive->formatForUser($timeLog->clock_in->copy()->setTimezone('UTC'), 'h:i A', auth()->user()) : '-' }}</td>
                         <td>{{ $timeLog->clock_out ? $drive->formatForUser($timeLog->clock_out->copy()->setTimezone('UTC'), 'h:i A', auth()->user()) : '-' }}</td>
                         <td>{{ number_format($timeLog->regular_hours ?? 0, 2) }}</td>

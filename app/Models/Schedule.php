@@ -108,15 +108,20 @@ class Schedule extends Model
             return '';
         }
         
-        // Combine date and time, then parse in schedule timezone
-        $scheduleTimezone = $this->getTimezone();
-        $dateTimeString = $this->start_date->format('Y-m-d') . ' ' . $this->start_time;
-        $dateTime = \Carbon\Carbon::parse($dateTimeString, $scheduleTimezone);
-        
-        // Convert to user's timezone
+        // Get user timezone
+        $userTimezone = 'UTC';
         if ($this->drive) {
-            return $this->drive->toUserTimezone($dateTime, $user)->format('H:i:s');
+            $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone($user, $this->drive);
         }
+        
+        // start_date is stored as a date in UTC, but represents a calendar date
+        // start_time is stored as UTC time (e.g., "14:00:00" for 2pm UTC)
+        // Combine them: create datetime in UTC
+        $dateString = $this->start_date->format('Y-m-d');
+        $dateTime = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $dateString . ' ' . $this->start_time, 'UTC');
+        
+        // Convert from UTC to user timezone
+        $dateTime->setTimezone($userTimezone);
         
         return $dateTime->format('H:i:s');
     }
@@ -130,22 +135,28 @@ class Schedule extends Model
             return '';
         }
         
-        // Combine date and time, then parse in schedule timezone
-        $scheduleTimezone = $this->getTimezone();
-        $date = $this->end_date ?? $this->start_date;
-        $dateTimeString = $date->format('Y-m-d') . ' ' . $this->end_time;
-        $dateTime = \Carbon\Carbon::parse($dateTimeString, $scheduleTimezone);
-        
-        // Convert to user's timezone
+        // Get user timezone
+        $userTimezone = 'UTC';
         if ($this->drive) {
-            return $this->drive->toUserTimezone($dateTime, $user)->format('H:i:s');
+            $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone($user, $this->drive);
         }
+        
+        // end_date or start_date is stored as a date in UTC, but represents a calendar date
+        // end_time is stored as UTC time (e.g., "22:00:00" for 10pm UTC)
+        // Combine them: create datetime in UTC
+        $date = $this->end_date ?? $this->start_date;
+        $dateString = $date->format('Y-m-d');
+        $dateTime = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $dateString . ' ' . $this->end_time, 'UTC');
+        
+        // Convert from UTC to user timezone
+        $dateTime->setTimezone($userTimezone);
         
         return $dateTime->format('H:i:s');
     }
 
     /**
      * Format start date for display in user's timezone
+     * Note: Date-only fields should not be converted through timezones as they represent calendar dates
      */
     public function getStartDateForUser(?User $user = null): string
     {
@@ -153,20 +164,13 @@ class Schedule extends Model
             return '';
         }
         
-        // Create Carbon instance from date at midnight in schedule timezone
-        $scheduleTimezone = $this->getTimezone();
-        $dateTime = \Carbon\Carbon::parse($this->start_date->format('Y-m-d') . ' 00:00:00', $scheduleTimezone);
-        
-        // Convert to user's timezone
-        if ($this->drive) {
-            return $this->drive->formatForUser($dateTime, 'M d, Y', $user);
-        }
-        
-        return $dateTime->format('M d, Y');
+        // Date-only fields should be displayed as-is without timezone conversion
+        return $this->start_date->format('M d, Y');
     }
 
     /**
      * Format end date for display in user's timezone
+     * Note: Date-only fields should not be converted through timezones as they represent calendar dates
      */
     public function getEndDateForUser(?User $user = null): string
     {
@@ -174,16 +178,8 @@ class Schedule extends Model
             return '';
         }
         
-        // Create Carbon instance from date at midnight in schedule timezone
-        $scheduleTimezone = $this->getTimezone();
-        $dateTime = \Carbon\Carbon::parse($this->end_date->format('Y-m-d') . ' 00:00:00', $scheduleTimezone);
-        
-        // Convert to user's timezone
-        if ($this->drive) {
-            return $this->drive->formatForUser($dateTime, 'M d, Y', $user);
-        }
-        
-        return $dateTime->format('M d, Y');
+        // Date-only fields should be displayed as-is without timezone conversion
+        return $this->end_date->format('M d, Y');
     }
 
     /**

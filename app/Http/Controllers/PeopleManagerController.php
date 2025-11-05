@@ -114,12 +114,42 @@ class PeopleManagerController extends Controller
                 ->limit(10)
                 ->get();
 
-            $upcomingSchedules = $drive->schedules()
+            // Get upcoming schedules - need to consider user timezone
+            $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
+            $nowInUserTimezone = \Carbon\Carbon::now($userTimezone);
+            
+            // Get schedules that might be upcoming (start_date >= today in UTC as a filter)
+            // We'll refine the filtering and sorting in PHP based on actual datetime in user timezone
+            $allSchedules = $drive->schedules()
                 ->with(['person'])
-                ->where('start_date', '>=', now())
-                ->orderBy('start_date', 'asc')
-                ->limit(10)
+                ->where('start_date', '>=', now()->startOfDay()->setTimezone('UTC')->format('Y-m-d'))
+                ->whereNotIn('status', ['cancelled', 'completed'])
                 ->get();
+            
+            // Filter and sort by actual datetime in user timezone
+            $upcomingSchedules = $allSchedules->filter(function($schedule) use ($userTimezone, $nowInUserTimezone) {
+                if (!$schedule->start_time) {
+                    return false;
+                }
+                
+                // Combine UTC date + UTC time to create UTC datetime
+                $utcDateTimeString = $schedule->start_date->format('Y-m-d') . ' ' . $schedule->start_time;
+                $utcDateTime = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $utcDateTimeString, 'UTC');
+                
+                // Convert to user timezone
+                $scheduleDateTime = $utcDateTime->copy()->setTimezone($userTimezone);
+                
+                // Only include if it's in the future (compared to current time in user timezone)
+                return $scheduleDateTime->gt($nowInUserTimezone);
+            })
+            ->sortBy(function($schedule) use ($userTimezone) {
+                // Sort by datetime in user timezone
+                $utcDateTimeString = $schedule->start_date->format('Y-m-d') . ' ' . $schedule->start_time;
+                $utcDateTime = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $utcDateTimeString, 'UTC');
+                return $utcDateTime->setTimezone($userTimezone)->timestamp;
+            })
+            ->take(10)
+            ->values();
 
             // Get people by type
             $peopleByType = [

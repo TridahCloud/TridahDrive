@@ -195,7 +195,12 @@
                                         </p>
                                         <small class="text-muted">
                                             <i class="fas fa-calendar me-1"></i>{{ $schedule->start_date->format('M d, Y') }}
-                                            <i class="fas fa-clock ms-2 me-1"></i>{{ date('g:i A', strtotime($schedule->start_time)) }} - {{ date('g:i A', strtotime($schedule->end_time)) }}
+                                            @if($schedule->start_time)
+                                                <i class="fas fa-clock ms-2 me-1"></i>{{ \Carbon\Carbon::parse($schedule->getStartTimeForUser(auth()->user()))->format('g:i A') }}
+                                                @if($schedule->end_time)
+                                                    - {{ \Carbon\Carbon::parse($schedule->getEndTimeForUser(auth()->user()))->format('g:i A') }}
+                                                @endif
+                                            @endif
                                         </small>
                                     </div>
                                     <span class="badge bg-{{ $schedule->status === 'confirmed' ? 'success' : 'secondary' }}">

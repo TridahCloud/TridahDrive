@@ -188,8 +188,8 @@
                                                         <i class="fas fa-times"></i>
                                                     </button>
                                                     <small>
-                                                        {{ date('g:i A', strtotime($schedule->start_time)) }} - 
-                                                        {{ date('g:i A', strtotime($schedule->end_time)) }}
+                                                        {{ \Carbon\Carbon::parse($schedule->getStartTimeForUser(auth()->user()))->format('g:i A') }} - 
+                                                        {{ \Carbon\Carbon::parse($schedule->getEndTimeForUser(auth()->user()))->format('g:i A') }}
                                                     </small>
                                                     <br>
                                                     <strong>{{ number_format($schedule->total_hours, 1) }}h</strong>
