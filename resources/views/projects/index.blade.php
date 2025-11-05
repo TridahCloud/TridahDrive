@@ -85,10 +85,10 @@
                         <div class="text-muted small mb-3">
                             @if($project->start_date)
                                 <i class="fas fa-calendar-alt me-1"></i>
-                                {{ $project->start_date->format('M d, Y') }}
+                                {{ $drive->formatForUser(\Carbon\Carbon::parse($project->start_date), 'M d, Y', auth()->user()) }}
                             @endif
                             @if($project->end_date)
-                                <span class="ms-2">→ {{ $project->end_date->format('M d, Y') }}</span>
+                                <span class="ms-2">→ {{ $drive->formatForUser(\Carbon\Carbon::parse($project->end_date), 'M d, Y', auth()->user()) }}</span>
                             @endif
                         </div>
                     @endif

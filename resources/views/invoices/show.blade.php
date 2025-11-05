@@ -69,10 +69,10 @@
                     <div class="mb-1" data-field="invoice-number">Invoice # <span class="text-dark">{{ $invoice->invoice_number }}</span></div>
                     @endif
                     @if($customizations['show_invoice_date'] ?? true)
-                    <div class="mb-1" data-field="invoice-date">Date: <strong>{{ $invoice->issue_date->format('M d, Y') }}</strong></div>
+                    <div class="mb-1" data-field="invoice-date">Date: <strong>{{ $drive->formatForUser(\Carbon\Carbon::parse($invoice->issue_date), 'M d, Y', auth()->user()) }}</strong></div>
                     @endif
                     @if($customizations['show_invoice_due_date'] ?? true)
-                    <div class="mb-1" data-field="invoice-due-date">Due: <strong>{{ $invoice->due_date->format('M d, Y') }}</strong></div>
+                    <div class="mb-1" data-field="invoice-due-date">Due: <strong>{{ $drive->formatForUser(\Carbon\Carbon::parse($invoice->due_date), 'M d, Y', auth()->user()) }}</strong></div>
                     @endif
                     @if($customizations['show_invoice_status'] ?? true)
                     <div data-field="invoice-status">

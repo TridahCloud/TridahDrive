@@ -52,11 +52,11 @@
                         <p class="text-muted mb-1 small"><i class="fas fa-user me-1"></i>{{ $schedule->person->full_name }}</p>
                     @endif
                     <p class="text-muted mb-0 small">
-                        <i class="fas fa-calendar me-1"></i>{{ $schedule->start_date->format('M d, Y') }}
+                        <i class="fas fa-calendar me-1"></i>{{ $schedule->getStartDateForUser(auth()->user()) }}
                         @if($schedule->start_time)
-                            <i class="fas fa-clock ms-2 me-1"></i>{{ date('g:i A', strtotime($schedule->start_time)) }}
+                            <i class="fas fa-clock ms-2 me-1"></i>{{ \Carbon\Carbon::parse($schedule->getStartTimeForUser(auth()->user()))->format('g:i A') }}
                             @if($schedule->end_time)
-                                - {{ date('g:i A', strtotime($schedule->end_time)) }}
+                                - {{ \Carbon\Carbon::parse($schedule->getEndTimeForUser(auth()->user()))->format('g:i A') }}
                             @endif
                         @endif
                     </p>

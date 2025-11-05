@@ -69,11 +69,8 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div class="flex-grow-1">
-                            @php
-                                $scheduleTimezone = $timeLog->schedule->timezone ?? 'UTC';
-                            @endphp
                             <div class="d-flex align-items-center gap-2 mb-2">
-                                <h5 class="mb-0">{{ $timeLog->work_date->format('l, F j, Y') }}</h5>
+                                <h5 class="mb-0">{{ $drive->formatForUser(\Carbon\Carbon::parse($timeLog->work_date), 'l, F j, Y', auth()->user()) }}</h5>
                                 @if($timeLog->schedule)
                                     <span class="badge bg-info">{{ $timeLog->schedule->title ?? 'Scheduled Shift' }}</span>
                                 @endif
@@ -85,19 +82,27 @@
                             @if($timeLog->clock_in && $timeLog->clock_out)
                                 <div class="mb-2">
                                     <i class="fas fa-clock me-2 text-muted"></i>
-                                    <strong>Clock In:</strong> {{ \Carbon\Carbon::parse($timeLog->clock_in)->setTimezone($scheduleTimezone)->format('M j, g:i A') }}
-                                    <span class="ms-3"><strong>Clock Out:</strong> {{ \Carbon\Carbon::parse($timeLog->clock_out)->setTimezone($scheduleTimezone)->format('M j, g:i A') }}</span>
-                                    @if($scheduleTimezone !== 'UTC')
-                                        <br><small class="text-muted">Timezone: {{ $scheduleTimezone }}</small>
+                                    <strong>Clock In:</strong> {{ $drive->formatForUser($timeLog->clock_in->copy()->setTimezone('UTC'), 'M j, g:i A', auth()->user()) }}
+                                    <span class="ms-3"><strong>Clock Out:</strong> {{ $drive->formatForUser($timeLog->clock_out->copy()->setTimezone('UTC'), 'M j, g:i A', auth()->user()) }}</span>
+                                    @php
+                                        $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
+                                        $scheduleTimezone = $timeLog->schedule->timezone ?? null;
+                                    @endphp
+                                    @if($scheduleTimezone && $scheduleTimezone !== $userTimezone)
+                                        <br><small class="text-muted">Schedule timezone: {{ $scheduleTimezone }} | Displayed in: {{ $userTimezone }}</small>
                                     @endif
                                 </div>
                             @elseif($timeLog->clock_in)
                                 <div class="mb-2">
                                     <i class="fas fa-clock me-2 text-muted"></i>
-                                    <strong>Clock In:</strong> {{ \Carbon\Carbon::parse($timeLog->clock_in)->setTimezone($scheduleTimezone)->format('M j, g:i A') }}
+                                    <strong>Clock In:</strong> {{ $drive->formatForUser($timeLog->clock_in->copy()->setTimezone('UTC'), 'M j, g:i A', auth()->user()) }}
                                     <span class="badge bg-warning ms-2">Still Clocked In</span>
-                                    @if($scheduleTimezone !== 'UTC')
-                                        <br><small class="text-muted">Timezone: {{ $scheduleTimezone }}</small>
+                                    @php
+                                        $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
+                                        $scheduleTimezone = $timeLog->schedule->timezone ?? null;
+                                    @endphp
+                                    @if($scheduleTimezone && $scheduleTimezone !== $userTimezone)
+                                        <br><small class="text-muted">Schedule timezone: {{ $scheduleTimezone }} | Displayed in: {{ $userTimezone }}</small>
                                     @endif
                                 </div>
                             @endif

@@ -75,7 +75,7 @@
                 <div class="flex-grow-1">
                     <h5 class="mb-2">{{ $entry->person->full_name ?? 'Unknown' }}</h5>
                     <p class="text-muted mb-1 small">
-                        <i class="fas fa-calendar me-1"></i>{{ $entry->pay_date->format('M d, Y') }}
+                        <i class="fas fa-calendar me-1"></i>{{ $drive->formatForUser(\Carbon\Carbon::parse($entry->pay_date), 'M d, Y', auth()->user()) }}
                         @if($entry->payroll_period)
                             <span class="ms-2">{{ $entry->payroll_period }}</span>
                         @endif

@@ -114,21 +114,32 @@ class ScheduleController extends Controller
             }
 
             try {
-                $startDate = \Carbon\Carbon::parse($assignment['date']);
-                $startTime = \Carbon\Carbon::parse($assignment['start_time']);
-                $endTime = \Carbon\Carbon::parse($assignment['end_time']);
+                // Parse dates and times - convert from user timezone to drive timezone
+                $driveTimezone = $drive->getEffectiveTimezone();
+                $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user());
+                
+                // Parse date in user timezone, convert to drive timezone
+                $startDate = \Carbon\Carbon::parse($assignment['date'], $userTimezone);
+                $startDate->setTimezone($driveTimezone);
+                
+                // Parse times - combine with date first
+                $startDateTime = \Carbon\Carbon::parse($assignment['date'] . ' ' . $assignment['start_time'], $userTimezone);
+                $startDateTime->setTimezone($driveTimezone);
+                
+                $endDateTime = \Carbon\Carbon::parse($assignment['date'] . ' ' . $assignment['end_time'], $userTimezone);
+                $endDateTime->setTimezone($driveTimezone);
 
-                $totalMinutes = $startTime->diffInMinutes($endTime);
+                $totalMinutes = $startDateTime->diffInMinutes($endDateTime);
                 $totalHours = round($totalMinutes / 60, 2);
 
                 $schedule = $drive->schedules()->create([
                     'person_id' => $assignment['person_id'],
                     'title' => $assignment['title'] ?? 'Scheduled Shift',
                     'type' => 'one_time',
-                    'start_date' => $startDate,
-                    'end_date' => $startDate,
-                    'start_time' => $startTime->format('H:i:s'),
-                    'end_time' => $endTime->format('H:i:s'),
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'end_date' => $startDate->format('Y-m-d'),
+                    'start_time' => $startDateTime->format('H:i:s'),
+                    'end_time' => $endDateTime->format('H:i:s'),
                     'status' => 'scheduled',
                     'total_hours' => $totalHours,
                     'break_minutes' => 0,
@@ -218,6 +229,40 @@ class ScheduleController extends Controller
             $profile = $drive->peopleManagerProfiles()->find($validated['people_manager_profile_id']);
             if (!$profile) {
                 return back()->withErrors(['people_manager_profile_id' => 'Invalid profile selected.'])->withInput();
+            }
+        }
+
+        // Convert dates from user timezone to drive timezone
+        $driveTimezone = $drive->getEffectiveTimezone();
+        $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
+        
+        // Parse start_date in user timezone, convert to drive timezone
+        if (isset($validated['start_date'])) {
+            $startDate = \Carbon\Carbon::parse($validated['start_date'], $userTimezone);
+            $startDate->setTimezone($driveTimezone);
+            $validated['start_date'] = $startDate->format('Y-m-d');
+        }
+        
+        // Parse end_date in user timezone, convert to drive timezone
+        if (isset($validated['end_date'])) {
+            $endDate = \Carbon\Carbon::parse($validated['end_date'], $userTimezone);
+            $endDate->setTimezone($driveTimezone);
+            $validated['end_date'] = $endDate->format('Y-m-d');
+        }
+        
+        // Parse start_time and end_time - combine with date first
+        if (isset($validated['start_date']) && isset($validated['start_time'])) {
+            $startDateTime = \Carbon\Carbon::parse($validated['start_date'] . ' ' . $validated['start_time'], $userTimezone);
+            $startDateTime->setTimezone($driveTimezone);
+            $validated['start_time'] = $startDateTime->format('H:i:s');
+        }
+        
+        if (isset($validated['end_time'])) {
+            $endDate = $validated['end_date'] ?? $validated['start_date'];
+            if ($endDate) {
+                $endDateTime = \Carbon\Carbon::parse($endDate . ' ' . $validated['end_time'], $userTimezone);
+                $endDateTime->setTimezone($driveTimezone);
+                $validated['end_time'] = $endDateTime->format('H:i:s');
             }
         }
 
@@ -320,6 +365,40 @@ class ScheduleController extends Controller
             $profile = $drive->peopleManagerProfiles()->find($validated['people_manager_profile_id']);
             if (!$profile) {
                 return back()->withErrors(['people_manager_profile_id' => 'Invalid profile selected.'])->withInput();
+            }
+        }
+
+        // Convert dates from user timezone to drive timezone
+        $driveTimezone = $drive->getEffectiveTimezone();
+        $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
+        
+        // Parse start_date in user timezone, convert to drive timezone
+        if (isset($validated['start_date'])) {
+            $startDate = \Carbon\Carbon::parse($validated['start_date'], $userTimezone);
+            $startDate->setTimezone($driveTimezone);
+            $validated['start_date'] = $startDate->format('Y-m-d');
+        }
+        
+        // Parse end_date in user timezone, convert to drive timezone
+        if (isset($validated['end_date'])) {
+            $endDate = \Carbon\Carbon::parse($validated['end_date'], $userTimezone);
+            $endDate->setTimezone($driveTimezone);
+            $validated['end_date'] = $endDate->format('Y-m-d');
+        }
+        
+        // Parse start_time and end_time - combine with date first
+        if (isset($validated['start_date']) && isset($validated['start_time'])) {
+            $startDateTime = \Carbon\Carbon::parse($validated['start_date'] . ' ' . $validated['start_time'], $userTimezone);
+            $startDateTime->setTimezone($driveTimezone);
+            $validated['start_time'] = $startDateTime->format('H:i:s');
+        }
+        
+        if (isset($validated['end_time'])) {
+            $endDate = $validated['end_date'] ?? $validated['start_date'];
+            if ($endDate) {
+                $endDateTime = \Carbon\Carbon::parse($endDate . ' ' . $validated['end_time'], $userTimezone);
+                $endDateTime->setTimezone($driveTimezone);
+                $validated['end_time'] = $endDateTime->format('H:i:s');
             }
         }
 

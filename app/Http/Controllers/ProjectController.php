@@ -99,6 +99,22 @@ class ProjectController extends Controller
             'header_image' => 'nullable|image|max:10240', // 10MB
         ]);
 
+        // Convert dates from user timezone to drive timezone
+        $driveTimezone = $drive->getEffectiveTimezone();
+        $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
+        
+        if (isset($validated['start_date'])) {
+            $startDate = \Carbon\Carbon::parse($validated['start_date'], $userTimezone);
+            $startDate->setTimezone($driveTimezone);
+            $validated['start_date'] = $startDate->format('Y-m-d');
+        }
+        
+        if (isset($validated['end_date'])) {
+            $endDate = \Carbon\Carbon::parse($validated['end_date'], $userTimezone);
+            $endDate->setTimezone($driveTimezone);
+            $validated['end_date'] = $endDate->format('Y-m-d');
+        }
+
         $project = $drive->projects()->create([
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
@@ -243,6 +259,22 @@ class ProjectController extends Controller
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'header_image' => 'nullable|image|max:10240',
         ]);
+
+        // Convert dates from user timezone to drive timezone
+        $driveTimezone = $drive->getEffectiveTimezone();
+        $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
+        
+        if (isset($validated['start_date'])) {
+            $startDate = \Carbon\Carbon::parse($validated['start_date'], $userTimezone);
+            $startDate->setTimezone($driveTimezone);
+            $validated['start_date'] = $startDate->format('Y-m-d');
+        }
+        
+        if (isset($validated['end_date'])) {
+            $endDate = \Carbon\Carbon::parse($validated['end_date'], $userTimezone);
+            $endDate->setTimezone($driveTimezone);
+            $validated['end_date'] = $endDate->format('Y-m-d');
+        }
 
         // Handle public key generation if making project public
         if ($request->has('is_public') && !$project->is_public) {

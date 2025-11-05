@@ -161,11 +161,11 @@
                                 &bull; <i class="fas fa-briefcase me-1"></i>{{ $invoice->project }}
                             @endif
                             &bull; 
-                            <i class="fas fa-calendar me-1"></i>{{ $invoice->issue_date->format('M d, Y') }}
+                            <i class="fas fa-calendar me-1"></i>{{ $drive->formatForUser(\Carbon\Carbon::parse($invoice->issue_date), 'M d, Y', auth()->user()) }}
                             @if($invoice->due_date)
                                 &bull; <i class="fas fa-calendar-check me-1"></i>
                                 <span class="{{ $invoice->due_date < now() && $invoice->status !== 'paid' && $invoice->status !== 'cancelled' ? 'text-danger fw-bold' : '' }}">
-                                    Due: {{ $invoice->due_date->format('M d, Y') }}
+                                    Due: {{ $drive->formatForUser(\Carbon\Carbon::parse($invoice->due_date), 'M d, Y', auth()->user()) }}
                                 </span>
                             @endif
                             &bull; {{ currency_for($invoice->total, $drive) }}

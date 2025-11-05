@@ -22,6 +22,7 @@ class Drive extends Model
         'settings',
         'description',
         'currency',
+        'timezone',
     ];
 
     protected function casts(): array
@@ -699,5 +700,49 @@ class Drive extends Model
         }
         
         return str_pad($this->id, 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Get the effective timezone for this drive (inherits from parent if not set)
+     */
+    public function getEffectiveTimezone(): string
+    {
+        if ($this->timezone) {
+            return $this->timezone;
+        }
+        
+        // If sub-drive, inherit from parent
+        if ($this->parent_drive_id && $this->parentDrive) {
+            return $this->parentDrive->getEffectiveTimezone();
+        }
+        
+        // Default to UTC
+        return 'UTC';
+    }
+
+    /**
+     * Convert a date/time to the user's timezone for display
+     * Database stores times in UTC, so we convert from UTC to user timezone
+     */
+    public function toUserTimezone(\Carbon\Carbon $date, ?User $user = null): \Carbon\Carbon
+    {
+        return \App\Helpers\TimezoneHelper::toUserTimezone($date, $this, $user);
+    }
+
+    /**
+     * Parse a date/time from user input (assumed in user's timezone) to UTC for storage
+     */
+    public function parseFromUserInput(string $dateTime, ?User $user = null): \Carbon\Carbon
+    {
+        return \App\Helpers\TimezoneHelper::parseFromUserInput($dateTime, $this, $user);
+    }
+
+    /**
+     * Format a date/time in the user's timezone
+     * Database stores times in UTC, so we convert from UTC to user timezone
+     */
+    public function formatForUser(\Carbon\Carbon $date, string $format = 'Y-m-d H:i:s', ?User $user = null): string
+    {
+        return \App\Helpers\TimezoneHelper::formatForUser($date, $this, $format, $user);
     }
 }

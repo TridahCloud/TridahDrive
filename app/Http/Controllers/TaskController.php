@@ -92,6 +92,22 @@ class TaskController extends Controller
             'header_image' => 'nullable|image|max:10240', // For kanban card header
         ]);
 
+        // Convert dates from user timezone to drive timezone
+        $driveTimezone = $drive->getEffectiveTimezone();
+        $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
+        
+        if (isset($validated['due_date'])) {
+            $dueDate = \Carbon\Carbon::parse($validated['due_date'], $userTimezone);
+            $dueDate->setTimezone($driveTimezone);
+            $validated['due_date'] = $dueDate->format('Y-m-d');
+        }
+        
+        if (isset($validated['start_date'])) {
+            $startDate = \Carbon\Carbon::parse($validated['start_date'], $userTimezone);
+            $startDate->setTimezone($driveTimezone);
+            $validated['start_date'] = $startDate->format('Y-m-d');
+        }
+
         // Get max sort_order for this status
         $maxSortOrder = $project->tasks()
             ->where('status', $validated['status'])
@@ -234,6 +250,22 @@ class TaskController extends Controller
             'attachments.*' => 'file|max:10240',
             'header_image' => 'nullable|image|max:10240',
         ]);
+
+        // Convert dates from user timezone to drive timezone
+        $driveTimezone = $drive->getEffectiveTimezone();
+        $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
+        
+        if (isset($validated['due_date'])) {
+            $dueDate = \Carbon\Carbon::parse($validated['due_date'], $userTimezone);
+            $dueDate->setTimezone($driveTimezone);
+            $validated['due_date'] = $dueDate->format('Y-m-d');
+        }
+        
+        if (isset($validated['start_date'])) {
+            $startDate = \Carbon\Carbon::parse($validated['start_date'], $userTimezone);
+            $startDate->setTimezone($driveTimezone);
+            $validated['start_date'] = $startDate->format('Y-m-d');
+        }
 
         // Update task
         $task->update([

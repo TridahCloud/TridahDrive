@@ -135,6 +135,19 @@ class InvoiceController extends Controller
                 $customizations = json_decode($request->customizations, true);
             }
 
+            // Convert dates from user timezone to drive timezone
+            $driveTimezone = $drive->getEffectiveTimezone();
+            $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
+            
+            $issueDate = \Carbon\Carbon::parse($validated['issue_date'], $userTimezone);
+            $issueDate->setTimezone($driveTimezone);
+            $validated['issue_date'] = $issueDate->format('Y-m-d');
+            
+            $dueDate = $validated['due_date'] ?? $validated['issue_date'];
+            $dueDate = \Carbon\Carbon::parse($dueDate, $userTimezone);
+            $dueDate->setTimezone($driveTimezone);
+            $validated['due_date'] = $dueDate->format('Y-m-d');
+
             // Create invoice
             $invoice = Invoice::create([
                 'drive_id' => $drive->id,
@@ -147,7 +160,7 @@ class InvoiceController extends Controller
                 'client_email' => $validated['client_email'] ?? '',
                 'project' => $validated['project'] ?? null,
                 'issue_date' => $validated['issue_date'],
-                'due_date' => $validated['due_date'] ?? $validated['issue_date'],
+                'due_date' => $validated['due_date'],
                 'notes' => $validated['notes'] ?? '',
                 'tax_rate' => $validated['tax_rate'] ?? 0,
                 'customizations' => $customizations,
@@ -305,6 +318,18 @@ class InvoiceController extends Controller
             if ($request->has('customizations') && !empty($request->customizations)) {
                 $customizations = json_decode($request->customizations, true);
             }
+
+            // Convert dates from user timezone to drive timezone
+            $driveTimezone = $drive->getEffectiveTimezone();
+            $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
+            
+            $issueDate = \Carbon\Carbon::parse($validated['issue_date'], $userTimezone);
+            $issueDate->setTimezone($driveTimezone);
+            $validated['issue_date'] = $issueDate->format('Y-m-d');
+            
+            $dueDate = \Carbon\Carbon::parse($validated['due_date'], $userTimezone);
+            $dueDate->setTimezone($driveTimezone);
+            $validated['due_date'] = $dueDate->format('Y-m-d');
 
             $invoice->update([
                 'client_id' => $validated['client_id'] ?? null,

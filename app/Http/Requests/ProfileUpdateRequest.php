@@ -26,6 +26,7 @@ class ProfileUpdateRequest extends FormRequest
                 Rule::unique(User::class)->ignore($this->user()->id),
             ],
             'currency' => ['required', 'string', 'size:3', 'in:USD,EUR,GBP,JPY,AUD,CAD,CHF,CNY,INR,MXN,BRL,ZAR,KRW,SGD,HKD,NZD,NOK,SEK,DKK,PLN,RUB,TRY,AED,SAR'],
+            'timezone' => ['nullable', 'string', 'max:50'],
         ];
     }
 }

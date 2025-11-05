@@ -85,7 +85,7 @@
                         </span>
                     </div>
                     <p class="text-muted mb-1 small">
-                        <i class="fas fa-calendar me-1"></i>{{ $timeLog->work_date->format('M d, Y') }}
+                        <i class="fas fa-calendar me-1"></i>{{ $drive->formatForUser(\Carbon\Carbon::parse($timeLog->work_date), 'M d, Y', auth()->user()) }}
                         @if($timeLog->total_hours)
                             <i class="fas fa-clock ms-2 me-1"></i>{{ number_format($timeLog->total_hours, 1) }} hours
                         @endif

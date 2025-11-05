@@ -280,6 +280,7 @@ class DriveController extends Controller
             'color' => 'nullable|string|max:50',
             'icon' => 'nullable|string|max:50',
             'currency' => 'nullable|string|size:3',
+            'timezone' => 'nullable|string|max:50',
         ]);
 
         $this->driveService->updateDrive($drive, Auth::user(), $validated);

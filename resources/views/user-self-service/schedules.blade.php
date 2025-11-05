@@ -95,8 +95,8 @@
                             
                             <div class="mb-2">
                                 <i class="fas fa-clock me-2 text-muted"></i>
-                                {{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} - 
-                                {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }}
+                                {{ \Carbon\Carbon::parse($schedule->getStartTimeForUser(auth()->user()))->format('g:i A') }} - 
+                                {{ \Carbon\Carbon::parse($schedule->getEndTimeForUser(auth()->user()))->format('g:i A') }}
                                 @if($schedule->total_hours)
                                     <span class="text-muted">({{ number_format($schedule->total_hours, 2) }} hours)</span>
                                 @endif
@@ -121,14 +121,11 @@
                                     @if($hasClockedIn)
                                         <div class="alert alert-info mb-2">
                                             <i class="fas fa-clock me-2"></i>
-                                            Clocked in: {{ \Carbon\Carbon::parse($timeLog->clock_in)->setTimezone($schedule->timezone ?? 'UTC')->format('M j, g:i A') }}
+                                            Clocked in: {{ $drive->formatForUser($timeLog->clock_in->copy()->setTimezone('UTC'), 'M j, g:i A', auth()->user()) }}
                                             @if($hasClockedOut)
                                                 <br><i class="fas fa-sign-out-alt me-2"></i>
-                                                Clocked out: {{ \Carbon\Carbon::parse($timeLog->clock_out)->setTimezone($schedule->timezone ?? 'UTC')->format('M j, g:i A') }}
+                                                Clocked out: {{ $drive->formatForUser($timeLog->clock_out->copy()->setTimezone('UTC'), 'M j, g:i A', auth()->user()) }}
                                                 <br><strong>Total hours: {{ number_format($timeLog->total_hours, 2) }}</strong>
-                                            @endif
-                                            @if($schedule->timezone && $schedule->timezone !== 'UTC')
-                                                <br><small class="text-muted">Timezone: {{ $schedule->timezone }}</small>
                                             @endif
                                         </div>
                                     @endif
@@ -216,15 +213,15 @@
                                 <strong>{{ $schedule->title ?? 'Shift' }}</strong>
                                 <span class="text-muted ms-2">{{ $scheduleDate->format('M j, Y') }}</span>
                                 <span class="text-muted ms-2">
-                                    {{ \Carbon\Carbon::parse($schedule->start_time)->format('g:i A') }} - 
-                                    {{ \Carbon\Carbon::parse($schedule->end_time)->format('g:i A') }}
+                                    {{ \Carbon\Carbon::parse($schedule->getStartTimeForUser(auth()->user()))->format('g:i A') }} - 
+                                    {{ \Carbon\Carbon::parse($schedule->getEndTimeForUser(auth()->user()))->format('g:i A') }}
                                 </span>
                                 @if($timeLog && $hasClockedIn)
                                     <span class="ms-2">
                                         @if($hasClockedOut)
                                             <span class="badge bg-info">
-                                                {{ \Carbon\Carbon::parse($timeLog->clock_in)->setTimezone($schedule->timezone ?? 'UTC')->format('g:i A') }} - 
-                                                {{ \Carbon\Carbon::parse($timeLog->clock_out)->setTimezone($schedule->timezone ?? 'UTC')->format('g:i A') }}
+                                                {{ $drive->formatForUser($timeLog->clock_in->copy()->setTimezone('UTC'), 'g:i A', auth()->user()) }} - 
+                                                {{ $drive->formatForUser($timeLog->clock_out->copy()->setTimezone('UTC'), 'g:i A', auth()->user()) }}
                                             </span>
                                         @else
                                             <span class="badge bg-warning">Clocked In Only</span>

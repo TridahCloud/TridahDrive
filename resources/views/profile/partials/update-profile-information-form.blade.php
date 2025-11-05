@@ -44,6 +44,20 @@
         <x-input-error :messages="$errors->get('currency')" />
     </div>
 
+    <div class="mb-3">
+        <x-input-label for="timezone" :value="__('Timezone')" />
+        <select class="form-select @error('timezone') is-invalid @enderror" id="timezone" name="timezone">
+            <option value="">Default (UTC)</option>
+            @foreach(\App\Helpers\TimezoneHelper::getCommonTimezones() as $tz => $label)
+                <option value="{{ $tz }}" {{ old('timezone', $user->timezone ?? '') === $tz ? 'selected' : '' }}>
+                    {{ $label }}
+                </option>
+            @endforeach
+        </select>
+        <small class="text-muted">All dates and times will be displayed in your selected timezone</small>
+        <x-input-error :messages="$errors->get('timezone')" />
+    </div>
+
     <div class="d-flex align-items-center gap-3">
         <x-primary-button>{{ __('Save') }}</x-primary-button>
 

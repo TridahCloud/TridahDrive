@@ -101,6 +101,29 @@ class PayrollController extends Controller
             }
         }
 
+        // Convert dates from user timezone to drive timezone
+        $driveTimezone = $drive->getEffectiveTimezone();
+        $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
+        
+        // Parse dates in user timezone, convert to drive timezone
+        if (isset($validated['period_start_date'])) {
+            $periodStart = \Carbon\Carbon::parse($validated['period_start_date'], $userTimezone);
+            $periodStart->setTimezone($driveTimezone);
+            $validated['period_start_date'] = $periodStart->format('Y-m-d');
+        }
+        
+        if (isset($validated['period_end_date'])) {
+            $periodEnd = \Carbon\Carbon::parse($validated['period_end_date'], $userTimezone);
+            $periodEnd->setTimezone($driveTimezone);
+            $validated['period_end_date'] = $periodEnd->format('Y-m-d');
+        }
+        
+        if (isset($validated['pay_date'])) {
+            $payDate = \Carbon\Carbon::parse($validated['pay_date'], $userTimezone);
+            $payDate->setTimezone($driveTimezone);
+            $validated['pay_date'] = $payDate->format('Y-m-d');
+        }
+
         // Generate payroll_period if not provided
         if (empty($validated['payroll_period'])) {
             $startDate = \Carbon\Carbon::parse($validated['period_start_date']);
@@ -227,6 +250,29 @@ class PayrollController extends Controller
             if (!$profile) {
                 return back()->withErrors(['people_manager_profile_id' => 'Invalid profile selected.'])->withInput();
             }
+        }
+
+        // Convert dates from user timezone to drive timezone
+        $driveTimezone = $drive->getEffectiveTimezone();
+        $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
+        
+        // Parse dates in user timezone, convert to drive timezone
+        if (isset($validated['period_start_date'])) {
+            $periodStart = \Carbon\Carbon::parse($validated['period_start_date'], $userTimezone);
+            $periodStart->setTimezone($driveTimezone);
+            $validated['period_start_date'] = $periodStart->format('Y-m-d');
+        }
+        
+        if (isset($validated['period_end_date'])) {
+            $periodEnd = \Carbon\Carbon::parse($validated['period_end_date'], $userTimezone);
+            $periodEnd->setTimezone($driveTimezone);
+            $validated['period_end_date'] = $periodEnd->format('Y-m-d');
+        }
+        
+        if (isset($validated['pay_date'])) {
+            $payDate = \Carbon\Carbon::parse($validated['pay_date'], $userTimezone);
+            $payDate->setTimezone($driveTimezone);
+            $validated['pay_date'] = $payDate->format('Y-m-d');
         }
 
         // Generate payroll_period if not provided
@@ -463,8 +509,15 @@ class PayrollController extends Controller
             'person_id' => 'nullable|exists:people,id',
         ]);
 
-        $startDate = \Carbon\Carbon::parse($validated['start_date']);
-        $endDate = \Carbon\Carbon::parse($validated['end_date']);
+        // Convert dates from user timezone to drive timezone for querying
+        $driveTimezone = $drive->getEffectiveTimezone();
+        $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user());
+        
+        // Parse in user timezone, convert to drive timezone
+        $startDate = \Carbon\Carbon::parse($validated['start_date'], $userTimezone);
+        $startDate->setTimezone($driveTimezone);
+        $endDate = \Carbon\Carbon::parse($validated['end_date'], $userTimezone);
+        $endDate->setTimezone($driveTimezone);
 
         // Get approved time logs in the date range
         $query = $drive->timeLogs()

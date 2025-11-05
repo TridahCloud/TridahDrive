@@ -79,6 +79,114 @@ class Schedule extends Model
     }
 
     /**
+     * Get the timezone for this schedule (from schedule timezone or drive default)
+     */
+    public function getTimezone(): string
+    {
+        if ($this->timezone) {
+            return $this->timezone;
+        }
+        
+        // Load drive if not already loaded
+        if (!$this->relationLoaded('drive')) {
+            $this->load('drive');
+        }
+        
+        if ($this->drive) {
+            return $this->drive->getEffectiveTimezone();
+        }
+        
+        return 'UTC';
+    }
+
+    /**
+     * Format start time for display in user's timezone
+     */
+    public function getStartTimeForUser(?User $user = null): string
+    {
+        if (!$this->start_time) {
+            return '';
+        }
+        
+        // Combine date and time, then parse in schedule timezone
+        $scheduleTimezone = $this->getTimezone();
+        $dateTimeString = $this->start_date->format('Y-m-d') . ' ' . $this->start_time;
+        $dateTime = \Carbon\Carbon::parse($dateTimeString, $scheduleTimezone);
+        
+        // Convert to user's timezone
+        if ($this->drive) {
+            return $this->drive->toUserTimezone($dateTime, $user)->format('H:i:s');
+        }
+        
+        return $dateTime->format('H:i:s');
+    }
+
+    /**
+     * Format end time for display in user's timezone
+     */
+    public function getEndTimeForUser(?User $user = null): string
+    {
+        if (!$this->end_time) {
+            return '';
+        }
+        
+        // Combine date and time, then parse in schedule timezone
+        $scheduleTimezone = $this->getTimezone();
+        $date = $this->end_date ?? $this->start_date;
+        $dateTimeString = $date->format('Y-m-d') . ' ' . $this->end_time;
+        $dateTime = \Carbon\Carbon::parse($dateTimeString, $scheduleTimezone);
+        
+        // Convert to user's timezone
+        if ($this->drive) {
+            return $this->drive->toUserTimezone($dateTime, $user)->format('H:i:s');
+        }
+        
+        return $dateTime->format('H:i:s');
+    }
+
+    /**
+     * Format start date for display in user's timezone
+     */
+    public function getStartDateForUser(?User $user = null): string
+    {
+        if (!$this->start_date) {
+            return '';
+        }
+        
+        // Create Carbon instance from date at midnight in schedule timezone
+        $scheduleTimezone = $this->getTimezone();
+        $dateTime = \Carbon\Carbon::parse($this->start_date->format('Y-m-d') . ' 00:00:00', $scheduleTimezone);
+        
+        // Convert to user's timezone
+        if ($this->drive) {
+            return $this->drive->formatForUser($dateTime, 'M d, Y', $user);
+        }
+        
+        return $dateTime->format('M d, Y');
+    }
+
+    /**
+     * Format end date for display in user's timezone
+     */
+    public function getEndDateForUser(?User $user = null): string
+    {
+        if (!$this->end_date) {
+            return '';
+        }
+        
+        // Create Carbon instance from date at midnight in schedule timezone
+        $scheduleTimezone = $this->getTimezone();
+        $dateTime = \Carbon\Carbon::parse($this->end_date->format('Y-m-d') . ' 00:00:00', $scheduleTimezone);
+        
+        // Convert to user's timezone
+        if ($this->drive) {
+            return $this->drive->formatForUser($dateTime, 'M d, Y', $user);
+        }
+        
+        return $dateTime->format('M d, Y');
+    }
+
+    /**
      * Calculate total hours based on start and end time
      */
     public function calculateTotalHours(): float

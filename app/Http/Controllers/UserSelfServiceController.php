@@ -289,17 +289,18 @@ class UserSelfServiceController extends Controller
 
         // Load schedule to get timezone
         $timeLog->load('schedule');
-        $scheduleTimezone = $timeLog->schedule->timezone ?? 'UTC';
+        $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
 
-        // Convert clock in/out times from schedule timezone to UTC for storage
+        // Convert clock in/out times from user timezone to UTC for storage
+        // User enters times in their timezone, we convert to UTC for database storage
         if (isset($validated['clock_in']) && $validated['clock_in']) {
-            $validated['clock_in'] = Carbon::parse($validated['clock_in'], $scheduleTimezone)
+            $validated['clock_in'] = Carbon::parse($validated['clock_in'], $userTimezone)
                 ->setTimezone('UTC')
                 ->toDateTimeString();
         }
 
         if (isset($validated['clock_out']) && $validated['clock_out']) {
-            $validated['clock_out'] = Carbon::parse($validated['clock_out'], $scheduleTimezone)
+            $validated['clock_out'] = Carbon::parse($validated['clock_out'], $userTimezone)
                 ->setTimezone('UTC')
                 ->toDateTimeString();
         }

@@ -166,7 +166,7 @@
                         <tbody>
                             @forelse($transactions as $transaction)
                                 <tr>
-                                    <td>{{ $transaction->date->format('M d, Y') }}</td>
+                                    <td>{{ $drive->formatForUser(\Carbon\Carbon::parse($transaction->date), 'M d, Y', auth()->user()) }}</td>
                                     <td>
                                         <code>{{ $transaction->transaction_number }}</code>
                                         @if($transaction->drive && $transaction->drive->id !== $drive->id)

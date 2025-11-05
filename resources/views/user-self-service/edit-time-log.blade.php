@@ -53,7 +53,7 @@
                 @if($timeLog->schedule)
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Scheduled Shift</label>
-                        <input type="text" class="form-control" value="{{ $timeLog->schedule->title ?? 'Shift' }} - {{ \Carbon\Carbon::parse($timeLog->schedule->start_time)->format('g:i A') }} to {{ \Carbon\Carbon::parse($timeLog->schedule->end_time)->format('g:i A') }}" disabled>
+                        <input type="text" class="form-control" value="{{ $timeLog->schedule->title ?? 'Shift' }} - {{ \Carbon\Carbon::parse($timeLog->schedule->getStartTimeForUser(auth()->user()))->format('g:i A') }} to {{ \Carbon\Carbon::parse($timeLog->schedule->getEndTimeForUser(auth()->user()))->format('g:i A') }}" disabled>
                         <small class="text-muted">Scheduled hours: {{ number_format($timeLog->schedule->total_hours ?? 0, 2) }}</small>
                     </div>
                 @endif
@@ -63,8 +63,8 @@
                 <div class="col-md-6 mb-3">
                     <label for="clock_in" class="form-label">Clock In Time</label>
                     @php
-                        $scheduleTimezone = $timeLog->schedule->timezone ?? 'UTC';
-                        $clockInLocal = $timeLog->clock_in ? \Carbon\Carbon::parse($timeLog->clock_in)->setTimezone($scheduleTimezone)->format('Y-m-d\TH:i') : '';
+                        $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
+                        $clockInLocal = $timeLog->clock_in ? $drive->formatForUser($timeLog->clock_in->copy()->setTimezone('UTC'), 'Y-m-d\TH:i', auth()->user()) : '';
                     @endphp
                     <input type="datetime-local" 
                            class="form-control @error('clock_in') is-invalid @enderror" 
@@ -76,16 +76,14 @@
                     @enderror
                     <small class="form-text text-muted">
                         Leave blank if you want to manually enter hours instead
-                        @if($scheduleTimezone !== 'UTC')
-                            <br>Timezone: {{ $scheduleTimezone }}
-                        @endif
+                        <br>Times displayed in your timezone: {{ $userTimezone }}
                     </small>
                 </div>
                 
                 <div class="col-md-6 mb-3">
                     <label for="clock_out" class="form-label">Clock Out Time</label>
                     @php
-                        $clockOutLocal = $timeLog->clock_out ? \Carbon\Carbon::parse($timeLog->clock_out)->setTimezone($scheduleTimezone)->format('Y-m-d\TH:i') : '';
+                        $clockOutLocal = $timeLog->clock_out ? $drive->formatForUser($timeLog->clock_out->copy()->setTimezone('UTC'), 'Y-m-d\TH:i', auth()->user()) : '';
                     @endphp
                     <input type="datetime-local" 
                            class="form-control @error('clock_out') is-invalid @enderror" 
@@ -97,9 +95,7 @@
                     @enderror
                     <small class="form-text text-muted">
                         Leave blank if you want to manually enter hours instead
-                        @if($scheduleTimezone !== 'UTC')
-                            <br>Timezone: {{ $scheduleTimezone }}
-                        @endif
+                        <br>Times displayed in your timezone: {{ $userTimezone }}
                     </small>
                 </div>
             </div>

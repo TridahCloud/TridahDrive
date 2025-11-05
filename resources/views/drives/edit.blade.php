@@ -67,6 +67,23 @@
                         @enderror
                     </div>
 
+                    <div class="mb-3">
+                        <label for="timezone" class="form-label">Timezone</label>
+                        <select class="form-select @error('timezone') is-invalid @enderror" id="timezone" name="timezone">
+                            @foreach(\App\Helpers\TimezoneHelper::getCommonTimezones() as $tz => $label)
+                                <option value="{{ $tz }}" {{ old('timezone', $drive->timezone ?? 'UTC') === $tz ? 'selected' : '' }}>
+                                    {{ $label }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <small class="text-muted">
+                            All dates and times in this drive will be stored in this timezone. Users can view times in their own timezone preference.
+                        </small>
+                        @error('timezone')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="color" class="form-label">Color</label>

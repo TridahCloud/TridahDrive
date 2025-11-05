@@ -221,6 +221,16 @@ class BookTransactionController extends Controller
 
         $validated = $request->validated();
 
+        // Convert date from user timezone to drive timezone
+        $driveTimezone = $drive->getEffectiveTimezone();
+        $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
+        
+        if (isset($validated['date'])) {
+            $date = \Carbon\Carbon::parse($validated['date'], $userTimezone);
+            $date->setTimezone($driveTimezone);
+            $validated['date'] = $date->format('Y-m-d');
+        }
+
         // Verify account belongs to drive
         $account = Account::findOrFail($validated['account_id']);
         if ($account->drive_id !== $drive->id) {
@@ -349,6 +359,16 @@ class BookTransactionController extends Controller
         }
 
         $validated = $request->validated();
+
+        // Convert date from user timezone to drive timezone
+        $driveTimezone = $drive->getEffectiveTimezone();
+        $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
+        
+        if (isset($validated['date'])) {
+            $date = \Carbon\Carbon::parse($validated['date'], $userTimezone);
+            $date->setTimezone($driveTimezone);
+            $validated['date'] = $date->format('Y-m-d');
+        }
 
         // Verify account belongs to drive
         $account = Account::findOrFail($validated['account_id']);

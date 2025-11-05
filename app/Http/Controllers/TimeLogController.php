@@ -146,6 +146,30 @@ class TimeLogController extends Controller
             }
         }
 
+        // Convert dates from user timezone to drive timezone
+        $driveTimezone = $drive->getEffectiveTimezone();
+        $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
+        
+        // Parse work_date in user timezone, convert to drive timezone
+        if (isset($validated['work_date'])) {
+            $workDate = \Carbon\Carbon::parse($validated['work_date'], $userTimezone);
+            $workDate->setTimezone($driveTimezone);
+            $validated['work_date'] = $workDate->format('Y-m-d');
+        }
+        
+        // Parse clock_in and clock_out in user timezone, convert to UTC for storage
+        if (isset($validated['clock_in'])) {
+            $clockIn = \Carbon\Carbon::parse($validated['clock_in'], $userTimezone);
+            // Convert to UTC for storage (database stores UTC)
+            $validated['clock_in'] = $clockIn->setTimezone('UTC')->format('Y-m-d H:i:s');
+        }
+        
+        if (isset($validated['clock_out'])) {
+            $clockOut = \Carbon\Carbon::parse($validated['clock_out'], $userTimezone);
+            // Convert to UTC for storage (database stores UTC)
+            $validated['clock_out'] = $clockOut->setTimezone('UTC')->format('Y-m-d H:i:s');
+        }
+
         $timeLog = $drive->timeLogs()->create($validated);
 
         // Calculate pay if hours are provided (either from clock in/out or manual entry)
@@ -240,6 +264,30 @@ class TimeLogController extends Controller
             if (!$schedule) {
                 return back()->withErrors(['schedule_id' => 'Invalid schedule selected.'])->withInput();
             }
+        }
+
+        // Convert dates from user timezone to drive timezone
+        $driveTimezone = $drive->getEffectiveTimezone();
+        $userTimezone = \App\Helpers\TimezoneHelper::getUserTimezone(auth()->user(), $drive);
+        
+        // Parse work_date in user timezone, convert to drive timezone
+        if (isset($validated['work_date'])) {
+            $workDate = \Carbon\Carbon::parse($validated['work_date'], $userTimezone);
+            $workDate->setTimezone($driveTimezone);
+            $validated['work_date'] = $workDate->format('Y-m-d');
+        }
+        
+        // Parse clock_in and clock_out in user timezone, convert to UTC for storage
+        if (isset($validated['clock_in'])) {
+            $clockIn = \Carbon\Carbon::parse($validated['clock_in'], $userTimezone);
+            // Convert to UTC for storage (database stores UTC)
+            $validated['clock_in'] = $clockIn->setTimezone('UTC')->format('Y-m-d H:i:s');
+        }
+        
+        if (isset($validated['clock_out'])) {
+            $clockOut = \Carbon\Carbon::parse($validated['clock_out'], $userTimezone);
+            // Convert to UTC for storage (database stores UTC)
+            $validated['clock_out'] = $clockOut->setTimezone('UTC')->format('Y-m-d H:i:s');
         }
 
         $timeLog->update($validated);
