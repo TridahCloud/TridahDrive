@@ -706,6 +706,7 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.9/dist/purify.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 <script>
     // Kanban drag and drop
@@ -921,7 +922,7 @@
             html += '<div class="d-flex gap-2 mb-3">';
             if (task.status && task.status.name) {
                 html += `<span class="badge fs-6" style="background-color: ${task.status.color}; color: #fff;">`;
-                html += `${escapeHtml(task.status.name)}</span>`;
+                html += `${sanitizeText(task.status.name)}</span>`;
             }
             html += `<span class="badge bg-${task.priority === 'urgent' ? 'danger' : (task.priority === 'high' ? 'warning' : (task.priority === 'medium' ? 'info' : 'secondary'))} fs-6">`;
             html += `${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}</span>`;
@@ -932,7 +933,7 @@
             if (task.description) {
                 html += '<div class="task-sidebar-section">';
                 html += '<div class="task-sidebar-section-title">Description</div>';
-                html += `<p style="color: var(--text-color); white-space: pre-wrap;">${escapeHtml(task.description)}</p>`;
+                html += `<div style="color: var(--text-color);">${sanitizeHtml(task.description)}</div>`;
                 html += '</div>';
             }
             
@@ -950,7 +951,7 @@
             if (task.owner) {
                 html += '<div class="task-sidebar-section">';
                 html += '<div class="task-sidebar-section-title">Owner</div>';
-                html += `<p style="color: var(--text-color);">${escapeHtml(task.owner)}</p>`;
+                html += `<p style="color: var(--text-color);">${sanitizeText(task.owner)}</p>`;
                 html += '</div>';
             }
             
@@ -960,7 +961,7 @@
                 html += '<div class="task-sidebar-section-title">Assigned Members</div>';
                 html += '<div class="d-flex flex-wrap gap-1">';
                 task.members.forEach(member => {
-                    html += `<span class="badge bg-secondary">${escapeHtml(member)}</span>`;
+                    html += `<span class="badge bg-secondary">${sanitizeText(member)}</span>`;
                 });
                 html += '</div>';
                 html += '</div>';
@@ -972,7 +973,7 @@
                 html += '<div class="task-sidebar-section-title">Labels</div>';
                 html += '<div class="d-flex flex-wrap gap-1">';
                 task.labels.forEach(label => {
-                    html += `<span class="badge" style="background-color: ${label.color}; color: white;">${escapeHtml(label.name)}</span>`;
+                    html += `<span class="badge" style="background-color: ${label.color}; color: white;">${sanitizeText(label.name)}</span>`;
                 });
                 html += '</div>';
                 html += '</div>';
@@ -981,7 +982,7 @@
             // Created Date
             html += '<div class="task-sidebar-section">';
             html += '<div class="task-sidebar-section-title">Created</div>';
-            html += `<p class="text-muted small">${escapeHtml(task.created_at)}</p>`;
+            html += `<p class="text-muted small">${sanitizeText(task.created_at)}</p>`;
             html += '</div>';
             
             document.getElementById('taskSidebarContent').innerHTML = html;
@@ -992,10 +993,20 @@
             document.body.style.overflow = 'hidden';
         };
         
-        function escapeHtml(text) {
+        function sanitizeText(text) {
             const div = document.createElement('div');
-            div.textContent = text;
+            div.textContent = text ?? '';
             return div.innerHTML;
+        }
+
+        function sanitizeHtml(markup) {
+            if (!markup) {
+                return '';
+            }
+            if (window.DOMPurify) {
+                return DOMPurify.sanitize(markup, { USE_PROFILES: { html: true } });
+            }
+            return markup;
         }
         
         function closeTaskSidebar() {

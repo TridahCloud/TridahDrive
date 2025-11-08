@@ -419,7 +419,7 @@ class TimeLogController extends Controller
             'status' => 'rejected',
             'approved_by' => auth()->id(),
             'approved_at' => now(),
-            'approval_notes' => $validated['approval_notes'],
+            'approval_notes' => $validated['approval_notes'] ?? null,
         ]);
 
         return redirect()->route('drives.people-manager.time-logs.index', $drive)

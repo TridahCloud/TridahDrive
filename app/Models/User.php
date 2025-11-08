@@ -37,6 +37,7 @@ class User extends Authenticatable
         'password',
         'currency',
         'timezone',
+        'theme',
     ];
 
     /**

@@ -2,6 +2,15 @@
 
 @section('title', 'Edit Task - ' . $drive->name)
 
+@push('styles')
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<style>
+    .ql-editor {
+        min-height: 200px;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="container-fluid">
     <div class="row">
@@ -38,7 +47,7 @@
                     </div>
                 @endif
 
-                <form action="{{ route('drives.projects.projects.tasks.update', [$drive, $project, $task]) }}" method="POST" enctype="multipart/form-data">
+                <form id="taskForm" action="{{ route('drives.projects.projects.tasks.update', [$drive, $project, $task]) }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
 
@@ -49,7 +58,8 @@
 
                     <div class="mb-3">
                         <label for="description" class="form-label">Description</label>
-                        <textarea class="form-control" id="description" name="description" rows="4">{{ old('description', $task->description) }}</textarea>
+                        <div id="descriptionEditor"></div>
+                        <input type="hidden" id="description" name="description">
                     </div>
 
                     <div class="row">
@@ -227,4 +237,42 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const editorElement = document.getElementById('descriptionEditor');
+    if (!editorElement) {
+        return;
+    }
+
+    const quill = new Quill('#descriptionEditor', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                [{ header: [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ list: 'ordered' }, { list: 'bullet' }],
+                ['blockquote', 'code-block'],
+                ['link'],
+                ['clean']
+            ],
+        },
+    });
+
+    const hiddenInput = document.getElementById('description');
+    const initialContent = {!! json_encode(old('description', $task->description)) !!} || '';
+    if (initialContent) {
+        quill.root.innerHTML = initialContent;
+        hiddenInput.value = initialContent;
+    }
+
+    const form = document.getElementById('taskForm');
+    form.addEventListener('submit', function () {
+        hiddenInput.value = quill.root.innerHTML.trim();
+    });
+});
+</script>
+@endpush
 

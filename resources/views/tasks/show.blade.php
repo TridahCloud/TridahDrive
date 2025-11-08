@@ -59,7 +59,9 @@
             <div class="dashboard-card mb-4">
                 <h5 class="mb-3" style="color: var(--text-color);">Description</h5>
                 @if($task->description)
-                    <p class="mb-0" style="color: var(--text-color);">{{ nl2br(e($task->description)) }}</p>
+                    <div class="task-description-content" style="color: var(--text-color);">
+                        {!! $task->description !!}
+                    </div>
                 @else
                     <p class="text-muted mb-0">No description provided.</p>
                 @endif

@@ -27,29 +27,46 @@
             </div>
 
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table table-hover" id="projectTasksTable">
                     <thead>
                         <tr>
-                            <th>Title</th>
-                            <th>Status</th>
-                            <th>Priority</th>
-                            <th>Owner</th>
-                            <th>Members</th>
-                            <th>Labels</th>
-                            <th>Due Date</th>
+                            <th class="sortable" data-sort-key="title">Title <span class="sort-indicator"></span></th>
+                            <th class="sortable" data-sort-key="status">Status <span class="sort-indicator"></span></th>
+                            <th class="sortable" data-sort-key="priority">Priority <span class="sort-indicator"></span></th>
+                            <th class="sortable" data-sort-key="owner">Owner <span class="sort-indicator"></span></th>
+                            <th class="sortable" data-sort-key="members">Members <span class="sort-indicator"></span></th>
+                            <th class="sortable" data-sort-key="labels">Labels <span class="sort-indicator"></span></th>
+                            <th class="sortable" data-sort-key="due">Due Date <span class="sort-indicator"></span></th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="tasksTableBody">
                         @forelse($tasksByStatus as $statusSlug => $tasks)
                             @foreach($tasks as $task)
-                                <tr data-status="{{ $task->status_slug }}" data-priority="{{ $task->priority }}" data-labels="{{ $task->labels->pluck('id')->implode(',') }}">
+                                @php
+                                    $statusName = $task->status->name ?? 'Unassigned';
+                                    $priorityWeights = ['low' => 1, 'medium' => 2, 'high' => 3, 'urgent' => 4];
+                                    $priorityWeight = $priorityWeights[$task->priority] ?? 0;
+                                    $ownerName = $task->owner->name ?? '';
+                                    $membersNames = $task->members->pluck('name')->join(', ');
+                                    $labelsNames = $task->labels->pluck('name')->join(', ');
+                                    $dueTimestamp = $task->due_date ? $task->due_date->timestamp : '';
+                                @endphp
+                                <tr data-status="{{ $task->status_slug }}" data-priority="{{ $task->priority }}"
+                                    data-title="{{ strtolower($task->title) }}"
+                                    data-status-sort="{{ strtolower($statusName) }}"
+                                    data-priority-weight="{{ $priorityWeight }}"
+                                    data-owner="{{ strtolower($ownerName) }}"
+                                    data-members="{{ strtolower($membersNames) }}"
+                                    data-labels="{{ strtolower($labelsNames) }}"
+                                    data-due="{{ $dueTimestamp }}"
+                                    @if($task->priority === 'urgent') class="table-warning" @endif>
                                     <td>
                                         <a href="{{ route('drives.projects.projects.tasks.show', [$drive, $project, $task]) }}" class="text-decoration-none">
                                             <strong>{{ $task->title }}</strong>
                                         </a>
                                         @if($task->description)
-                                            <br><small class="text-muted">{{ Str::limit($task->description, 50) }}</small>
+                                            <br><small class="text-muted">{{ Str::limit(strip_tags($task->description), 50) }}</small>
                                         @endif
                                     </td>
                                     <td>
@@ -139,6 +156,32 @@
     </div>
 </div>
 
+@push('styles')
+<style>
+    #projectTasksTable th.sortable {
+        cursor: pointer;
+        user-select: none;
+        white-space: nowrap;
+    }
+
+    #projectTasksTable th.sortable .sort-indicator {
+        display: inline-flex;
+        align-items: center;
+        margin-left: 0.35rem;
+        font-size: 0.75rem;
+        opacity: 0.45;
+    }
+
+    #projectTasksTable th.sortable.sorted-asc .sort-indicator::after {
+        content: '\25B2';
+    }
+
+    #projectTasksTable th.sortable.sorted-desc .sort-indicator::after {
+        content: '\25BC';
+    }
+</style>
+@endpush
+
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -146,7 +189,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const filterPriority = document.getElementById('filterPriority');
     const filterLabel = document.getElementById('filterLabel');
     const tableBody = document.getElementById('tasksTableBody');
-    
+    const sortableHeaders = document.querySelectorAll('#projectTasksTable th.sortable');
+
     function filterTasks() {
         const statusFilter = filterStatus.value;
         const priorityFilter = filterPriority.value;
@@ -166,10 +210,86 @@ document.addEventListener('DOMContentLoaded', function() {
             row.style.display = show ? '' : 'none';
         });
     }
-    
+
     if (filterStatus) filterStatus.addEventListener('change', filterTasks);
     if (filterPriority) filterPriority.addEventListener('change', filterTasks);
     if (filterLabel) filterLabel.addEventListener('change', filterTasks);
+
+    let currentSortKey = null;
+    let currentSortDirection = 'asc';
+
+    function getSortValue(row, key, direction) {
+        switch (key) {
+            case 'priority':
+                return Number(row.dataset.priorityWeight || 0);
+            case 'due': {
+                const value = row.dataset.due;
+                if (!value) {
+                    return direction === 'asc' ? Number.MAX_SAFE_INTEGER : Number.MIN_SAFE_INTEGER;
+                }
+                const parsed = parseInt(value, 10);
+                return Number.isNaN(parsed) ? (direction === 'asc' ? Number.MAX_SAFE_INTEGER : Number.MIN_SAFE_INTEGER) : parsed;
+            }
+            case 'status':
+                return (row.dataset.statusSort || '').toString();
+            case 'title':
+            case 'owner':
+            case 'members':
+            case 'labels':
+            default:
+                return (row.dataset[key] || '').toString();
+        }
+    }
+
+    function updateHeaderIndicators(key, direction) {
+        sortableHeaders.forEach(header => {
+            header.classList.remove('sorted-asc', 'sorted-desc');
+            header.setAttribute('aria-sort', 'none');
+        });
+        if (!key) {
+            return;
+        }
+        const activeHeader = document.querySelector(`#projectTasksTable th[data-sort-key="${key}"]`);
+        if (activeHeader) {
+            const sortClass = direction === 'asc' ? 'sorted-asc' : 'sorted-desc';
+            activeHeader.classList.add(sortClass);
+            activeHeader.setAttribute('aria-sort', direction === 'asc' ? 'ascending' : 'descending');
+        }
+    }
+
+    function sortTasks(key) {
+        const rows = Array.from(tableBody.querySelectorAll('tr'));
+        const direction = (currentSortKey === key && currentSortDirection === 'asc') ? 'desc' : 'asc';
+
+        rows.sort((rowA, rowB) => {
+            const aVal = getSortValue(rowA, key, direction);
+            const bVal = getSortValue(rowB, key, direction);
+
+            if (typeof aVal === 'number' && typeof bVal === 'number') {
+                return direction === 'asc' ? aVal - bVal : bVal - aVal;
+            }
+
+            return direction === 'asc'
+                ? aVal.localeCompare(bVal)
+                : bVal.localeCompare(aVal);
+        });
+
+        rows.forEach(row => tableBody.appendChild(row));
+
+        currentSortKey = key;
+        currentSortDirection = direction;
+        updateHeaderIndicators(key, direction);
+    }
+
+    sortableHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+            const sortKey = header.dataset.sortKey;
+            if (!sortKey) {
+                return;
+            }
+            sortTasks(sortKey);
+        });
+    });
 });
 </script>
 @endpush

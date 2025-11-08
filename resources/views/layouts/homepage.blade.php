@@ -1,5 +1,9 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-theme="dark">
+@php
+    $userTheme = auth()->check() ? (auth()->user()->theme ?? 'dark') : null;
+    $initialTheme = $userTheme ?? 'dark';
+@endphp
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-theme="{{ $initialTheme }}" data-initial-theme="{{ $initialTheme }}" data-authenticated="{{ auth()->check() ? 'true' : 'false' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">

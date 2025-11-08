@@ -113,6 +113,8 @@ class TaskController extends Controller
             $validated['start_date'] = $startDate->format('Y-m-d');
         }
 
+        $validated['description'] = $this->sanitizeDescription($validated['description'] ?? null);
+
         // Get max sort_order for this status
         $maxSortOrder = $project->tasks()
             ->where('task_status_id', $validated['status_id'])
@@ -276,6 +278,8 @@ class TaskController extends Controller
             $startDate->setTimezone($driveTimezone);
             $validated['start_date'] = $startDate->format('Y-m-d');
         }
+
+        $validated['description'] = $this->sanitizeDescription($validated['description'] ?? null);
 
         // Update task
         $task->update([
@@ -472,5 +476,17 @@ class TaskController extends Controller
         }
 
         return Storage::disk('public')->response($attachment->file_path, $attachment->original_filename);
+    }
+
+    private function sanitizeDescription(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $clean = strip_tags($value, '<p><br><strong><em><u><ol><ul><li><a><blockquote><code><pre><span><div><h1><h2><h3><h4><h5><h6>');
+        $clean = trim($clean);
+
+        return $clean === '' ? null : $clean;
     }
 }

@@ -58,6 +58,25 @@
         <x-input-error :messages="$errors->get('timezone')" />
     </div>
 
+    <div class="mb-3">
+        <x-input-label for="theme" :value="__('Theme')" />
+        <select class="form-select @error('theme') is-invalid @enderror" id="theme" name="theme" required>
+            @php
+                $availableThemes = [
+                    'dark' => 'Dark (Default)',
+                    'light' => 'Light',
+                    'zen' => 'Zen (Relaxed)',
+                ];
+                $selectedTheme = old('theme', $user->theme ?? 'dark');
+            @endphp
+            @foreach($availableThemes as $value => $label)
+                <option value="{{ $value }}" {{ $selectedTheme === $value ? 'selected' : '' }}>{{ $label }}</option>
+            @endforeach
+        </select>
+        <small class="text-muted">Choose how the dashboard looks across all of your devices.</small>
+        <x-input-error :messages="$errors->get('theme')" />
+    </div>
+
     <div class="d-flex align-items-center gap-3">
         <x-primary-button>{{ __('Save') }}</x-primary-button>
 

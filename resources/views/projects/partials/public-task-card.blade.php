@@ -16,7 +16,7 @@
     
     @if($task->description)
         <div class="public-task-card-description">
-            {{ Str::limit($task->description, 100) }}
+            {{ Str::limit(strip_tags($task->description), 100) }}
         </div>
     @endif
 

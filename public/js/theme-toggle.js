@@ -1,58 +1,104 @@
 /**
  * Theme Toggle Functionality
- * 
- * Handles dark/light mode theme switching with localStorage persistence.
- * The theme is stored in localStorage and persists across page loads.
- * Uses data-theme attribute on html element to trigger CSS theme changes.
+ *
+ * Handles theme switching with persistence for guests (localStorage)
+ * and authenticated users (AJAX update to profile preference).
  */
 document.addEventListener('DOMContentLoaded', function() {
-    // Get current theme from localStorage or default to dark mode
-    const currentTheme = localStorage.getItem('theme') || 'dark';
-    
-    // Apply the theme immediately on page load
-    document.documentElement.setAttribute('data-theme', currentTheme);
-    
-    // Update the theme icon to match the current theme
-    updateThemeIcon(currentTheme);
-    
-    // Add event listeners to all theme toggle buttons on the page
+    const root = document.documentElement;
+    const storedTheme = localStorage.getItem('theme');
+    const themeCycle = ['dark', 'light', 'zen'];
+    const isAuthenticated = root.dataset.authenticated === 'true';
+    const initialTheme = root.dataset.initialTheme || 'dark';
+
+    let currentTheme = isAuthenticated ? initialTheme : (storedTheme ?? initialTheme);
+
+    if (!themeCycle.includes(currentTheme)) {
+        currentTheme = 'dark';
+    }
+
+    applyTheme(currentTheme, { initial: true, skipPersist: true });
+
     const themeToggles = document.querySelectorAll('.theme-toggle');
+
     themeToggles.forEach(function(toggle) {
+        toggle.classList.remove('disabled');
+        toggle.removeAttribute('title');
+        if (typeof toggle.disabled !== 'undefined') {
+            toggle.disabled = false;
+        }
+
         toggle.addEventListener('click', function() {
-            // Get the current theme from the HTML element
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            
-            // Toggle between dark and light mode
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            
-            // Apply the new theme
-            document.documentElement.setAttribute('data-theme', newTheme);
-            
-            // Persist the theme choice to localStorage
-            localStorage.setItem('theme', newTheme);
-            
-            // Update all theme toggle icons on the page
-            updateThemeIcon(newTheme);
+            const activeTheme = root.getAttribute('data-theme') || currentTheme;
+            const currentIndex = themeCycle.indexOf(activeTheme);
+            const nextTheme = themeCycle[(currentIndex + 1) % themeCycle.length];
+
+            applyTheme(nextTheme);
         });
     });
+
+    function applyTheme(theme, options = {}) {
+        const { skipPersist = false, initial = false } = options;
+
+        if (!themeCycle.includes(theme)) {
+            theme = 'dark';
+        }
+
+        root.setAttribute('data-theme', theme);
+        updateThemeIcon(theme);
+        currentTheme = theme;
+
+        if (initial) {
+            localStorage.setItem('theme', theme);
+        }
+
+        if (!skipPersist) {
+            localStorage.setItem('theme', theme);
+
+            if (isAuthenticated) {
+                persistUserTheme(theme);
+            }
+        }
+    }
+
+    function persistUserTheme(theme) {
+        const tokenElement = document.querySelector('meta[name="csrf-token"]');
+        if (!tokenElement) {
+            return;
+        }
+
+        const token = tokenElement.getAttribute('content');
+
+        fetch('/profile/theme', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': token,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ theme: theme })
+        }).catch(function(error) {
+            console.error('Failed to persist theme preference', error);
+        });
+    }
 });
 
 /**
  * Update theme toggle icon based on current theme
- * @param {string} theme - The current theme ('dark' or 'light')
+ * @param {string} theme - The current theme ('dark', 'light', 'zen')
  */
 function updateThemeIcon(theme) {
-    // Find all theme toggle icons on the page
-    const themeToggles = document.querySelectorAll('.theme-toggle i');
-    
-    themeToggles.forEach(function(icon) {
+    const icons = document.querySelectorAll('.theme-toggle i');
+
+    icons.forEach(function(icon) {
+        icon.classList.remove('fa-moon', 'fa-sun', 'fa-spa');
+
         if (theme === 'dark') {
-            // Show moon icon for dark mode (indicates clicking will switch to light)
-            icon.classList.remove('fa-sun');
             icon.classList.add('fa-moon');
+        } else if (theme === 'zen') {
+            icon.classList.add('fa-spa');
         } else {
-            // Show sun icon for light mode (indicates clicking will switch to dark)
-            icon.classList.remove('fa-moon');
             icon.classList.add('fa-sun');
         }
     });
