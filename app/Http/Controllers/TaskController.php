@@ -10,6 +10,7 @@ use App\Models\TaskLabel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class TaskController extends Controller
 {
@@ -53,8 +54,9 @@ class TaskController extends Controller
         $driveMembers = $drive->users()->get();
         $labels = $drive->taskLabels()->where('is_active', true)->get();
         $parentTasks = $project->tasks()->whereNull('parent_id')->whereNull('deleted_at')->get();
+        $statuses = $project->taskStatuses()->get();
 
-        return view('tasks.create', compact('drive', 'project', 'driveMembers', 'labels', 'parentTasks'));
+        return view('tasks.create', compact('drive', 'project', 'driveMembers', 'labels', 'parentTasks', 'statuses'));
     }
 
     /**
@@ -76,7 +78,10 @@ class TaskController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'required|in:todo,in_progress,review,done,blocked',
+            'status_id' => [
+                'required',
+                Rule::exists('task_statuses', 'id')->where('project_id', $project->id),
+            ],
             'priority' => 'required|in:low,medium,high,urgent',
             'due_date' => 'nullable|date',
             'start_date' => 'nullable|date',
@@ -110,14 +115,14 @@ class TaskController extends Controller
 
         // Get max sort_order for this status
         $maxSortOrder = $project->tasks()
-            ->where('status', $validated['status'])
+            ->where('task_status_id', $validated['status_id'])
             ->whereNull('deleted_at')
             ->max('sort_order') ?? -1;
 
         $task = $project->tasks()->create([
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
-            'status' => $validated['status'],
+            'task_status_id' => $validated['status_id'],
             'priority' => $validated['priority'],
             'due_date' => $validated['due_date'] ?? null,
             'start_date' => $validated['start_date'] ?? null,
@@ -176,9 +181,10 @@ class TaskController extends Controller
             'members', 
             'labels', 
             'attachments', 
-            'subtasks',
+            'subtasks.status',
             'comments.user',
-            'comments.replies.user'
+            'comments.replies.user',
+            'status'
         ]);
         $driveMembers = $drive->users()->get();
         $labels = $drive->taskLabels()->where('is_active', true)->get();
@@ -209,10 +215,11 @@ class TaskController extends Controller
             ->where('id', '!=', $task->id)
             ->whereNull('deleted_at')
             ->get();
+        $statuses = $project->taskStatuses()->get();
 
-        $task->load(['members', 'labels', 'attachments']);
+        $task->load(['members', 'labels', 'attachments', 'status']);
 
-        return view('tasks.edit', compact('drive', 'project', 'task', 'driveMembers', 'labels', 'parentTasks'));
+        return view('tasks.edit', compact('drive', 'project', 'task', 'driveMembers', 'labels', 'parentTasks', 'statuses'));
     }
 
     /**
@@ -234,7 +241,10 @@ class TaskController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'required|in:todo,in_progress,review,done,blocked',
+            'status_id' => [
+                'required',
+                Rule::exists('task_statuses', 'id')->where('project_id', $project->id),
+            ],
             'priority' => 'required|in:low,medium,high,urgent',
             'due_date' => 'nullable|date',
             'start_date' => 'nullable|date',
@@ -271,7 +281,7 @@ class TaskController extends Controller
         $task->update([
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
-            'status' => $validated['status'],
+            'task_status_id' => $validated['status_id'],
             'priority' => $validated['priority'],
             'due_date' => $validated['due_date'] ?? null,
             'start_date' => $validated['start_date'] ?? null,
@@ -354,14 +364,19 @@ class TaskController extends Controller
         }
 
         $validated = $request->validate([
-            'status' => 'required|in:todo,in_progress,review,done,blocked',
+            'status_id' => [
+                'required',
+                Rule::exists('task_statuses', 'id')->where('project_id', $project->id),
+            ],
             'sort_order' => 'nullable|integer',
         ]);
 
         $task->update([
-            'status' => $validated['status'],
+            'task_status_id' => $validated['status_id'],
             'sort_order' => $validated['sort_order'] ?? $task->sort_order,
         ]);
+
+        $task->load('status');
 
         return response()->json(['success' => true, 'task' => $task]);
     }

@@ -44,6 +44,15 @@
     <link rel="stylesheet" href="{{ asset('css/toast.css') }}">
     
     @stack('styles')
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17684753649"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'AW-17684753649');
+    </script>
 </head>
 <body class="homepage-body">
     <!-- Navigation -->
@@ -68,15 +77,6 @@
     <script src="{{ asset('js/toast.js') }}"></script>
     
     @stack('scripts')
-    
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17684753649"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'AW-17684753649');
-    </script>
 </body>
 </html>
 

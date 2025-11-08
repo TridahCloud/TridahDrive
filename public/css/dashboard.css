@@ -1,9 +1,14 @@
 /* Dashboard Layout */
+[x-cloak] {
+    display: none !important;
+}
+
 .wrapper {
     display: flex;
     min-height: 100vh;
     background-color: #141420;
     color: rgba(255, 255, 255, 0.9);
+    position: relative;
 }
 
 /* Sidebar Styles */
@@ -19,7 +24,12 @@
     height: 100vh;
     padding: 1.5rem 1rem;
     z-index: 1000;
-    transition: all 0.3s ease;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.sidebar.collapsed {
+    transform: translateX(-100%);
+    opacity: 0;
 }
 
 .sidebar-logo {
@@ -98,6 +108,44 @@
     display: flex;
     flex-direction: column;
     transition: all 0.3s ease;
+}
+
+.main-content.sidebar-collapsed {
+    margin-left: 0;
+}
+
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 900;
+}
+
+.sidebar-toggle-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 0.75rem;
+}
+
+.sidebar-toggle-btn .fas {
+    font-size: 1rem;
+    transition: transform 0.2s ease;
+}
+
+@media (max-width: 991px) {
+    .sidebar {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+
+    .sidebar.expanded {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    .main-content {
+        margin-left: 0;
+    }
 }
 
 /* Dashboard Header */

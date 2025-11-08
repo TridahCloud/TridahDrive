@@ -1,109 +1,33 @@
 <div class="row">
     <div class="col-12">
-        <div class="kanban-board">
-            <div class="row g-3 h-100">
-                <!-- Todo Column -->
-                <div class="col-lg-2 col-md-4 col-sm-6 h-100">
-                    <div class="dashboard-card h-100 d-flex flex-column" style="padding: 0;">
-                        <div class="kanban-column-header p-3">
-                            <h6 class="mb-0">
-                                <span class="badge bg-secondary me-2">{{ $tasksByStatus['todo']->count() }}</span>
-                                Todo
-                            </h6>
-                        </div>
-                        <div id="kanban-todo" data-status="todo" class="kanban-column-content">
-                            <div class="kanban-empty-state text-center text-muted py-5" id="empty-todo" style="display: {{ $tasksByStatus['todo']->isEmpty() ? 'block' : 'none' }};">
-                                <i class="fas fa-inbox fa-2x mb-2 opacity-50"></i>
-                                <p class="small mb-0">No tasks</p>
+        <div class="dashboard-card">
+            <div class="kanban-board-wrapper">
+                <div class="kanban-board">
+                    <div class="kanban-columns d-flex gap-3 flex-nowrap">
+                @foreach($statuses as $status)
+                    <div class="kanban-column-wrapper">
+                        <div class="dashboard-card d-flex flex-column" style="padding: 0;">
+                            <div class="kanban-column-header p-3 d-flex align-items-center justify-content-between">
+                                <h6 class="mb-0 d-flex align-items-center gap-2">
+                                    <span class="badge" style="background-color: {{ $status->color }};">{{ $status->tasks->count() }}</span>
+                                    <span>{{ $status->name }}</span>
+                                </h6>
+                                @if($status->is_completed)
+                                    <span class="badge bg-success fw-normal">Completed</span>
+                                @endif
                             </div>
-                            @foreach($tasksByStatus['todo'] as $task)
-                                @include('projects.partials.task-card', ['task' => $task])
-                            @endforeach
+                            <div id="kanban-status-{{ $status->id }}" data-status-id="{{ $status->id }}" class="kanban-column-content">
+                                <div class="kanban-empty-state text-center text-muted py-5" id="empty-status-{{ $status->id }}" style="display: {{ $status->tasks->isEmpty() ? 'block' : 'none' }};">
+                                    <i class="fas fa-layer-group fa-2x mb-2 opacity-50"></i>
+                                    <p class="small mb-0">No tasks</p>
+                                </div>
+                                @foreach($status->tasks as $task)
+                                    @include('projects.partials.task-card', ['task' => $task, 'status' => $status])
+                                @endforeach
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- In Progress Column -->
-                <div class="col-lg-2 col-md-4 col-sm-6 h-100">
-                    <div class="dashboard-card h-100 d-flex flex-column" style="padding: 0;">
-                        <div class="kanban-column-header p-3">
-                            <h6 class="mb-0">
-                                <span class="badge bg-primary me-2">{{ $tasksByStatus['in_progress']->count() }}</span>
-                                In Progress
-                            </h6>
-                        </div>
-                        <div id="kanban-in_progress" data-status="in_progress" class="kanban-column-content">
-                            <div class="kanban-empty-state text-center text-muted py-5" id="empty-in_progress" style="display: {{ $tasksByStatus['in_progress']->isEmpty() ? 'block' : 'none' }};">
-                                <i class="fas fa-spinner fa-2x mb-2 opacity-50"></i>
-                                <p class="small mb-0">No tasks</p>
-                            </div>
-                            @foreach($tasksByStatus['in_progress'] as $task)
-                                @include('projects.partials.task-card', ['task' => $task])
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Review Column -->
-                <div class="col-lg-2 col-md-4 col-sm-6 h-100">
-                    <div class="dashboard-card h-100 d-flex flex-column" style="padding: 0;">
-                        <div class="kanban-column-header p-3">
-                            <h6 class="mb-0">
-                                <span class="badge bg-info me-2">{{ $tasksByStatus['review']->count() }}</span>
-                                Review
-                            </h6>
-                        </div>
-                        <div id="kanban-review" data-status="review" class="kanban-column-content">
-                            <div class="kanban-empty-state text-center text-muted py-5" id="empty-review" style="display: {{ $tasksByStatus['review']->isEmpty() ? 'block' : 'none' }};">
-                                <i class="fas fa-search fa-2x mb-2 opacity-50"></i>
-                                <p class="small mb-0">No tasks</p>
-                            </div>
-                            @foreach($tasksByStatus['review'] as $task)
-                                @include('projects.partials.task-card', ['task' => $task])
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Done Column -->
-                <div class="col-lg-2 col-md-4 col-sm-6 h-100">
-                    <div class="dashboard-card h-100 d-flex flex-column" style="padding: 0;">
-                        <div class="kanban-column-header p-3">
-                            <h6 class="mb-0">
-                                <span class="badge bg-success me-2">{{ $tasksByStatus['done']->count() }}</span>
-                                Done
-                            </h6>
-                        </div>
-                        <div id="kanban-done" data-status="done" class="kanban-column-content">
-                            <div class="kanban-empty-state text-center text-muted py-5" id="empty-done" style="display: {{ $tasksByStatus['done']->isEmpty() ? 'block' : 'none' }};">
-                                <i class="fas fa-check-circle fa-2x mb-2 opacity-50"></i>
-                                <p class="small mb-0">No tasks</p>
-                            </div>
-                            @foreach($tasksByStatus['done'] as $task)
-                                @include('projects.partials.task-card', ['task' => $task])
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Blocked Column -->
-                <div class="col-lg-2 col-md-4 col-sm-6 h-100">
-                    <div class="dashboard-card h-100 d-flex flex-column" style="padding: 0;">
-                        <div class="kanban-column-header p-3">
-                            <h6 class="mb-0">
-                                <span class="badge bg-danger me-2">{{ $tasksByStatus['blocked']->count() }}</span>
-                                Blocked
-                            </h6>
-                        </div>
-                        <div id="kanban-blocked" data-status="blocked" class="kanban-column-content">
-                            <div class="kanban-empty-state text-center text-muted py-5" id="empty-blocked" style="display: {{ $tasksByStatus['blocked']->isEmpty() ? 'block' : 'none' }};">
-                                <i class="fas fa-ban fa-2x mb-2 opacity-50"></i>
-                                <p class="small mb-0">No tasks</p>
-                            </div>
-                            @foreach($tasksByStatus['blocked'] as $task)
-                                @include('projects.partials.task-card', ['task' => $task])
-                            @endforeach
-                        </div>
+                @endforeach
                     </div>
                 </div>
             </div>

@@ -54,14 +54,15 @@
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
-                            <select class="form-select" id="status" name="status" required>
-                                <option value="todo" {{ old('status', $task->status) === 'todo' ? 'selected' : '' }}>Todo</option>
-                                <option value="in_progress" {{ old('status', $task->status) === 'in_progress' ? 'selected' : '' }}>In Progress</option>
-                                <option value="review" {{ old('status', $task->status) === 'review' ? 'selected' : '' }}>Review</option>
-                                <option value="done" {{ old('status', $task->status) === 'done' ? 'selected' : '' }}>Done</option>
-                                <option value="blocked" {{ old('status', $task->status) === 'blocked' ? 'selected' : '' }}>Blocked</option>
+                            <label for="status_id" class="form-label">Status <span class="text-danger">*</span></label>
+                            <select class="form-select" id="status_id" name="status_id" required>
+                                @foreach($statuses as $status)
+                                    <option value="{{ $status->id }}" {{ (int)old('status_id', $task->task_status_id) === $status->id ? 'selected' : '' }}>
+                                        {{ $status->name }}
+                                    </option>
+                                @endforeach
                             </select>
+                            <small class="text-muted">Statuses are managed in the project board.</small>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="priority" class="form-label">Priority <span class="text-danger">*</span></label>

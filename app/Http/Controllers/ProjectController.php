@@ -29,9 +29,15 @@ class ProjectController extends Controller
             ->with(['creator', 'users', 'tasks' => function($query) {
                 $query->whereNull('deleted_at');
             }])
-            ->withCount(['tasks as total_tasks', 'tasks as completed_tasks' => function($query) {
-                $query->where('status', 'done')->whereNull('deleted_at');
-            }])
+            ->withCount([
+                'tasks as total_tasks' => function($query) {
+                    $query->whereNull('deleted_at');
+                },
+                'tasks as completed_tasks' => function($query) {
+                    $query->whereNull('deleted_at')
+                        ->whereHas('status', fn($statusQuery) => $statusQuery->where('is_completed', true));
+                },
+            ])
             ->orderBy('created_at', 'desc')
             ->get();
         
@@ -127,6 +133,26 @@ class ProjectController extends Controller
             'status' => 'active',
         ]);
 
+        $defaultStatuses = [
+            ['name' => 'To-Do', 'slug' => 'todo', 'color' => '#6B7280', 'is_completed' => false],
+            ['name' => 'In Progress', 'slug' => 'in_progress', 'color' => '#3B82F6', 'is_completed' => false],
+            ['name' => 'Review', 'slug' => 'review', 'color' => '#0EA5E9', 'is_completed' => false],
+            ['name' => 'Done', 'slug' => 'done', 'color' => '#10B981', 'is_completed' => true],
+            ['name' => 'Blocked', 'slug' => 'blocked', 'color' => '#EF4444', 'is_completed' => false],
+        ];
+
+        $sortOrder = 0;
+        foreach ($defaultStatuses as $status) {
+            $project->taskStatuses()->create([
+                'name' => $status['name'],
+                'slug' => $status['slug'],
+                'color' => $status['color'],
+                'is_completed' => $status['is_completed'],
+                'sort_order' => $sortOrder,
+            ]);
+            $sortOrder += 10;
+        }
+
         // Handle header image upload
         if ($request->hasFile('header_image')) {
             $this->storeHeaderImage($project, $request->file('header_image'));
@@ -159,16 +185,38 @@ class ProjectController extends Controller
 
         $view = $request->get('view', 'list'); // list, kanban, gantt, calendar, workload
 
-        $project->load(['tasks.members', 'tasks.labels', 'tasks.owner', 'tasks.creator', 'tasks.attachments', 'users']);
+        $project->load([
+            'tasks.members',
+            'tasks.labels',
+            'tasks.owner',
+            'tasks.creator',
+            'tasks.attachments',
+            'tasks.status',
+            'users',
+        ]);
 
-        // Get tasks by status for kanban view
-        $tasksByStatus = [
-            'todo' => $project->tasks()->where('status', 'todo')->whereNull('deleted_at')->orderBy('sort_order')->get(),
-            'in_progress' => $project->tasks()->where('status', 'in_progress')->whereNull('deleted_at')->orderBy('sort_order')->get(),
-            'review' => $project->tasks()->where('status', 'review')->whereNull('deleted_at')->orderBy('sort_order')->get(),
-            'done' => $project->tasks()->where('status', 'done')->whereNull('deleted_at')->orderBy('sort_order')->get(),
-            'blocked' => $project->tasks()->where('status', 'blocked')->whereNull('deleted_at')->orderBy('sort_order')->get(),
-        ];
+        $statuses = $project->taskStatuses()
+            ->with(['tasks' => function($query) {
+                $query->with(['owner', 'creator', 'members', 'labels', 'attachments', 'status'])
+                    ->whereNull('deleted_at');
+            }])
+            ->orderBy('sort_order')
+            ->get();
+
+        $tasksByStatus = $statuses->mapWithKeys(function ($status) {
+            return [$status->slug => $status->tasks];
+        });
+
+        $statusSummary = $statuses->map(function ($status) {
+            return [
+                'id' => $status->id,
+                'slug' => $status->slug,
+                'name' => $status->name,
+                'color' => $status->color,
+                'is_completed' => $status->is_completed,
+                'count' => $status->tasks->count(),
+            ];
+        });
 
         // Get drive members for task assignment
         $driveMembers = $drive->users()->get();
@@ -184,6 +232,7 @@ class ProjectController extends Controller
         if ($view === 'workload') {
             foreach ($driveMembers as $member) {
                 $memberTasks = $project->tasks()->whereNull('deleted_at')
+                    ->with('status')
                     ->where(function($query) use ($member) {
                         $query->where('owner_id', $member->id)
                             ->orWhereHas('taskMembers', function($q) use ($member) {
@@ -195,8 +244,8 @@ class ProjectController extends Controller
                 $memberStats[$member->id] = [
                     'name' => $member->name,
                     'total' => $memberTasks->count(),
-                    'in_progress' => $memberTasks->where('status', 'in_progress')->count(),
-                    'done' => $memberTasks->where('status', 'done')->count(),
+                    'active' => $memberTasks->filter(fn($task) => !$task->status?->is_completed)->count(),
+                    'done' => $memberTasks->filter(fn($task) => $task->status?->is_completed)->count(),
                     'overdue' => $memberTasks->filter(function($task) {
                         return $task->isOverdue();
                     })->count(),
@@ -205,7 +254,18 @@ class ProjectController extends Controller
             }
         }
 
-        return view('projects.show', compact('drive', 'project', 'view', 'tasksByStatus', 'driveMembers', 'availableUsers', 'labels', 'memberStats'));
+        return view('projects.show', compact(
+            'drive',
+            'project',
+            'view',
+            'tasksByStatus',
+            'driveMembers',
+            'availableUsers',
+            'labels',
+            'memberStats',
+            'statuses',
+            'statusSummary'
+        ));
     }
 
     /**
@@ -383,17 +443,27 @@ class ProjectController extends Controller
             ->where('status', 'active')
             ->firstOrFail();
 
-        $project->load(['drive', 'tasks.members', 'tasks.labels', 'tasks.owner', 'tasks.attachments']);
+        $project->load([
+            'drive',
+            'tasks.members',
+            'tasks.labels',
+            'tasks.owner',
+            'tasks.attachments',
+            'tasks.status',
+        ]);
 
-        // Get tasks by status for kanban view
-        $tasksByStatus = [
-            'todo' => $project->tasks()->where('status', 'todo')->whereNull('deleted_at')->orderBy('sort_order')->get(),
-            'in_progress' => $project->tasks()->where('status', 'in_progress')->whereNull('deleted_at')->orderBy('sort_order')->get(),
-            'review' => $project->tasks()->where('status', 'review')->whereNull('deleted_at')->orderBy('sort_order')->get(),
-            'done' => $project->tasks()->where('status', 'done')->whereNull('deleted_at')->orderBy('sort_order')->get(),
-            'blocked' => $project->tasks()->where('status', 'blocked')->whereNull('deleted_at')->orderBy('sort_order')->get(),
-        ];
+        $statuses = $project->taskStatuses()
+            ->with(['tasks' => function($query) {
+                $query->with(['owner', 'members', 'labels', 'attachments', 'status'])
+                    ->whereNull('deleted_at');
+            }])
+            ->orderBy('sort_order')
+            ->get();
 
-        return view('projects.public', compact('project', 'tasksByStatus'));
+        $tasksByStatus = $statuses->mapWithKeys(function ($status) {
+            return [$status->slug => $status->tasks];
+        });
+
+        return view('projects.public', compact('project', 'tasksByStatus', 'statuses'));
     }
 }

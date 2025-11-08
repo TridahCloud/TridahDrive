@@ -16,6 +16,7 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskCommentController;
 use App\Http\Controllers\TaskLabelController;
+use App\Http\Controllers\TaskStatusController;
 use App\Http\Controllers\UserItemController;
 use App\Http\Controllers\PeopleManagerController;
 use App\Http\Controllers\PeopleController;
@@ -109,6 +110,11 @@ Route::middleware('auth')->group(function () {
                    Route::post('tasks/{task}/update-status', [TaskController::class, 'updateStatus'])->name('tasks.update-status');
                    Route::get('tasks/{task}/attachments/{attachment}', [TaskController::class, 'showAttachment'])->name('tasks.attachments.show');
                    Route::delete('tasks/{task}/attachments/{attachment}', [TaskController::class, 'destroyAttachment'])->name('tasks.attachments.destroy');
+
+                   Route::post('task-statuses/reorder', [TaskStatusController::class, 'reorder'])->name('task-statuses.reorder');
+                   Route::post('task-statuses', [TaskStatusController::class, 'store'])->name('task-statuses.store');
+                   Route::patch('task-statuses/{taskStatus}', [TaskStatusController::class, 'update'])->name('task-statuses.update');
+                   Route::delete('task-statuses/{taskStatus}', [TaskStatusController::class, 'destroy'])->name('task-statuses.destroy');
                    
                    // Task comments
                    Route::post('tasks/{task}/comments', [TaskCommentController::class, 'store'])->name('tasks.comments.store');

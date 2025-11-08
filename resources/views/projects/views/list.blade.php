@@ -3,14 +3,12 @@
         <div class="dashboard-card">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="mb-0">Tasks</h5>
-                <div class="d-flex gap-2">
+                <div class="d-flex flex-wrap gap-2">
                     <select class="form-select form-select-sm" style="width: auto;" id="filterStatus">
                         <option value="">All Status</option>
-                        <option value="todo">Todo</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="review">Review</option>
-                        <option value="done">Done</option>
-                        <option value="blocked">Blocked</option>
+                        @foreach($statuses as $status)
+                            <option value="{{ $status->slug }}">{{ $status->name }}</option>
+                        @endforeach
                     </select>
                     <select class="form-select form-select-sm" style="width: auto;" id="filterPriority">
                         <option value="">All Priorities</option>
@@ -18,6 +16,12 @@
                         <option value="medium">Medium</option>
                         <option value="high">High</option>
                         <option value="urgent">Urgent</option>
+                    </select>
+                    <select class="form-select form-select-sm" style="width: auto;" id="filterLabel">
+                        <option value="">All Labels</option>
+                        @foreach($labels as $label)
+                            <option value="{{ $label->id }}">{{ $label->name }}</option>
+                        @endforeach
                     </select>
                 </div>
             </div>
@@ -37,9 +41,9 @@
                         </tr>
                     </thead>
                     <tbody id="tasksTableBody">
-                        @forelse($tasksByStatus as $status => $tasks)
+                        @forelse($tasksByStatus as $statusSlug => $tasks)
                             @foreach($tasks as $task)
-                                <tr data-status="{{ $task->status }}" data-priority="{{ $task->priority }}">
+                                <tr data-status="{{ $task->status_slug }}" data-priority="{{ $task->priority }}" data-labels="{{ $task->labels->pluck('id')->implode(',') }}">
                                     <td>
                                         <a href="{{ route('drives.projects.projects.tasks.show', [$drive, $project, $task]) }}" class="text-decoration-none">
                                             <strong>{{ $task->title }}</strong>
@@ -49,9 +53,13 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <span class="badge bg-{{ $task->status === 'done' ? 'success' : ($task->status === 'todo' ? 'secondary' : ($task->status === 'blocked' ? 'danger' : 'primary')) }}">
-                                            {{ ucfirst(str_replace('_', ' ', $task->status)) }}
-                                        </span>
+                                        @if($task->status)
+                                            <span class="badge task-status-badge" style="background-color: {{ $task->status->color }}; color: #fff;">
+                                                {{ $task->status->name }}
+                                            </span>
+                                        @else
+                                            <span class="badge bg-secondary">Unassigned</span>
+                                        @endif
                                     </td>
                                     <td>
                                         <span class="badge bg-{{ $task->priority === 'urgent' ? 'danger' : ($task->priority === 'high' ? 'warning' : ($task->priority === 'medium' ? 'info' : 'secondary')) }}">
@@ -136,20 +144,24 @@
 document.addEventListener('DOMContentLoaded', function() {
     const filterStatus = document.getElementById('filterStatus');
     const filterPriority = document.getElementById('filterPriority');
+    const filterLabel = document.getElementById('filterLabel');
     const tableBody = document.getElementById('tasksTableBody');
     
     function filterTasks() {
         const statusFilter = filterStatus.value;
         const priorityFilter = filterPriority.value;
+        const labelFilter = filterLabel.value;
         const rows = tableBody.querySelectorAll('tr');
         
         rows.forEach(row => {
             const status = row.dataset.status;
             const priority = row.dataset.priority;
+            const labels = row.dataset.labels ? row.dataset.labels.split(',').filter(Boolean) : [];
             
             let show = true;
             if (statusFilter && status !== statusFilter) show = false;
             if (priorityFilter && priority !== priorityFilter) show = false;
+            if (labelFilter && !labels.includes(labelFilter)) show = false;
             
             row.style.display = show ? '' : 'none';
         });
@@ -157,6 +169,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (filterStatus) filterStatus.addEventListener('change', filterTasks);
     if (filterPriority) filterPriority.addEventListener('change', filterTasks);
+    if (filterLabel) filterLabel.addEventListener('change', filterTasks);
 });
 </script>
 @endpush

@@ -67,9 +67,13 @@
                                             </a>
                                         </td>
                                         <td>
-                                            <span class="badge bg-{{ $task->status === 'done' ? 'success' : ($task->status === 'todo' ? 'secondary' : 'primary') }}">
-                                                {{ ucfirst(str_replace('_', ' ', $task->status)) }}
-                                            </span>
+                                            @if($task->status)
+                                                <span class="badge" style="background-color: {{ $task->status->color }}; color: #fff;">
+                                                    {{ $task->status->name }}
+                                                </span>
+                                            @else
+                                                <span class="badge bg-secondary">Unassigned</span>
+                                            @endif
                                         </td>
                                         <td>
                                             <span class="badge bg-{{ $task->priority === 'urgent' ? 'danger' : ($task->priority === 'high' ? 'warning' : 'info') }}">

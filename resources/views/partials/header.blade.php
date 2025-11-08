@@ -1,5 +1,8 @@
 <header class="dashboard-header">
     <div class="header-content container-fluid">
+        <button class="btn btn-outline-light sidebar-toggle-btn me-3 d-inline-flex align-items-center justify-content-center" type="button" @click="sidebarOpen = !sidebarOpen" aria-label="Toggle navigation">
+            <i class="fas" :class="sidebarOpen ? 'fa-chevron-left' : 'fa-bars'"></i>
+        </button>
         <!-- Search Bar -->
         <div class="header-search flex-grow-1">
             <div class="input-group">

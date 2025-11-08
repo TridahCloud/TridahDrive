@@ -95,7 +95,9 @@ class TaskLabelController extends Controller
         }
 
         $taskLabel->load(['creator', 'tasks' => function($query) {
-            $query->whereNull('deleted_at')->limit(50);
+            $query->whereNull('deleted_at')
+                ->with('status')
+                ->limit(50);
         }]);
 
         return view('task-labels.show', compact('drive', 'taskLabel'));

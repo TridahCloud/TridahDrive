@@ -1,12 +1,37 @@
 @push('styles')
 <style>
     .gantt-container {
-        height: 600px;
         width: 100%;
+        height: auto;
+        min-height: 600px;
     }
     .gantt-timeline {
         position: relative;
         overflow-x: auto;
+        overflow-y: visible;
+        background-color: var(--bg-primary);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        box-shadow: inset 0 0 0 1px var(--border-color);
+    }
+    .gantt-timeline .table-responsive {
+        margin-bottom: 0;
+        background-color: transparent;
+    }
+    .gantt-timeline .table {
+        background-color: transparent;
+        margin-bottom: 0;
+        color: var(--text-color);
+    }
+    .gantt-timeline th,
+    .gantt-timeline td {
+        background-color: transparent;
+        border-color: var(--border-color);
+        white-space: nowrap;
+    }
+    .gantt-timeline .timeline-cell {
+        padding: 0.25rem;
+        vertical-align: middle;
     }
     .timeline-task {
         margin-bottom: 1rem;
@@ -44,16 +69,13 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="mb-0">Gantt Chart</h5>
                 <div class="btn-group btn-group-sm" role="group">
-                    <button type="button" class="btn btn-outline-primary" onclick="gantt.scaleToFit()">
-                        <i class="fas fa-compress-alt me-1"></i>Fit
-                    </button>
-                    <button type="button" class="btn btn-outline-primary" onclick="gantt.ext.zoom.setLevel('day')">
+                    <button type="button" class="btn btn-outline-primary" data-scale="day">
                         Day
                     </button>
-                    <button type="button" class="btn btn-outline-primary" onclick="gantt.ext.zoom.setLevel('week')">
+                    <button type="button" class="btn btn-outline-primary" data-scale="week">
                         Week
                     </button>
-                    <button type="button" class="btn btn-outline-primary" onclick="gantt.ext.zoom.setLevel('month')">
+                    <button type="button" class="btn btn-outline-primary" data-scale="month">
                         Month
                     </button>
                 </div>
@@ -84,13 +106,17 @@
         }
         
         // Calculate progress percentage
+        $statusModel = $task->status;
+        $statusSlug = $statusModel?->slug ?? 'other';
+        $statusColor = $statusModel?->color ?? '#6B7280';
+
         $progress = 0;
-        if ($task->status === 'done') {
+        if ($statusModel?->is_completed) {
             $progress = 100;
-        } elseif ($task->status === 'in_progress') {
-            $progress = 50;
-        } elseif ($task->status === 'review') {
+        } elseif ($statusSlug === 'review') {
             $progress = 75;
+        } elseif ($statusSlug === 'in_progress') {
+            $progress = 50;
         }
         
         return [
@@ -102,7 +128,12 @@
             'end_date_formatted' => $endDate->format('M d, Y'),
             'duration' => $duration,
             'progress' => $progress,
-            'status' => $task->status,
+            'status' => [
+                'slug' => $statusSlug,
+                'name' => $statusModel?->name,
+                'color' => $statusColor,
+                'is_completed' => (bool) $statusModel?->is_completed,
+            ],
             'priority' => $task->priority,
             'url' => route('drives.projects.projects.tasks.show', [$drive, $project, $task]),
         ];
@@ -115,8 +146,9 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const container = document.getElementById('gantt-container');
+    const scaleButtons = document.querySelectorAll('[data-scale]');
     const tasks = @json($ganttTasks);
-    
+
     if (tasks.length === 0) {
         container.innerHTML = `
             <div class="alert alert-info">
@@ -127,99 +159,188 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         return;
     }
-    
-    // Find date range
-    const dates = tasks.map(t => new Date(t.start_date));
-    const minDate = new Date(Math.min(...dates));
-    const maxDate = new Date(Math.max(...tasks.map(t => new Date(t.end_date))));
-    
-    // Calculate total days
-    const totalDays = Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24)) + 1;
-    const days = [];
-    const currentDate = new Date(minDate);
-    
-    // Generate date labels for the timeline
-    while (currentDate <= maxDate) {
-        days.push(new Date(currentDate));
-        currentDate.setDate(currentDate.getDate() + 1);
-    }
-    
-    // Create timeline HTML
-    let timelineHTML = '<div class="gantt-timeline">';
-    timelineHTML += '<div class="table-responsive">';
-    timelineHTML += '<table class="table table-sm" style="min-width: ' + (totalDays * 30) + 'px;">';
-    
-    // Header row with dates
-    timelineHTML += '<thead><tr><th style="width: 200px;">Task</th>';
-    days.forEach((date, index) => {
-        if (index % 7 === 0 || index === 0) {
-            const weekStart = new Date(date);
-            timelineHTML += `<th colspan="7" style="text-align: center; border-left: 2px solid var(--border-color);">${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</th>`;
+
+    let currentScale = 'day';
+
+    function renderGantt(scale) {
+        const dayMs = 24 * 60 * 60 * 1000;
+        const scaleKey = scale;
+
+        function buildUnits(unitScale, minDate, maxDate) {
+            const units = [];
+            if (unitScale === 'day') {
+                let cursor = new Date(minDate);
+                while (cursor <= maxDate) {
+                    const start = new Date(cursor);
+                    const end = new Date(cursor);
+                    units.push({
+                        start,
+                        end,
+                        spanDays: 1,
+                        label: start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    });
+                    cursor.setDate(cursor.getDate() + 1);
+                }
+            } else if (unitScale === 'week') {
+                let cursor = new Date(minDate);
+                while (cursor <= maxDate) {
+                    const start = new Date(cursor);
+                    const end = new Date(cursor);
+                    end.setDate(end.getDate() + 6);
+                    if (end > maxDate) {
+                        end.setTime(maxDate.getTime());
+                    }
+                    const spanDays = Math.floor((end - start) / dayMs) + 1;
+                    units.push({
+                        start,
+                        end,
+                        spanDays,
+                        label: `Week of ${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                    });
+                    cursor = new Date(end);
+                    cursor.setDate(cursor.getDate() + 1);
+                }
+            } else if (unitScale === 'month') {
+                let cursor = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
+                while (cursor <= maxDate) {
+                    const start = cursor < minDate ? new Date(minDate) : new Date(cursor);
+                    const monthEnd = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
+                    const end = monthEnd > maxDate ? new Date(maxDate) : monthEnd;
+                    const spanDays = Math.floor((end - start) / dayMs) + 1;
+                    units.push({
+                        start,
+                        end,
+                        spanDays,
+                        label: start.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                    });
+                    cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+                }
+            }
+            return units;
         }
-    });
-    timelineHTML += '</tr></thead>';
-    
-    // Task rows
-    timelineHTML += '<tbody>';
-    tasks.forEach(task => {
-        const taskStart = new Date(task.start_date);
-        const taskEnd = new Date(task.end_date);
-        const taskDays = Math.ceil((taskEnd - taskStart) / (1000 * 60 * 60 * 24)) + 1;
-        const startOffset = Math.floor((taskStart - minDate) / (1000 * 60 * 60 * 24));
-        
-        const statusColors = {
-            'todo': '#6c757d',
-            'in_progress': '#0d6efd',
-            'review': '#0dcaf0',
-            'done': '#198754',
-            'blocked': '#dc3545'
-        };
-        
+
+        const dateValues = tasks.flatMap(task => [task.start_date, task.end_date]).map(d => new Date(d));
+        const minDate = new Date(Math.min(...dateValues.map(d => d.getTime())));
+        const maxDate = new Date(Math.max(...dateValues.map(d => d.getTime())));
+
+        const units = buildUnits(scaleKey, minDate, maxDate);
+        if (!units.length) {
+            container.innerHTML = '';
+            return;
+        }
+
+        const totalSpanDays = units.reduce((sum, unit) => sum + unit.spanDays, 0);
+        const containerWidth = container.clientWidth || container.offsetWidth || 960;
+
+        let basePerDay;
+        switch (scale) {
+            case 'day':
+                basePerDay = 120;
+                break;
+            case 'week':
+                basePerDay = 28;
+                break;
+            case 'month':
+            default:
+                basePerDay = 12;
+                break;
+        }
+
+        const unitWidths = units.map(unit => Math.max(unit.spanDays * basePerDay, 40));
+        const tableMinWidth = unitWidths.reduce((acc, width) => acc + width, 0);
+
+        let html = '<div class="gantt-timeline">';
+        html += '<div class="table-responsive">';
+        html += `<table class="table table-sm" style="min-width: ${tableMinWidth}px;">`;
+
+        html += '<thead><tr><th style="width: 220px;">Task</th>';
+        units.forEach((unit, idx) => {
+            html += `<th style="min-width: ${unitWidths[idx]}px;">${unit.label}</th>`;
+        });
+        html += '</tr></thead>';
+
         const priorityColors = {
             'low': '#6c757d',
             'medium': '#0dcaf0',
             'high': '#ffc107',
             'urgent': '#dc3545'
         };
-        
-        timelineHTML += '<tr>';
-        timelineHTML += `<td><a href="${task.url}" class="text-decoration-none"><strong>${task.title}</strong></a><br><small class="text-muted">${task.start_date_formatted} - ${task.end_date_formatted}</small></td>`;
-        
-        // Generate timeline cells
-        let cellCount = 0;
-        days.forEach((date, index) => {
-            const isTaskDay = date >= taskStart && date <= taskEnd;
-            
-            if (isTaskDay) {
-                if (cellCount === 0) {
-                    // First day of task
-                    const width = Math.min(taskDays * 30, 300);
-                    timelineHTML += `<td colspan="${Math.min(taskDays, totalDays - index)}" style="padding: 0;">`;
-                    timelineHTML += `<div class="timeline-bar" style="width: ${width}px; background-color: ${statusColors[task.status] || '#6c757d'}; border-left: 3px solid ${priorityColors[task.priority] || '#6c757d'};">
-                        <div class="timeline-bar-progress" style="width: ${task.progress}%;"></div>
-                        <div style="position: absolute; top: 0; left: 4px; font-size: 0.75rem; color: white; line-height: 20px;">${task.title}</div>
-                    </div>`;
-                    timelineHTML += '</td>';
-                    cellCount = taskDays;
-                }
-            } else if (cellCount === 0) {
-                timelineHTML += '<td></td>';
+
+        html += '<tbody>';
+        tasks.forEach(task => {
+            const taskStart = new Date(task.start_date);
+            const taskEnd = new Date(task.end_date);
+
+            let startIndex = 0;
+            while (startIndex < units.length && taskStart > units[startIndex].end) {
+                startIndex++;
             }
-            
-            if (cellCount > 0) {
-                cellCount--;
+            let endIndex = units.length - 1;
+            while (endIndex >= 0 && taskEnd < units[endIndex].start) {
+                endIndex--;
+            }
+
+            if (startIndex >= units.length || endIndex < 0 || startIndex > endIndex) {
+                return;
+            }
+
+            html += '<tr>';
+            html += `<td><a href="${task.url}" class="text-decoration-none"><strong>${task.title}</strong></a><br><small class="text-muted">${task.start_date_formatted} - ${task.end_date_formatted}</small></td>`;
+
+            for (let i = 0; i < startIndex; i++) {
+                html += `<td style="min-width: ${unitWidths[i]}px;"></td>`;
+            }
+
+            const span = endIndex - startIndex + 1;
+            const barWidth = unitWidths.slice(startIndex, endIndex + 1).reduce((acc, width) => acc + width, 0);
+            const statusColor = task.status && task.status.color ? task.status.color : '#6c757d';
+            const priorityColor = priorityColors[task.priority] || '#6c757d';
+
+            html += `<td colspan="${span}" style="min-width: ${barWidth}px; width: ${barWidth}px;" class="timeline-cell">`;
+            html += `<div class="timeline-bar" style="background-color: ${statusColor}; border-left: 3px solid ${priorityColor}; width: 100%; min-width: ${barWidth}px;">
+                <div class="timeline-bar-progress" style="width: ${task.progress}%;"></div>
+                <div style="position: absolute; top: 0; left: 4px; font-size: 0.75rem; color: white; line-height: 20px;">${task.title}</div>
+            </div>`;
+            html += '</td>';
+
+            for (let i = endIndex + 1; i < units.length; i++) {
+                html += `<td style="min-width: ${unitWidths[i]}px;"></td>`;
+            }
+
+            html += '</tr>';
+        });
+
+        html += '</tbody>';
+        html += '</table>';
+        html += '</div>';
+        html += '</div>';
+
+        container.innerHTML = html;
+    }
+
+    function updateActiveButton(scale) {
+        scaleButtons.forEach(btn => {
+            if (btn.dataset.scale === scale) {
+                btn.classList.remove('btn-outline-primary');
+                btn.classList.add('btn-primary');
+            } else {
+                btn.classList.add('btn-outline-primary');
+                btn.classList.remove('btn-primary');
             }
         });
-        
-        timelineHTML += '</tr>';
+    }
+
+    scaleButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const scale = btn.dataset.scale;
+            currentScale = scale;
+            updateActiveButton(scale);
+            renderGantt(scale);
+        });
     });
-    
-    timelineHTML += '</tbody>';
-    timelineHTML += '</table>';
-    timelineHTML += '</div>';
-    timelineHTML += '</div>';
-    
-    container.innerHTML = timelineHTML;
+
+    updateActiveButton(currentScale);
+    renderGantt(currentScale);
 });
 </script>
 @endpush

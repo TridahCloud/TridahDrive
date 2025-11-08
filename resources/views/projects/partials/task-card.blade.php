@@ -1,6 +1,7 @@
 @php
     use Illuminate\Support\Facades\Storage;
     $headerImage = $task->attachments->where('type', 'header')->first();
+    $statusModel = $task->status ?? ($status ?? null);
 @endphp
 
 <div class="task-card" 
@@ -8,6 +9,10 @@
      data-task-title="{{ $task->title }}"
      data-task-url="{{ route('drives.projects.projects.tasks.show', [$drive, $project, $task]) }}"
      data-task-edit-url="{{ route('drives.projects.projects.tasks.edit', [$drive, $project, $task]) }}"
+     data-status-id="{{ $statusModel?->id }}"
+     data-status-name="{{ $statusModel?->name }}"
+     data-status-slug="{{ $statusModel?->slug }}"
+     data-status-color="{{ $statusModel?->color }}"
      draggable="true">
     
     @if($headerImage)
@@ -62,9 +67,11 @@
             @endif
         </div>
         <div class="d-flex align-items-center gap-1">
-            <span class="badge bg-{{ $task->status === 'done' ? 'success' : ($task->status === 'todo' ? 'secondary' : ($task->status === 'blocked' ? 'danger' : 'primary')) }}">
-                {{ ucfirst(str_replace('_', ' ', $task->status)) }}
-            </span>
+            @if($statusModel)
+                <span class="badge task-status-badge" style="background-color: {{ $statusModel->color }}; color: #fff;" data-role="task-status-badge">
+                    {{ $statusModel->name }}
+                </span>
+            @endif
         </div>
     </div>
 </div>

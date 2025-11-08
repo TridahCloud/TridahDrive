@@ -76,9 +76,11 @@
                                     <a href="{{ route('drives.projects.projects.tasks.show', [$drive, $project, $subtask]) }}" class="text-decoration-none" style="color: var(--text-color);">
                                         {{ $subtask->title }}
                                     </a>
-                                    <span class="badge bg-{{ $subtask->status === 'done' ? 'success' : ($subtask->status === 'todo' ? 'secondary' : 'primary') }} ms-2">
-                                        {{ ucfirst(str_replace('_', ' ', $subtask->status)) }}
-                                    </span>
+                                    @if($subtask->status)
+                                        <span class="badge ms-2" style="background-color: {{ $subtask->status->color }}; color: #fff;">
+                                            {{ $subtask->status->name }}
+                                        </span>
+                                    @endif
                                 </div>
                                 <span class="badge bg-{{ $subtask->priority === 'urgent' ? 'danger' : ($subtask->priority === 'high' ? 'warning' : ($subtask->priority === 'medium' ? 'info' : 'secondary')) }}">
                                     {{ ucfirst($subtask->priority) }}
@@ -149,9 +151,13 @@
                 <div class="mb-3">
                     <label class="text-muted small">Status</label>
                     <p class="mb-0">
-                        <span class="badge bg-{{ $task->status === 'done' ? 'success' : ($task->status === 'todo' ? 'secondary' : ($task->status === 'blocked' ? 'danger' : 'primary')) }} fs-6">
-                            {{ ucfirst(str_replace('_', ' ', $task->status)) }}
-                        </span>
+                        @if($task->status)
+                            <span class="badge fs-6" style="background-color: {{ $task->status->color }}; color: #fff;">
+                                {{ $task->status->name }}
+                            </span>
+                        @else
+                            <span class="badge bg-secondary fs-6">Unassigned</span>
+                        @endif
                     </p>
                 </div>
 

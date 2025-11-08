@@ -1,4 +1,4 @@
-<aside class="sidebar">
+<aside class="sidebar" :class="{ 'collapsed': !sidebarOpen, 'expanded': sidebarOpen }" x-cloak>
     <!-- Logo -->
     <div class="sidebar-logo">
         <a href="{{ route('drives.index') }}" class="d-flex align-items-center text-decoration-none">

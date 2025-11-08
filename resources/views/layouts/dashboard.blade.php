@@ -27,12 +27,29 @@
     @stack('styles')
 </head>
 <body>
-    <div class="wrapper">
+    <div class="wrapper" x-data="{
+        sidebarOpen: window.innerWidth >= 992,
+        isMobile: window.innerWidth < 992,
+        init() {
+            window.addEventListener('resize', () => {
+                this.isMobile = window.innerWidth < 992;
+                if (this.isMobile && this.sidebarOpen) {
+                    this.sidebarOpen = false;
+                }
+            });
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && this.isMobile && this.sidebarOpen) {
+                    this.sidebarOpen = false;
+                }
+            });
+        }
+    }" x-init="init()">
         <!-- Sidebar -->
         @include('partials.sidebar')
+        <div class="sidebar-overlay" x-show="sidebarOpen && isMobile" x-transition.opacity @click="sidebarOpen = false" x-cloak></div>
         
         <!-- Main Content -->
-        <div class="main-content">
+        <div class="main-content" :class="{ 'sidebar-collapsed': !sidebarOpen }">
             <!-- Top Header -->
             @include('partials.header')
             
@@ -48,6 +65,7 @@
     
     <!-- Bootstrap 5.3.x JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     
     <!-- Theme Toggle Script -->
     <script src="{{ asset('js/theme-toggle.js') }}"></script>

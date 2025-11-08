@@ -17,7 +17,6 @@ class Task extends Model
         'parent_id',
         'title',
         'description',
-        'status',
         'priority',
         'due_date',
         'start_date',
@@ -26,6 +25,7 @@ class Task extends Model
         'sort_order',
         'owner_id',
         'created_by',
+        'task_status_id',
     ];
 
     protected $casts = [
@@ -34,11 +34,17 @@ class Task extends Model
         'estimated_hours' => 'integer',
         'actual_hours' => 'integer',
         'sort_order' => 'integer',
+        'task_status_id' => 'integer',
     ];
 
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function status(): BelongsTo
+    {
+        return $this->belongsTo(TaskStatus::class, 'task_status_id');
     }
 
     public function parent(): BelongsTo
@@ -106,11 +112,45 @@ class Task extends Model
 
     public function isOverdue(): bool
     {
-        return $this->due_date && $this->due_date < now() && !in_array($this->status, ['done', 'blocked']);
+        if (!$this->due_date || $this->due_date >= now()) {
+            return false;
+        }
+
+        $status = $this->status;
+
+        if (!$status) {
+            return true;
+        }
+
+        if ($status->slug === 'blocked') {
+            return false;
+        }
+
+        return !$status->is_completed;
     }
 
     public function isAssignedTo(User $user): bool
     {
         return $this->members()->where('user_id', $user->id)->exists();
+    }
+
+    public function getStatusSlugAttribute(): ?string
+    {
+        return $this->status?->slug;
+    }
+
+    public function getStatusNameAttribute(): ?string
+    {
+        return $this->status?->name;
+    }
+
+    public function getStatusColorAttribute(): ?string
+    {
+        return $this->status?->color;
+    }
+
+    public function getIsCompletedAttribute(): bool
+    {
+        return (bool)($this->status?->is_completed);
     }
 }

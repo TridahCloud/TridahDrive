@@ -69,6 +69,11 @@ class Project extends Model
         return $this->hasMany(Task::class)->orderBy('sort_order')->orderBy('created_at');
     }
 
+    public function taskStatuses(): HasMany
+    {
+        return $this->hasMany(TaskStatus::class)->orderBy('sort_order')->orderBy('id');
+    }
+
     public function activeTasks(): HasMany
     {
         return $this->hasMany(Task::class)->whereNull('deleted_at')->orderBy('sort_order');

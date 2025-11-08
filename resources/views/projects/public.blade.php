@@ -40,6 +40,18 @@
     .public-kanban-board {
         overflow-x: auto;
         padding-bottom: 2rem;
+        scroll-snap-type: x proximity;
+    }
+    
+    .public-kanban-columns {
+        width: max-content;
+        min-height: 100%;
+    }
+    
+    .public-kanban-column-wrapper {
+        flex: 0 0 320px;
+        width: 320px;
+        scroll-snap-align: start;
     }
     
     .public-kanban-column {
@@ -51,6 +63,13 @@
         border: 2px solid var(--border-color);
         display: flex;
         flex-direction: column;
+    }
+    
+    @media (max-width: 768px) {
+        .public-kanban-column-wrapper {
+            flex-basis: 280px;
+            width: 280px;
+        }
     }
     
     .public-kanban-column-header {
@@ -295,121 +314,32 @@
 
         <!-- Kanban Board -->
         <div class="public-kanban-board">
-            <div class="row g-3">
-                <!-- Todo Column -->
-                <div class="col-lg-2 col-md-4 col-sm-6">
-                    <div class="public-kanban-column h-100">
-                        <div class="public-kanban-column-header">
-                            <h6>
-                                <span class="badge bg-secondary me-2">{{ $tasksByStatus['todo']->count() }}</span>
-                                Todo
-                            </h6>
-                        </div>
-                        <div class="public-kanban-column-content">
-                            @foreach($tasksByStatus['todo'] as $task)
-                                @include('projects.partials.public-task-card', ['task' => $task])
-                            @endforeach
-                            @if($tasksByStatus['todo']->isEmpty())
-                                <div class="public-empty-state">
-                                    <i class="fas fa-inbox"></i>
-                                    <p class="small mb-0">No tasks</p>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-
-                <!-- In Progress Column -->
-                <div class="col-lg-2 col-md-4 col-sm-6">
-                    <div class="public-kanban-column h-100">
-                        <div class="public-kanban-column-header">
-                            <h6>
-                                <span class="badge bg-primary me-2">{{ $tasksByStatus['in_progress']->count() }}</span>
-                                In Progress
-                            </h6>
-                        </div>
-                        <div class="public-kanban-column-content">
-                            @foreach($tasksByStatus['in_progress'] as $task)
-                                @include('projects.partials.public-task-card', ['task' => $task])
-                            @endforeach
-                            @if($tasksByStatus['in_progress']->isEmpty())
-                                <div class="public-empty-state">
-                                    <i class="fas fa-spinner"></i>
-                                    <p class="small mb-0">No tasks</p>
-                                </div>
-                            @endif
+            <div class="public-kanban-columns d-flex gap-3 flex-nowrap">
+                @foreach($statuses as $status)
+                    <div class="public-kanban-column-wrapper">
+                        <div class="public-kanban-column">
+                            <div class="public-kanban-column-header d-flex justify-content-between align-items-center">
+                                <h6 class="d-flex align-items-center gap-2 mb-0">
+                                    <span class="badge" style="background-color: {{ $status->color }};">{{ $status->tasks->count() }}</span>
+                                    <span>{{ $status->name }}</span>
+                                </h6>
+                                @if($status->is_completed)
+                                    <span class="badge bg-success">Completed</span>
+                                @endif
+                            </div>
+                            <div class="public-kanban-column-content">
+                                @forelse($status->tasks as $task)
+                                    @include('projects.partials.public-task-card', ['task' => $task, 'status' => $status])
+                                @empty
+                                    <div class="public-empty-state">
+                                        <i class="fas fa-layer-group"></i>
+                                        <p class="small mb-0">No tasks</p>
+                                    </div>
+                                @endforelse
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Review Column -->
-                <div class="col-lg-2 col-md-4 col-sm-6">
-                    <div class="public-kanban-column h-100">
-                        <div class="public-kanban-column-header">
-                            <h6>
-                                <span class="badge bg-info me-2">{{ $tasksByStatus['review']->count() }}</span>
-                                Review
-                            </h6>
-                        </div>
-                        <div class="public-kanban-column-content">
-                            @foreach($tasksByStatus['review'] as $task)
-                                @include('projects.partials.public-task-card', ['task' => $task])
-                            @endforeach
-                            @if($tasksByStatus['review']->isEmpty())
-                                <div class="public-empty-state">
-                                    <i class="fas fa-search"></i>
-                                    <p class="small mb-0">No tasks</p>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Done Column -->
-                <div class="col-lg-2 col-md-4 col-sm-6">
-                    <div class="public-kanban-column h-100">
-                        <div class="public-kanban-column-header">
-                            <h6>
-                                <span class="badge bg-success me-2">{{ $tasksByStatus['done']->count() }}</span>
-                                Done
-                            </h6>
-                        </div>
-                        <div class="public-kanban-column-content">
-                            @foreach($tasksByStatus['done'] as $task)
-                                @include('projects.partials.public-task-card', ['task' => $task])
-                            @endforeach
-                            @if($tasksByStatus['done']->isEmpty())
-                                <div class="public-empty-state">
-                                    <i class="fas fa-check-circle"></i>
-                                    <p class="small mb-0">No tasks</p>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Blocked Column -->
-                <div class="col-lg-2 col-md-4 col-sm-6">
-                    <div class="public-kanban-column h-100">
-                        <div class="public-kanban-column-header">
-                            <h6>
-                                <span class="badge bg-danger me-2">{{ $tasksByStatus['blocked']->count() }}</span>
-                                Blocked
-                            </h6>
-                        </div>
-                        <div class="public-kanban-column-content">
-                            @foreach($tasksByStatus['blocked'] as $task)
-                                @include('projects.partials.public-task-card', ['task' => $task])
-                            @endforeach
-                            @if($tasksByStatus['blocked']->isEmpty())
-                                <div class="public-empty-state">
-                                    <i class="fas fa-ban"></i>
-                                    <p class="small mb-0">No tasks</p>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-                </div>
+                @endforeach
             </div>
         </div>
     </div>
@@ -440,24 +370,43 @@
         const overlay = document.getElementById('taskSidebarOverlay');
         const closeBtn = document.getElementById('taskSidebarClose');
         
-        // Task data storage (pre-loaded from server)
-        const taskData = {
-            @foreach($project->tasks->whereNull('deleted_at') as $task)
-            {{ $task->id }}: {
-                id: {{ $task->id }},
-                title: @json($task->title),
-                description: @json($task->description ?? ''),
-                status: @json($task->status),
-                priority: @json($task->priority),
-                due_date: @json($task->due_date ? $task->due_date->format('Y-m-d') : null),
-                owner: @json($task->owner ? $task->owner->name : null),
-                members: @json($task->members->map(fn($m) => $m->name)->toArray()),
-                labels: @json($task->labels->map(fn($l) => ['name' => $l->name, 'color' => $l->color])->toArray()),
-                created_at: @json($task->created_at->format('M d, Y')),
-                is_overdue: {{ $task->isOverdue() ? 'true' : 'false' }},
-            },
-            @endforeach
-        };
+        @php
+            $publicTaskData = $project->tasks
+                ->whereNull('deleted_at')
+                ->mapWithKeys(function ($task) {
+                    $status = $task->status ? [
+                        'id' => $task->status->id,
+                        'slug' => $task->status->slug,
+                        'name' => $task->status->name,
+                        'color' => $task->status->color,
+                        'is_completed' => (bool) $task->status->is_completed,
+                    ] : null;
+
+                    return [
+                        $task->id => [
+                            'id' => $task->id,
+                            'title' => $task->title,
+                            'description' => $task->description ?? '',
+                            'status' => $status,
+                            'priority' => $task->priority,
+                            'due_date' => $task->due_date ? $task->due_date->format('Y-m-d') : null,
+                            'owner' => $task->owner ? $task->owner->name : null,
+                            'members' => $task->members->pluck('name')->toArray(),
+                            'labels' => $task->labels->map(function ($label) {
+                                return [
+                                    'name' => $label->name,
+                                    'color' => $label->color,
+                                ];
+                            })->toArray(),
+                            'created_at' => $task->created_at->format('M d, Y'),
+                            'is_overdue' => (bool) $task->isOverdue(),
+                        ],
+                    ];
+                })
+                ->toArray();
+        @endphp
+
+        const taskData = @json($publicTaskData);
         
         window.openTaskSidebar = function(taskId) {
             const task = taskData[taskId];
@@ -472,8 +421,10 @@
             // Status and Priority
             html += '<div class="task-sidebar-section">';
             html += '<div class="d-flex gap-2 mb-3">';
-            html += `<span class="badge bg-${task.status === 'done' ? 'success' : (task.status === 'todo' ? 'secondary' : (task.status === 'blocked' ? 'danger' : 'primary'))} fs-6">`;
-            html += `${task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('_', ' ')}</span>`;
+            if (task.status && task.status.name) {
+                html += `<span class="badge fs-6" style="background-color: ${task.status.color}; color: #fff;">`;
+                html += `${escapeHtml(task.status.name)}</span>`;
+            }
             html += `<span class="badge bg-${task.priority === 'urgent' ? 'danger' : (task.priority === 'high' ? 'warning' : (task.priority === 'medium' ? 'info' : 'secondary'))} fs-6">`;
             html += `${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}</span>`;
             html += '</div>';

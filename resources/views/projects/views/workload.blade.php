@@ -45,18 +45,24 @@
             </div>
 
             <!-- Statistics Cards -->
+            @php
+                $statusSummaryCollection = collect($statusSummary ?? []);
+                $completedStatusCount = $statusSummaryCollection->where('is_completed', true)->sum('count');
+                $activeStatusCount = $statusSummaryCollection->where('is_completed', false)->sum('count');
+            @endphp
+
             <div class="workload-stats">
                 <div class="workload-stat-card">
                     <div class="workload-stat-value">{{ $project->tasks->whereNull('deleted_at')->count() }}</div>
                     <div class="text-muted">Total Tasks</div>
                 </div>
                 <div class="workload-stat-card">
-                    <div class="workload-stat-value">{{ $project->tasks->whereNull('deleted_at')->where('status', 'done')->count() }}</div>
+                    <div class="workload-stat-value">{{ $completedStatusCount }}</div>
                     <div class="text-muted">Completed</div>
                 </div>
                 <div class="workload-stat-card">
-                    <div class="workload-stat-value">{{ $project->tasks->whereNull('deleted_at')->where('status', 'in_progress')->count() }}</div>
-                    <div class="text-muted">In Progress</div>
+                    <div class="workload-stat-value">{{ $activeStatusCount }}</div>
+                    <div class="text-muted">Active</div>
                 </div>
                 <div class="workload-stat-card">
                     <div class="workload-stat-value">{{ $driveMembers->count() }}</div>
@@ -77,7 +83,7 @@
                             <tr>
                                 <th>Member</th>
                                 <th>Total Tasks</th>
-                                <th>In Progress</th>
+                                <th>Active</th>
                                 <th>Done</th>
                                 <th>Overdue</th>
                                 <th>Estimated Hours</th>
@@ -91,7 +97,7 @@
                                 <tr>
                                     <td><strong>{{ $stats['name'] }}</strong></td>
                                     <td><span class="badge bg-primary">{{ $stats['total'] }}</span></td>
-                                    <td><span class="badge bg-info">{{ $stats['in_progress'] }}</span></td>
+                                    <td><span class="badge bg-info">{{ $stats['active'] }}</span></td>
                                     <td><span class="badge bg-success">{{ $stats['done'] }}</span></td>
                                     <td>
                                         @if($stats['overdue'] > 0)
@@ -212,47 +218,46 @@ document.addEventListener('DOMContentLoaded', function() {
         // Status Workload Chart
         const statusCtx = document.getElementById('statusWorkloadChart');
         if (statusCtx) {
-            const statusData = {
-                labels: ['Todo', 'In Progress', 'Review', 'Done', 'Blocked'],
+            @php
+                $statusLabels = $statusSummaryCollection->pluck('name')->toArray();
+                $statusCounts = $statusSummaryCollection->pluck('count')->toArray();
+                $statusColors = $statusSummaryCollection->pluck('color')->map(function ($color) {
+                    return $color ?: '#6B7280';
+                })->toArray();
+                $statusBackgroundColors = array_map(function ($color) {
+                    return $color . '99';
+                }, $statusColors);
+                $statusBorderColors = $statusColors;
+            @endphp
+
+            const statusSummaryData = {
+                labels: @json($statusLabels),
                 datasets: [{
-                    data: [
-                        {{ $tasksByStatus['todo']->count() }},
-                        {{ $tasksByStatus['in_progress']->count() }},
-                        {{ $tasksByStatus['review']->count() }},
-                        {{ $tasksByStatus['done']->count() }},
-                        {{ $tasksByStatus['blocked']->count() }}
-                    ],
-                    backgroundColor: [
-                        'rgba(108, 117, 125, 0.6)',
-                        'rgba(13, 110, 253, 0.6)',
-                        'rgba(13, 202, 240, 0.6)',
-                        'rgba(25, 135, 84, 0.6)',
-                        'rgba(220, 53, 69, 0.6)'
-                    ],
-                    borderColor: [
-                        'rgba(108, 117, 125, 1)',
-                        'rgba(13, 110, 253, 1)',
-                        'rgba(13, 202, 240, 1)',
-                        'rgba(25, 135, 84, 1)',
-                        'rgba(220, 53, 69, 1)'
-                    ],
+                    data: @json($statusCounts),
+                    backgroundColor: @json($statusBackgroundColors),
+                    borderColor: @json($statusBorderColors),
                     borderWidth: 2
                 }]
             };
-            
-            statusChart = new Chart(statusCtx, {
-                type: 'doughnut',
-                data: statusData,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'right'
+
+            if (statusSummaryData.labels.length > 0) {
+                statusChart = new Chart(statusCtx, {
+                    type: 'doughnut',
+                    data: statusSummaryData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right'
+                            }
                         }
                     }
-                }
-            });
+                });
+            } else {
+                statusCtx.closest('.workload-chart-container').innerHTML = 
+                    '<div class="alert alert-info text-center py-4">No status data available yet.</div>';
+            }
         }
 
         // Priority Workload Chart

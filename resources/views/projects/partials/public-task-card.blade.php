@@ -1,5 +1,6 @@
 @php
     $headerImage = $task->attachments->where('type', 'header')->first();
+    $statusModel = $task->status ?? ($status ?? null);
 @endphp
 
 <div class="public-task-card" data-task-id="{{ $task->id }}">
@@ -55,9 +56,11 @@
             @endif
         </div>
         <div class="d-flex align-items-center gap-1">
-            <span class="badge bg-{{ $task->status === 'done' ? 'success' : ($task->status === 'todo' ? 'secondary' : ($task->status === 'blocked' ? 'danger' : 'primary')) }}">
-                {{ ucfirst(str_replace('_', ' ', $task->status)) }}
-            </span>
+            @if($statusModel)
+                <span class="badge task-status-badge" style="background-color: {{ $statusModel->color }}; color: #fff;" data-role="task-status-badge">
+                    {{ $statusModel->name }}
+                </span>
+            @endif
         </div>
     </div>
 </div>

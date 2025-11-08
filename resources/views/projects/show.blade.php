@@ -5,24 +5,56 @@
 @push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.css">
 <style>
-    .kanban-board {
-        height: calc(100vh - 320px);
-        min-height: 600px;
+    .project-layout {
+        overflow-x: hidden;
+    }
+
+    .wrapper,
+    .main-content {
+        overflow-x: hidden;
+    }
+    
+    .kanban-board-wrapper {
+        width: 100%;
         overflow-x: auto;
         overflow-y: hidden;
+        position: relative;
+    }
+    
+    .kanban-board {
+        padding-bottom: 0.5rem;
+    }
+    
+    .kanban-columns {
+        width: max-content;
+        min-height: 100%;
+        scroll-snap-type: x proximity;
+        align-items: flex-start;
+    }
+    
+    .kanban-column-wrapper {
+        flex: 0 0 320px;
+        width: 320px;
+        scroll-snap-align: start;
+    }
+    
+    @media (max-width: 768px) {
+        .kanban-column-wrapper {
+            flex-basis: 280px;
+            width: 280px;
+        }
     }
     
     .kanban-column {
-        height: 100%;
         background-color: var(--bg-secondary);
         border-radius: 12px;
         padding: 1rem;
         display: flex;
         flex-direction: column;
-        min-height: 500px;
-        max-height: 100%;
+        min-height: 320px;
         overflow-y: auto;
     }
+    
     
     .kanban-column-header {
         flex-shrink: 0;
@@ -253,30 +285,73 @@
         background-color: #f8f9fa;
         border-bottom-color: rgba(0, 0, 0, 0.1);
     }
+
+    .project-meta-badge {
+        background-color: rgba(49, 216, 178, 0.12);
+        color: var(--text-color);
+        border: 1px solid rgba(49, 216, 178, 0.25);
+        font-weight: 500;
+    }
+
+    [data-theme="dark"] .project-meta-badge {
+        background-color: rgba(49, 216, 178, 0.25);
+        color: #f8fafc;
+        border-color: rgba(49, 216, 178, 0.5);
+    }
+
+    [data-theme="dark"] .breadcrumb-item.active {
+        color: #f8fafc;
+    }
+
+    [data-theme="dark"] .breadcrumb-item + .breadcrumb-item::before {
+        color: var(--text-muted);
+    }
 </style>
 @endpush
 
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid project-layout">
     <!-- Page Header -->
-    <div class="row mb-4">
+    <div class="row g-3 align-items-center mb-3">
         <div class="col-12">
             <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-2">
+                <ol class="breadcrumb mb-1">
                     <li class="breadcrumb-item"><a href="{{ route('drives.index') }}">Drives</a></li>
                     <li class="breadcrumb-item"><a href="{{ route('drives.show', $drive) }}">{{ $drive->name }}</a></li>
                     <li class="breadcrumb-item"><a href="{{ route('drives.projects.projects.index', $drive) }}">Projects</a></li>
                     <li class="breadcrumb-item active">{{ $project->name }}</li>
                 </ol>
             </nav>
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <h1 class="display-6 mb-0 brand-teal">{{ $project->name }}</h1>
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+                @php
+                    $projectStart = $project->start_date ? \Illuminate\Support\Carbon::parse($project->start_date) : null;
+                    $projectEnd = $project->end_date ? \Illuminate\Support\Carbon::parse($project->end_date) : null;
+                @endphp
+                <div class="flex-grow-1">
+                    <div class="d-flex flex-wrap align-items-center gap-3">
+                        <h1 class="h3 mb-0 brand-teal">{{ $project->name }}</h1>
+                        <span class="badge project-meta-badge">
+                            <i class="fas fa-calendar-alt me-1"></i>
+                            Created {{ $project->created_at->format('M d, Y') }}
+                        </span>
+                        @if($projectStart)
+                            <span class="badge project-meta-badge">
+                                <i class="fas fa-play me-1"></i>
+                                Starts {{ $projectStart->format('M d, Y') }}
+                            </span>
+                        @endif
+                        @if($projectEnd)
+                            <span class="badge project-meta-badge">
+                                <i class="fas fa-flag-checkered me-1"></i>
+                                Due {{ $projectEnd->format('M d, Y') }}
+                            </span>
+                        @endif
+                    </div>
                     @if($project->description)
-                        <p class="text-muted">{{ $project->description }}</p>
+                        <p class="text-muted mt-1 mb-0">{{ $project->description }}</p>
                     @endif
                     @if($project->is_public && $project->public_key)
-                        <div class="mt-2">
+                        <div class="mt-2 d-flex flex-wrap align-items-center gap-2">
                             <div class="input-group" style="max-width: 600px;">
                                 <input type="text" 
                                        class="form-control form-control-sm" 
@@ -292,19 +367,19 @@
                                     <i class="fas fa-copy me-1"></i>Copy Link
                                 </button>
                             </div>
-                            <small class="text-muted d-block mt-1">
+                            <small class="text-muted">
                                 <i class="fas fa-globe me-1"></i>This project is publicly accessible via the link above
                             </small>
                         </div>
                     @else
-                        <div class="mt-2">
+                        <div class="mt-2 text-muted small d-flex align-items-center gap-2">
                             <small class="text-muted">
                                 <i class="fas fa-lock me-1"></i>This project is private
                             </small>
                         </div>
                     @endif
                 </div>
-                <div class="d-flex gap-2">
+                <div class="d-flex flex-wrap gap-2">
                     @if($drive->canEdit(auth()->user()))
                         <a href="{{ route('drives.projects.projects.edit', [$drive, $project]) }}" class="btn btn-outline-primary">
                             <i class="fas fa-edit me-2"></i>Edit Project
@@ -326,11 +401,11 @@
     @endif
 
     <!-- View Switcher -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="dashboard-card">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="view-switcher btn-group" role="group">
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-xl-8">
+            <div class="dashboard-card h-100">
+                <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 align-items-lg-center">
+                    <div class="view-switcher btn-group flex-wrap" role="group">
                         <a href="{{ route('drives.projects.projects.show', [$drive, $project, 'view' => 'list']) }}" 
                            class="btn btn-{{ $view === 'list' ? 'primary' : 'outline-primary' }}">
                             <i class="fas fa-list me-2"></i>List
@@ -352,8 +427,11 @@
                             <i class="fas fa-chart-pie me-2"></i>Workload
                         </a>
                     </div>
-                    <div class="d-flex gap-2">
+                    <div class="d-flex flex-wrap gap-2">
                         @if($drive->canEdit(auth()->user()))
+                            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#manageStatusesModal">
+                                <i class="fas fa-columns me-2"></i>Manage Statuses
+                            </button>
                             <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createLabelModal">
                                 <i class="fas fa-tag me-2"></i>Create Label
                             </button>
@@ -365,43 +443,36 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Assigned Users Section -->
-    @if($drive->canEdit(auth()->user()) && isset($availableUsers))
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="dashboard-card">
-                <div class="d-flex justify-content-between align-items-center mb-3">
+        @if($drive->canEdit(auth()->user()) && isset($availableUsers))
+        <div class="col-12 col-xl-4">
+            <div class="dashboard-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2">
                     <h5 class="mb-0">
                         <i class="fas fa-users me-2 brand-teal"></i>Assigned Users
                     </h5>
                     <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#assignPeopleModal">
-                        <i class="fas fa-user-plus me-1"></i>Assign Users
+                        <i class="fas fa-user-plus me-1"></i>Assign
                     </button>
                 </div>
-                
                 @if($project->users->count() > 0)
                     <div class="d-flex flex-wrap gap-2">
                         @foreach($project->users as $user)
-                            <div class="badge bg-primary p-2 d-flex align-items-center gap-2">
+                            <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle px-2 py-1 d-flex align-items-center gap-2">
                                 <i class="fas fa-user"></i>
                                 <span>{{ $user->name }}</span>
-                                @if($user->email)
-                                    <small class="opacity-75">({{ $user->email }})</small>
-                                @endif
-                            </div>
+                            </span>
                         @endforeach
                     </div>
                 @else
-                    <p class="text-muted mb-0">
-                        <i class="fas fa-info-circle me-1"></i>No users assigned to this project yet.
+                    <p class="text-muted mb-0 small">
+                        <i class="fas fa-info-circle me-1"></i>No users assigned yet.
                     </p>
                 @endif
             </div>
         </div>
+        @endif
     </div>
-    @endif
 
     <!-- Assign Users Modal -->
     @if($drive->canEdit(auth()->user()) && isset($availableUsers))
@@ -541,6 +612,97 @@
         @include('projects.views.workload')
     @endif
 </div>
+
+@if($drive->canEdit(auth()->user()))
+    <div class="modal fade" id="manageStatusesModal" tabindex="-1" aria-labelledby="manageStatusesModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="manageStatusesModalLabel">
+                        <i class="fas fa-columns me-2"></i>Manage Task Statuses
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-4">
+                        <h6>Create New Status</h6>
+                        <form id="createStatusForm">
+                            <div class="row g-2 align-items-center">
+                                <div class="col-md-5">
+                                    <label class="form-label visually-hidden" for="statusNameInput">Status Name</label>
+                                    <input type="text" id="statusNameInput" name="name" class="form-control" placeholder="Status name" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label visually-hidden" for="statusColorInput">Color</label>
+                                    <input type="color" id="statusColorInput" name="color" class="form-control form-control-color" value="#6B7280" title="Pick a color">
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="1" id="statusCompletedInput" name="is_completed">
+                                        <label class="form-check-label" for="statusCompletedInput">
+                                            Completed
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="fas fa-plus me-1"></i>Add
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">Existing Statuses</h6>
+                        <span class="text-muted small"><i class="fas fa-grip-vertical me-1"></i>Drag statuses to reorder</span>
+                    </div>
+
+                    <ul class="list-group" id="statusList">
+                        @foreach($statuses as $status)
+                            <li class="list-group-item d-flex align-items-center justify-content-between gap-3 flex-wrap" data-status-id="{{ $status->id }}">
+                                <div class="d-flex align-items-center gap-3 flex-wrap flex-grow-1">
+                                    <span class="drag-handle text-muted" style="cursor: move;">
+                                        <i class="fas fa-grip-vertical"></i>
+                                    </span>
+                                    <div class="flex-grow-1">
+                                        <label class="form-label small mb-1">Name</label>
+                                        <input type="text" class="form-control form-control-sm status-name-input" value="{{ $status->name }}">
+                                    </div>
+                                    <div>
+                                        <label class="form-label small mb-1 d-block">Color</label>
+                                        <input type="color" class="form-control form-control-color status-color-input" value="{{ $status->color }}">
+                                    </div>
+                                    <div class="form-check mt-4">
+                                        <input class="form-check-input status-completed-input" type="checkbox" {{ $status->is_completed ? 'checked' : '' }} id="statusCompleted{{ $status->id }}">
+                                        <label class="form-check-label small" for="statusCompleted{{ $status->id }}">Completed</label>
+                                    </div>
+                                </div>
+                                <div class="d-flex flex-column gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-primary status-save-btn">
+                                        <i class="fas fa-save me-1"></i>Save
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger status-delete-btn">
+                                        <i class="fas fa-trash me-1"></i>Delete
+                                    </button>
+                                </div>
+                            </li>
+                        @endforeach
+                    </ul>
+
+                    @if($statuses->isEmpty())
+                        <div class="alert alert-info mt-3 mb-0">
+                            <i class="fas fa-info-circle me-2"></i>No statuses found. Use the form above to create your first status.
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
+
 @endsection
 
 @push('scripts')
@@ -549,10 +711,27 @@
     // Kanban drag and drop
     @if($view === 'kanban')
     document.addEventListener('DOMContentLoaded', function() {
-        const columns = ['todo', 'in_progress', 'review', 'done', 'blocked'];
-        
-        columns.forEach(status => {
-            const element = document.getElementById('kanban-' + status);
+        @php
+            $statusesConfig = $statuses->map(function ($status) {
+                return [
+                    'id' => $status->id,
+                    'slug' => $status->slug,
+                    'name' => $status->name,
+                    'color' => $status->color,
+                    'is_completed' => (bool) $status->is_completed,
+                ];
+            })->values()->all();
+        @endphp
+
+        const statusesConfig = @json($statusesConfig);
+
+        const statusLookup = {};
+        statusesConfig.forEach(status => {
+            statusLookup[String(status.id)] = status;
+        });
+
+        statusesConfig.forEach(status => {
+            const element = document.getElementById('kanban-status-' + status.id);
             if (element) {
                 new Sortable(element, {
                     group: 'tasks',
@@ -566,12 +745,14 @@
                     onEnd: function(evt) {
                         evt.item.classList.remove('dragging');
                         const taskId = evt.item.dataset.taskId;
-                        const newStatus = evt.to.dataset.status;
-                        const oldStatus = evt.from.dataset.status;
-                        const sortOrder = Array.from(evt.to.children).indexOf(evt.item);
+                        const newStatusId = evt.to.dataset.statusId;
+                        const oldStatusId = evt.from.dataset.statusId;
+
+                        const destinationCards = Array.from(evt.to.querySelectorAll('.task-card'));
+                        const sortOrder = destinationCards.findIndex(card => card.dataset.taskId === taskId.toString());
                         
                         // Update empty states
-                        updateEmptyStates(oldStatus, newStatus);
+                        updateEmptyStates(oldStatusId, newStatusId);
                         
                         fetch('{{ route("drives.projects.projects.tasks.update-status", [$drive, $project, ":task"]) }}'.replace(':task', taskId), {
                             method: 'POST',
@@ -580,7 +761,7 @@
                                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
                             },
                             body: JSON.stringify({
-                                status: newStatus,
+                                status_id: Number(newStatusId),
                                 sort_order: sortOrder
                             })
                         })
@@ -588,6 +769,15 @@
                         .then(data => {
                             if (data.success) {
                                 console.log('Task moved successfully');
+                                if (statusLookup[newStatusId]) {
+                                    const statusInfo = statusLookup[newStatusId];
+                                    taskData[taskId].status = statusInfo;
+                                    updateCardStatusBadge(evt.item, statusInfo);
+                                }
+                                updateColumnTaskCount(newStatusId);
+                                if (oldStatusId !== newStatusId) {
+                                    updateColumnTaskCount(oldStatusId);
+                                }
                             }
                         })
                         .catch(error => {
@@ -600,11 +790,11 @@
         });
         
         // Function to update empty states when cards are moved
-        function updateEmptyStates(oldStatus, newStatus) {
+        function updateEmptyStates(oldStatusId, newStatusId) {
             // Hide empty state for destination column if it has cards now
-            const newColumn = document.getElementById('kanban-' + newStatus);
+            const newColumn = document.getElementById('kanban-status-' + newStatusId);
             if (newColumn) {
-                const newEmptyState = document.getElementById('empty-' + newStatus);
+                const newEmptyState = document.getElementById('empty-status-' + newStatusId);
                 const newColumnCards = newColumn.querySelectorAll('.task-card:not(.dragging)');
                 if (newColumnCards.length > 0 && newEmptyState) {
                     newEmptyState.style.display = 'none';
@@ -612,9 +802,9 @@
             }
             
             // Show empty state for source column if it's now empty
-            const oldColumn = document.getElementById('kanban-' + oldStatus);
+            const oldColumn = document.getElementById('kanban-status-' + oldStatusId);
             if (oldColumn) {
-                const oldEmptyState = document.getElementById('empty-' + oldStatus);
+                const oldEmptyState = document.getElementById('empty-status-' + oldStatusId);
                 const oldColumnCards = oldColumn.querySelectorAll('.task-card:not(.dragging)');
                 if (oldColumnCards.length === 0 && oldEmptyState) {
                     oldEmptyState.style.display = 'block';
@@ -622,12 +812,36 @@
             }
         }
         
+        function updateCardStatusBadge(cardElement, statusInfo) {
+            if (!cardElement || !statusInfo) {
+                return;
+            }
+
+            const badge = cardElement.querySelector('[data-role="task-status-badge"]');
+            if (badge) {
+                badge.textContent = statusInfo.name;
+                badge.style.backgroundColor = statusInfo.color;
+            }
+        }
+
+        function updateColumnTaskCount(statusId) {
+            const column = document.getElementById('kanban-status-' + statusId);
+            if (!column) {
+                return;
+            }
+
+            const cardCount = column.querySelectorAll('.task-card').length;
+            const headerBadge = column.closest('.dashboard-card')?.querySelector('.kanban-column-header h6 .badge');
+            if (headerBadge) {
+                headerBadge.textContent = cardCount;
+            }
+        }
+
         // Initialize empty states visibility
         function initializeEmptyStates() {
-            const statuses = ['todo', 'in_progress', 'review', 'done', 'blocked'];
-            statuses.forEach(status => {
-                const column = document.getElementById('kanban-' + status);
-                const emptyState = document.getElementById('empty-' + status);
+            statusesConfig.forEach(status => {
+                const column = document.getElementById('kanban-status-' + status.id);
+                const emptyState = document.getElementById('empty-status-' + status.id);
                 if (column && emptyState) {
                     const cards = column.querySelectorAll('.task-card');
                     emptyState.style.display = cards.length === 0 ? 'block' : 'none';
@@ -645,30 +859,48 @@
         const fullViewBtn = document.getElementById('taskSidebarFullView');
         const editBtn = document.getElementById('taskSidebarEdit');
         
+        @php
+            $taskData = $project->tasks
+                ->whereNull('deleted_at')
+                ->mapWithKeys(function ($task) use ($drive, $project) {
+                    $status = $task->status
+                        ? [
+                            'id' => $task->status->id,
+                            'slug' => $task->status->slug,
+                            'name' => $task->status->name,
+                            'color' => $task->status->color,
+                            'is_completed' => (bool) $task->status->is_completed,
+                        ]
+                        : null;
+
+                    return [
+                        $task->id => [
+                            'id' => $task->id,
+                            'title' => $task->title,
+                            'description' => $task->description ?? '',
+                            'status' => $status,
+                            'priority' => $task->priority,
+                            'due_date' => $task->due_date ? $task->due_date->format('Y-m-d') : null,
+                            'owner' => $task->owner ? $task->owner->name : null,
+                            'members' => $task->members->pluck('name')->toArray(),
+                            'labels' => $task->labels->map(function ($label) {
+                                return [
+                                    'name' => $label->name,
+                                    'color' => $label->color,
+                                ];
+                            })->toArray(),
+                            'url' => route('drives.projects.projects.tasks.show', [$drive, $project, $task]),
+                            'edit_url' => route('drives.projects.projects.tasks.edit', [$drive, $project, $task]),
+                            'created_at' => $task->created_at->format('M d, Y'),
+                            'is_overdue' => (bool) $task->isOverdue(),
+                        ],
+                    ];
+                })
+                ->toArray();
+        @endphp
+
         // Task data storage
-        const taskData = {
-            @foreach($project->tasks->whereNull('deleted_at') as $task)
-            @php
-                $taskUrl = route('drives.projects.projects.tasks.show', [$drive, $project, $task]);
-                $taskEditUrl = route('drives.projects.projects.tasks.edit', [$drive, $project, $task]);
-            @endphp
-            {{ $task->id }}: {
-                id: {{ $task->id }},
-                title: @json($task->title),
-                description: @json($task->description ?? ''),
-                status: @json($task->status),
-                priority: @json($task->priority),
-                due_date: @json($task->due_date ? $task->due_date->format('Y-m-d') : null),
-                owner: @json($task->owner ? $task->owner->name : null),
-                members: @json($task->members->map(fn($m) => $m->name)->toArray()),
-                labels: @json($task->labels->map(fn($l) => ['name' => $l->name, 'color' => $l->color])->toArray()),
-                url: @json($taskUrl),
-                edit_url: @json($taskEditUrl),
-                created_at: @json($task->created_at->format('M d, Y')),
-                is_overdue: {{ $task->isOverdue() ? 'true' : 'false' }},
-            },
-            @endforeach
-        };
+        const taskData = @json($taskData);
         
         window.openTaskSidebar = function(taskId) {
             const task = taskData[taskId];
@@ -687,8 +919,10 @@
             // Status and Priority
             html += '<div class="task-sidebar-section">';
             html += '<div class="d-flex gap-2 mb-3">';
-            html += `<span class="badge bg-${task.status === 'done' ? 'success' : (task.status === 'todo' ? 'secondary' : (task.status === 'blocked' ? 'danger' : 'primary'))} fs-6">`;
-            html += `${task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('_', ' ')}</span>`;
+            if (task.status && task.status.name) {
+                html += `<span class="badge fs-6" style="background-color: ${task.status.color}; color: #fff;">`;
+                html += `${escapeHtml(task.status.name)}</span>`;
+            }
             html += `<span class="badge bg-${task.priority === 'urgent' ? 'danger' : (task.priority === 'high' ? 'warning' : (task.priority === 'medium' ? 'info' : 'secondary'))} fs-6">`;
             html += `${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}</span>`;
             html += '</div>';
@@ -959,6 +1193,163 @@
     
     // Make copy function available globally
     window.copyPublicLink = copyPublicLink;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const createStatusForm = document.getElementById('createStatusForm');
+        const statusListEl = document.getElementById('statusList');
+        const csrfToken = '{{ csrf_token() }}';
+        const storeStatusUrl = '{{ route('drives.projects.projects.task-statuses.store', [$drive, $project]) }}';
+        const reorderStatusUrl = '{{ route('drives.projects.projects.task-statuses.reorder', [$drive, $project]) }}';
+        const updateStatusUrlTemplate = '{{ route('drives.projects.projects.task-statuses.update', [$drive, $project, '__STATUS__']) }}';
+        const deleteStatusUrlTemplate = '{{ route('drives.projects.projects.task-statuses.destroy', [$drive, $project, '__STATUS__']) }}';
+
+        function showStatusError(error) {
+            if (error && error.errors) {
+                const firstErrorGroup = Object.values(error.errors)[0];
+                if (Array.isArray(firstErrorGroup) && firstErrorGroup.length > 0) {
+                    alert(firstErrorGroup[0]);
+                    return;
+                }
+            }
+
+            const message = (error && error.message) ? error.message : 'Unable to update statuses right now. Please try again.';
+            alert(message);
+        }
+
+        function sendJson(url, method, payload = null) {
+            const options = {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+            };
+
+            if (payload !== null) {
+                options.body = JSON.stringify(payload);
+            }
+
+            return fetch(url, options).then(response => {
+                if (response.ok) {
+                    return response.json().catch(() => ({}));
+                }
+
+                return response.json().then(err => Promise.reject(err));
+            });
+        }
+
+        if (createStatusForm) {
+            createStatusForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const nameInput = createStatusForm.querySelector('input[name="name"]');
+                const colorInput = createStatusForm.querySelector('input[name="color"]');
+                const completedInput = createStatusForm.querySelector('input[name="is_completed"]');
+                const submitButton = createStatusForm.querySelector('button[type="submit"]');
+
+                if (!nameInput.value.trim()) {
+                    alert('Status name is required.');
+                    return;
+                }
+
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Adding';
+
+                sendJson(storeStatusUrl, 'POST', {
+                    name: nameInput.value.trim(),
+                    color: colorInput.value,
+                    is_completed: completedInput.checked,
+                })
+                .then(() => location.reload())
+                .catch(error => {
+                    showStatusError(error);
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = '<i class="fas fa-plus me-1"></i>Add';
+                });
+            });
+        }
+
+        if (statusListEl && typeof Sortable !== 'undefined') {
+            new Sortable(statusListEl, {
+                handle: '.drag-handle',
+                animation: 150,
+                onEnd: function() {
+                    const order = Array.from(statusListEl.querySelectorAll('li[data-status-id]'))
+                        .map(item => Number(item.dataset.statusId));
+
+                    sendJson(reorderStatusUrl, 'POST', { order })
+                        .catch(showStatusError);
+                }
+            });
+
+            statusListEl.querySelectorAll('.status-save-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const listItem = this.closest('li[data-status-id]');
+                    if (!listItem) {
+                        return;
+                    }
+
+                    const statusId = listItem.dataset.statusId;
+                    const nameInput = listItem.querySelector('.status-name-input');
+                    const colorInput = listItem.querySelector('.status-color-input');
+                    const completedInput = listItem.querySelector('.status-completed-input');
+
+                    if (!nameInput.value.trim()) {
+                        alert('Status name cannot be empty.');
+                        return;
+                    }
+
+                    const updateUrl = updateStatusUrlTemplate.replace('__STATUS__', statusId);
+                    const saveButton = this;
+                    saveButton.disabled = true;
+                    const originalText = saveButton.innerHTML;
+                    saveButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving';
+
+                    sendJson(updateUrl, 'PATCH', {
+                        name: nameInput.value.trim(),
+                        color: colorInput.value,
+                        is_completed: completedInput.checked,
+                    })
+                    .then(() => location.reload())
+                    .catch(error => {
+                        showStatusError(error);
+                        saveButton.disabled = false;
+                        saveButton.innerHTML = originalText;
+                    });
+                });
+            });
+
+            statusListEl.querySelectorAll('.status-delete-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const listItem = this.closest('li[data-status-id]');
+                    if (!listItem) {
+                        return;
+                    }
+
+                    const statusId = listItem.dataset.statusId;
+                    const deleteUrl = deleteStatusUrlTemplate.replace('__STATUS__', statusId);
+
+                    if (!confirm('Are you sure you want to delete this status?')) {
+                        return;
+                    }
+
+                    const deleteButton = this;
+                    deleteButton.disabled = true;
+                    const originalText = deleteButton.innerHTML;
+                    deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Deleting';
+
+                    sendJson(deleteUrl, 'DELETE')
+                        .then(() => location.reload())
+                        .catch(error => {
+                            showStatusError(error);
+                            deleteButton.disabled = false;
+                            deleteButton.innerHTML = originalText;
+                        });
+                });
+            });
+        }
+    });
 </script>
 @endpush
 
