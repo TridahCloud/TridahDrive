@@ -38,6 +38,7 @@ class User extends Authenticatable
         'currency',
         'timezone',
         'theme',
+        'is_admin',
     ];
 
     /**
@@ -60,6 +61,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
     }
 

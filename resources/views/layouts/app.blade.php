@@ -18,8 +18,16 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
+        <!-- Styles -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.13/dist/tailwind.min.css">
+        <link rel="stylesheet" href="{{ asset('css/toast.css') }}">
+        @stack('styles')
+
         <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+        <script src="{{ asset('js/theme-toggle.js') }}" defer></script>
+        <script src="{{ asset('js/toast.js') }}" defer></script>
+        @stack('scripts')
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-100">

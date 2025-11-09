@@ -26,6 +26,8 @@ use App\Http\Controllers\TimeLogController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\UserSelfServiceController;
 use App\Http\Controllers\DriveRoleController;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -180,6 +182,12 @@ Route::middleware('auth')->group(function () {
     Route::patch('notifications/{notification}/unread', [NotificationController::class, 'markAsUnread'])->name('notifications.unread');
     Route::patch('notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
     Route::delete('notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+
+    Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+        Route::patch('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
+        Route::post('/users/{user}/password-reset', [AdminUserController::class, 'sendPasswordReset'])->name('users.password-reset');
+    });
 });
 
 require __DIR__.'/auth.php';
