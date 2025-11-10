@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TridahDrive Offline</title>
+    <style>
+        :root {
+            color-scheme: light dark;
+        }
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            margin: 0;
+            padding: 2.5rem 1.5rem;
+            background: #0b0d17;
+            color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+        main {
+            max-width: 24rem;
+        }
+        h1 {
+            font-size: 1.875rem;
+            margin-bottom: 1rem;
+            color: #31d8b2;
+        }
+        p {
+            margin-bottom: 0.75rem;
+            line-height: 1.6;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(49, 216, 178, 0.15);
+            color: #31d8b2;
+            border-radius: 999px;
+            padding: 0.35rem 0.9rem;
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+        }
+        @media (prefers-color-scheme: light) {
+            body {
+                background: #f8fafc;
+                color: #0f172a;
+            }
+            h1 {
+                color: #0f172a;
+            }
+            .badge {
+                background: rgba(49, 216, 178, 0.12);
+            }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="badge">You are offline</div>
+        <h1>Offline Right Now</h1>
+        <p>It looks like your device is currently offline. Any content you visited recently is available once you reconnect.</p>
+        <p>Please check your connection, then refresh this page to continue using TridahDrive.</p>
+    </main>
+</body>
+</html>
+

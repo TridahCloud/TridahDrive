@@ -8,6 +8,9 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        <meta name="theme-color" content="#31d8b2">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
         <!-- SEO Meta Tags -->
         <title>@yield('title', 'TridahDrive') - Business Management Platform</title>
@@ -25,8 +28,9 @@
         <meta property="og:site_name" content="TridahDrive">
         
         <!-- Favicon -->
-        <link rel="icon" type="image/png" href="{{ asset('images/tridah icon.png') }}">
-        <link rel="apple-touch-icon" href="{{ asset('images/tridah icon.png') }}">
+        <link rel="icon" type="image/png" href="{{ asset('images/tridah-icon-192.png') }}">
+        <link rel="apple-touch-icon" href="{{ asset('images/tridah-icon-512.png') }}">
+        <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
         
         <!-- Canonical URL -->
         <link rel="canonical" href="{{ url()->current() }}">
@@ -61,6 +65,16 @@
         
         <!-- Theme Toggle Script -->
         <script src="{{ asset('js/theme-toggle.js') }}"></script>
+        
+        <script>
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/sw.js').catch((error) => {
+                        console.warn('Service worker registration failed:', error);
+                    });
+                });
+            }
+        </script>
         
         <!-- Google tag (gtag.js) -->
         <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17684753649"></script>
