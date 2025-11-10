@@ -58,13 +58,22 @@
                     <i class="fas fa-chevron-down small"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="fas fa-user me-2"></i>Profile</a></li>
-                    <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                    @if (Auth::user()?->is_admin)
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center justify-content-between" href="{{ route('admin.dashboard') }}">
+                                <span><i class="fas fa-shield-halved me-2"></i>{{ __('Admin Console') }}</span>
+                                <span class="badge bg-success-subtle text-success">{{ __('Admin') }}</span>
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                    @endif
+                    <li><a class="dropdown-item" href="{{ route('profile.edit') }}"><i class="fas fa-user me-2"></i>{{ __('Profile') }}</a></li>
+                    <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>{{ __('Settings') }}</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-                            <button type="submit" class="dropdown-item"><i class="fas fa-sign-out-alt me-2"></i>Logout</button>
+                            <button type="submit" class="dropdown-item"><i class="fas fa-sign-out-alt me-2"></i>{{ __('Logout') }}</button>
                         </form>
                     </li>
                 </ul>
