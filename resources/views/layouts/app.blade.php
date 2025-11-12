@@ -20,6 +20,7 @@
 
         <!-- Styles -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.13/dist/tailwind.min.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
         <link rel="stylesheet" href="{{ asset('css/toast.css') }}">
         @stack('styles')
 
@@ -47,5 +48,8 @@
                 {{ $slot }}
             </main>
         </div>
+        
+        <!-- Help Widget -->
+        <x-help-widget />
     </body>
 </html>
