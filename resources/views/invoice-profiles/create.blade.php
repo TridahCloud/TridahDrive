@@ -28,7 +28,7 @@
         </div>
     </div>
 
-    <form action="{{ route('drives.invoice-profiles.store', $drive) }}" method="POST">
+    <form action="{{ route('drives.invoice-profiles.store', $drive) }}" method="POST" enctype="multipart/form-data">
         @csrf
         
         <div class="row">
@@ -78,8 +78,13 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="logo_url" class="form-label">Logo URL</label>
-                        <input type="url" class="form-control" id="logo_url" name="logo_url" value="{{ old('logo_url') }}" placeholder="https://example.com/logo.png">
+                        <label for="logo" class="form-label">Company Logo</label>
+                        <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
+                        <small class="text-muted">Upload a logo image (JPG, PNG, GIF, SVG, WebP - Max 2MB)</small>
+                        <div class="mt-2">
+                            <label for="logo_url" class="form-label">Or use Logo URL</label>
+                            <input type="url" class="form-control" id="logo_url" name="logo_url" value="{{ old('logo_url') }}" placeholder="https://example.com/logo.png">
+                        </div>
                     </div>
                 </div>
 

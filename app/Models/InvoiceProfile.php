@@ -18,6 +18,7 @@ class InvoiceProfile extends Model
         'company_email',
         'company_website',
         'logo_url',
+        'logo_path',
         'customizations',
         'invoice_prefix',
         'next_invoice_number',

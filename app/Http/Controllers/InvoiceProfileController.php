@@ -6,6 +6,7 @@ use App\Models\Drive;
 use App\Models\InvoiceProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class InvoiceProfileController extends Controller
 {
@@ -57,6 +58,7 @@ class InvoiceProfileController extends Controller
             'company_email' => 'nullable|email|max:255',
             'company_website' => 'nullable|url|max:255',
             'logo_url' => 'nullable|url|max:255',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
             'invoice_prefix' => 'nullable|string|max:20',
             'next_invoice_number' => 'nullable|integer|min:1',
             'bank_name' => 'nullable|string|max:255',
@@ -65,6 +67,12 @@ class InvoiceProfileController extends Controller
             'bank_routing_number' => 'nullable|string|max:100',
             'bank_account_number' => 'nullable|string|max:100',
         ]);
+
+        // Handle logo upload
+        if ($request->hasFile('logo')) {
+            $logoPath = $request->file('logo')->store('invoice-logos', 'public');
+            $validated['logo_path'] = $logoPath;
+        }
 
         // If this is marked as default, unset other defaults
         if ($request->has('is_default') && $request->is_default) {
@@ -135,6 +143,8 @@ class InvoiceProfileController extends Controller
             'company_email' => 'nullable|email|max:255',
             'company_website' => 'nullable|url|max:255',
             'logo_url' => 'nullable|url|max:255',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+            'remove_logo' => 'sometimes|boolean',
             'invoice_prefix' => 'nullable|string|max:20',
             'next_invoice_number' => 'nullable|integer|min:1',
             'bank_name' => 'nullable|string|max:255',
@@ -144,6 +154,24 @@ class InvoiceProfileController extends Controller
             'bank_account_number' => 'nullable|string|max:100',
             'accent_color' => 'nullable|string|max:7',
         ]);
+
+        // Handle logo removal
+        if ($request->has('remove_logo') && $request->remove_logo) {
+            if ($invoiceProfile->logo_path && Storage::disk('public')->exists($invoiceProfile->logo_path)) {
+                Storage::disk('public')->delete($invoiceProfile->logo_path);
+            }
+            $validated['logo_path'] = null;
+        }
+
+        // Handle logo upload
+        if ($request->hasFile('logo')) {
+            // Delete old logo if exists
+            if ($invoiceProfile->logo_path && Storage::disk('public')->exists($invoiceProfile->logo_path)) {
+                Storage::disk('public')->delete($invoiceProfile->logo_path);
+            }
+            $logoPath = $request->file('logo')->store('invoice-logos', 'public');
+            $validated['logo_path'] = $logoPath;
+        }
 
         // If this is marked as default, unset other defaults
         if ($request->has('is_default') && $request->is_default) {

@@ -2,6 +2,216 @@
 
 @section('title', 'Edit Invoice ' . $invoice->invoice_number . ' - ' . $drive->name)
 
+@php
+    // Get customizations, ensuring it's an array
+    $customizations = is_array($invoice->customizations) ? $invoice->customizations : [];
+    
+    // Helper function to check if a customization option is enabled
+    // Handles boolean true/false, string "true"/"false", and defaults to true if not set
+    $isEnabled = function($key) use ($customizations) {
+        if (!isset($customizations[$key])) {
+            return true; // Default to enabled if not set
+        }
+        $value = $customizations[$key];
+        // Handle boolean, string boolean, and numeric values
+        if (is_bool($value)) {
+            return $value;
+        }
+        if (is_string($value)) {
+            return strtolower($value) === 'true' || $value === '1';
+        }
+        return (bool) $value;
+    };
+@endphp
+
+@push('styles')
+<style>
+    :root {
+        --invoice-accent-color: {{ $accentColor }};
+    }
+    
+    @media print {
+        /* Hide navigation and toolbar when printing */
+        .breadcrumb,
+        .dashboard-card,
+        .btn,
+        .alert,
+        #customizePanel,
+        #customizePanelOverlay,
+        .customize-panel,
+        .quick-add-item,
+        #addItemBtn,
+        #importClientBtn,
+        .remove-item,
+        .dropdown-menu {
+            display: none !important;
+        }
+        
+        /* Hide form inputs and show values instead */
+        input[type="text"],
+        input[type="email"],
+        input[type="number"],
+        input[type="date"],
+        select,
+        textarea {
+            border: none !important;
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            appearance: none !important;
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+            box-shadow: none !important;
+            outline: none !important;
+            color: #000000 !important;
+            font-size: inherit !important;
+            font-family: inherit !important;
+            font-weight: inherit !important;
+            width: auto !important;
+            min-width: 0 !important;
+        }
+        
+        /* Remove contenteditable styling when printing */
+        [contenteditable="true"] {
+            border: none !important;
+            background: transparent !important;
+            outline: none !important;
+        }
+        
+        /* Remove padding and margins for print */
+        body {
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        
+        .container-fluid {
+            padding: 0 !important;
+        }
+        
+        /* Ensure invoice container is full width and has white background */
+        .invoice-container {
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 20px !important;
+            background-color: #ffffff !important;
+            box-shadow: none !important;
+        }
+        
+        /* Make all text dark for good contrast on white paper */
+        .text-muted,
+        .text-muted *,
+        small.text-muted,
+        .text-muted small {
+            color: #333333 !important;
+        }
+        
+        /* Make text-muted elements dark grey instead of light grey */
+        .invoice-container .text-muted {
+            color: #333333 !important;
+        }
+        
+        /* Ensure regular text elements are dark */
+        .invoice-container p:not([style*="color"]),
+        .invoice-container div:not([style*="color"]):not([data-field="totals"]),
+        .invoice-container span:not([style*="color"]),
+        .invoice-container td,
+        .invoice-container strong:not([style*="color"]),
+        .invoice-container h1:not([style*="color"]),
+        .invoice-container h2:not([style*="color"]),
+        .invoice-container h3:not([style*="color"]),
+        .invoice-container h4:not([style*="color"]),
+        .invoice-container h5:not([style*="color"]),
+        .invoice-container h6:not([style*="color"]) {
+            color: #000000 !important;
+        }
+        
+        /* Preserve accent color for customized elements - use very specific selectors */
+        .invoice-container h2[data-field="company-name"][style*="color"],
+        .invoice-container h1[data-field="invoice-title"][style*="color"],
+        .invoice-container [data-field="totals"] .mb-3 strong[style*="color"],
+        .invoice-container [data-field="totals"] .h3 strong span[style*="color"],
+        .invoice-container [data-field="totals"] strong[style*="color"],
+        .invoice-container [data-field="totals"] span[style*="color"],
+        .invoice-container .invoice-heading,
+        .invoice-container .brand-teal,
+        .invoice-container #subtotal,
+        .invoice-container #taxAmount,
+        .invoice-container #total {
+            color: var(--invoice-accent-color) !important;
+        }
+        
+        /* Ensure table header uses accent color */
+        .invoice-container thead,
+        .invoice-container thead th {
+            background-color: var(--invoice-accent-color) !important;
+            color: #ffffff !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        /* Ensure borders print */
+        .table-bordered,
+        .table-bordered th,
+        .table-bordered td,
+        .border-top {
+            border-color: #000000 !important;
+        }
+        
+        /* Remove input borders when printing */
+        .form-control,
+        .invoice-field,
+        .invoice-field-small {
+            border: none !important;
+            border-bottom: 1px solid transparent !important;
+        }
+        
+        /* Ensure background colors print */
+        .bg-light {
+            background-color: #f5f5f5 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        /* Badge colors for status */
+        .badge {
+            border: 1px solid #000000 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        /* Links should be dark, not blue */
+        a {
+            color: #000000 !important;
+            text-decoration: underline !important;
+        }
+        
+        /* Remove any background images or gradients */
+        * {
+            background-image: none !important;
+        }
+        
+        /* Page break settings */
+        .invoice-container {
+            page-break-inside: avoid;
+        }
+        
+        .table {
+            page-break-inside: avoid;
+        }
+        
+        /* Hide input group styling */
+        .input-group {
+            display: block !important;
+        }
+        
+        .input-group .form-control {
+            display: block !important;
+            width: 100% !important;
+        }
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="container-fluid py-4">
     <!-- Toolbar -->
@@ -29,9 +239,6 @@
             </button>
             <button type="button" class="btn btn-outline-primary btn-sm" id="saveBtn">
                 <i class="fas fa-save me-1"></i>Update
-            </button>
-            <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">
-                <i class="fas fa-print me-1"></i>Print
             </button>
         </div>
     </div>
@@ -76,6 +283,13 @@
                                     <span class="toggle-slider"></span>
                                 </label>
                                 <span class="toggle-label">Company Email</span>
+                            </div>
+                            <div class="customize-item">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="show-company-logo" {{ old('customizations.show_company_logo', $invoice->customizations['show_company_logo'] ?? true) ? 'checked' : '' }}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span class="toggle-label">Company Logo</span>
                             </div>
             </div>
 
@@ -206,8 +420,21 @@
             <!-- Top Section: Logo & Invoice Info -->
             <div class="invoice-section d-flex justify-content-between align-items-start mb-5" id="company-info" data-section="company-info">
                 <div class="flex-grow-1">
-                    <h2 class="mb-2" data-field="company-name">
-                        <span contenteditable="true" class="brand-teal">{{ $invoiceProfile?->company_name ?? 'Your Company' }}</span>
+                    @php
+                        $logoUrl = null;
+                        if ($invoiceProfile?->logo_path) {
+                            $logoUrl = Storage::url($invoiceProfile->logo_path);
+                        } elseif ($invoiceProfile?->logo_url) {
+                            $logoUrl = $invoiceProfile->logo_url;
+                        }
+                    @endphp
+                    @if($logoUrl)
+                        <div class="mb-3" data-field="company-logo" style="display: {{ $isEnabled('show_company_logo') ? '' : 'none' }};">
+                            <img src="{{ $logoUrl }}" alt="Company Logo" style="max-height: 80px; max-width: 200px; object-fit: contain;">
+                        </div>
+                    @endif
+                    <h2 class="mb-2" data-field="company-name" style="color: {{ $accentColor }} !important;">
+                        <span contenteditable="true" class="brand-teal" style="color: {{ $accentColor }} !important;">{{ $invoiceProfile?->company_name ?? 'Your Company' }}</span>
                     </h2>
                     <p class="text-muted mb-1" data-field="company-address">
                         <span contenteditable="true">{{ $invoiceProfile?->company_address ?? 'Your Address' }}</span>
@@ -220,7 +447,7 @@
                     </p>
                 </div>
                 <div class="text-end invoice-section" id="invoice-header" data-section="invoice-details" style="text-align: right;">
-                    <h1 class="text-primary mb-3 invoice-heading" data-field="invoice-title" style="color: {{ $accentColor }}; text-align: right;">INVOICE</h1>
+                    <h1 class="text-primary mb-3 invoice-heading" data-field="invoice-title" style="color: {{ $accentColor }} !important; text-align: right;">INVOICE</h1>
                     <div class="text-muted small" style="text-align: right;">
                         <div class="mb-1" data-field="invoice-number">
                             Invoice # <span class="invoice-number text-dark">{{ $invoice->invoice_number }}</span>
@@ -282,7 +509,7 @@
             </div>
 
             <!-- Items Table -->
-            <div class="invoice-section mb-4" id="items-table" data-section="items-table">
+            <div class="invoice-section mb-4" id="items-table" data-section="items-table" style="display: {{ $isEnabled('show_items_table') ? '' : 'none' }};">
                 <!-- Quick Add Items -->
                 @if($userItems->count() > 0)
                 <div class="mb-3">
@@ -302,13 +529,13 @@
                 @endif
                 
                 <table class="table table-bordered" id="itemsTable">
-                    <thead class="bg-primary text-white" style="background-color: {{ $accentColor }};">
+                    <thead class="bg-primary text-white" style="background-color: {{ $accentColor }} !important;">
                         <tr>
-                            <th style="width: 40%;">DESCRIPTION</th>
-                            <th style="width: 12%;">QTY</th>
-                            <th style="width: 18%;">UNIT</th>
-                            <th style="width: 15%;">RATE</th>
-                            <th style="width: 15%;">AMOUNT</th>
+                            <th style="width: 40%; background-color: {{ $accentColor }} !important;">DESCRIPTION</th>
+                            <th style="width: 12%; background-color: {{ $accentColor }} !important;">QTY</th>
+                            <th style="width: 18%; background-color: {{ $accentColor }} !important;">UNIT</th>
+                            <th style="width: 15%; background-color: {{ $accentColor }} !important;">RATE</th>
+                            <th style="width: 15%; background-color: {{ $accentColor }} !important;">AMOUNT</th>
                         </tr>
                     </thead>
                     <tbody id="itemsBody">
@@ -344,8 +571,8 @@
             </div>
 
             <!-- Totals -->
-            <div class="row">
-                <div class="col-md-6 invoice-section" id="payment-details" data-section="payment-details">
+            <div class="row" style="display: {{ ($isEnabled('show_payment_details') || $isEnabled('show_totals')) ? '' : 'none' }};">
+                <div class="col-md-6 invoice-section" id="payment-details" data-section="payment-details" style="display: {{ $isEnabled('show_payment_details') ? '' : 'none' }};">
                     <h6 class="text-uppercase text-muted mb-3">Payment Details:</h6>
                     <div class="bg-light p-3 rounded">
                         <div class="row">
@@ -372,18 +599,18 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-6 invoice-section" id="totals" data-section="totals">
+                <div class="col-md-6 invoice-section" id="totals" data-section="totals" style="display: {{ $isEnabled('show_totals') ? '' : 'none' }};">
                     <div class="text-end">
                         <div class="mb-3">
-                            <strong>Subtotal: <span id="subtotal">{{ currency_for($invoice->subtotal, $drive) }}</span></strong>
+                            <strong style="color: {{ $accentColor }} !important;">Subtotal: <span id="subtotal" style="color: {{ $accentColor }} !important;">{{ currency_for($invoice->subtotal, $drive) }}</span></strong>
                         </div>
                         <div class="mb-3 d-flex align-items-center gap-2">
                             <label class="mb-0">Tax:</label>
                             <input type="number" class="form-control invoice-field-small" id="tax_rate" name="tax_rate" value="{{ old('tax_rate', $invoice->tax_rate ?? 0) }}" step="0.01" min="0" max="100" style="width: 80px;">
-                            <span>% (<span id="taxAmount">{{ currency_for($invoice->tax_amount ?? 0, $drive) }}</span>)</span>
+                            <span>% (<span id="taxAmount" style="color: {{ $accentColor }} !important;">{{ currency_for($invoice->tax_amount ?? 0, $drive) }}</span>)</span>
                         </div>
                         <div class="h3 mb-0">
-                            <strong>Total: <span class="brand-teal"><span id="total" style="color: {{ $accentColor }};">{{ currency_for($invoice->total, $drive) }}</span></span></strong>
+                            <strong>Total: <span class="brand-teal"><span id="total" style="color: {{ $accentColor }} !important;">{{ currency_for($invoice->total, $drive) }}</span></span></strong>
                         </div>
                     </div>
                 </div>
@@ -430,9 +657,13 @@ document.addEventListener('DOMContentLoaded', function() {
             element.style.color = color;
         });
         
-        document.getElementById('subtotal').style.color = color;
-        document.getElementById('taxAmount').style.color = color;
-        document.getElementById('total').style.color = color;
+        const subtotalEl = document.getElementById('subtotal');
+        const taxAmountEl = document.getElementById('taxAmount');
+        const totalEl = document.getElementById('total');
+        
+        if (subtotalEl) subtotalEl.style.color = color;
+        if (taxAmountEl) taxAmountEl.style.color = color;
+        if (totalEl) totalEl.style.color = color;
         
         document.querySelectorAll('.table thead, .table thead th').forEach(element => {
             element.style.backgroundColor = color;
@@ -452,7 +683,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize with saved accent color if available
     if (savedAccentColor && savedAccentColor !== initialAccentColor) {
         initializeAccentColor(savedAccentColor);
-        document.getElementById('invoice-color').value = savedAccentColor;
+        const invoiceColorInput = document.getElementById('invoice-color');
+        if (invoiceColorInput) {
+            invoiceColorInput.value = savedAccentColor;
+        }
     }
     
     // Apply saved customizations on page load
@@ -461,6 +695,7 @@ document.addEventListener('DOMContentLoaded', function() {
         'show-company-address': 'company-address',
         'show-company-phone': 'company-phone',
         'show-company-email': 'company-email',
+        'show-company-logo': 'company-logo',
         'show-invoice-title': 'invoice-title',
         'show-invoice-number': 'invoice-number',
         'show-invoice-date': 'invoice-date',
@@ -472,26 +707,84 @@ document.addEventListener('DOMContentLoaded', function() {
         'show-project': 'project',
         'show-items-table': 'items-table',
         'show-payment-details': 'payment-details',
-        'show-totals': 'totals'
+        'show-totals': 'totals',
+    };
+    
+    // Section mappings for larger sections that use data-section attribute
+    const sectionMappings = {
+        'show-items-table': 'items-table',
+        'show-payment-details': 'payment-details',
+        'show-totals': 'totals',
     };
     
     // Apply saved customizations
     Object.keys(fieldMappings).forEach(checkboxId => {
         const checkbox = document.getElementById(checkboxId);
         const fieldName = fieldMappings[checkboxId];
+        const sectionName = sectionMappings[checkboxId];
         const customizationKey = checkboxId.replace('show-', 'show_').replace(/-/g, '_');
         const isChecked = savedCustomizations?.[customizationKey] ?? true;
         
         if (checkbox) {
-            // Apply display state based on saved customization
-            const targetElements = document.querySelectorAll(`[data-field="${fieldName}"]`);
-            targetElements.forEach(element => {
-                if (isChecked) {
-                    element.style.display = '';
-                } else {
-                    element.style.display = 'none';
+            // Handle regular fields with data-field attribute
+            if (fieldName && !sectionName) {
+                const targetElements = document.querySelectorAll(`[data-field="${fieldName}"]`);
+                targetElements.forEach(element => {
+                    if (isChecked) {
+                        element.style.display = '';
+                    } else {
+                        element.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Handle sections with data-section attribute
+            if (sectionName) {
+                // Try to find the section - use ID first (most reliable), then data-section
+                const targetSection = document.getElementById(sectionName)
+                    || document.querySelector(`[data-section="${sectionName}"]`)
+                    || document.querySelector(`.invoice-container [data-section="${sectionName}"]`);
+                if (targetSection) {
+                    if (isChecked) {
+                        targetSection.style.display = '';
+                        // For totals row, also show the parent row if either payment-details or totals is visible
+                        if (sectionName === 'payment-details' || sectionName === 'totals') {
+                            const totalsRow = targetSection.closest('.row');
+                            if (totalsRow) {
+                                const paymentDetailsCheckbox = document.getElementById('show-payment-details');
+                                const totalsCheckbox = document.getElementById('show-totals');
+                                const paymentDetailsKey = 'show_payment_details';
+                                const totalsKey = 'show_totals';
+                                const paymentDetailsVisible = paymentDetailsCheckbox ? (savedCustomizations?.[paymentDetailsKey] ?? true) : true;
+                                const totalsVisible = totalsCheckbox ? (savedCustomizations?.[totalsKey] ?? true) : true;
+                                if (paymentDetailsVisible || totalsVisible) {
+                                    totalsRow.style.display = '';
+                                }
+                            }
+                        }
+                    } else {
+                        targetSection.style.display = 'none';
+                        // For totals row, hide the parent row if both payment-details and totals are hidden
+                        if (sectionName === 'payment-details' || sectionName === 'totals') {
+                            const totalsRow = targetSection.closest('.row');
+                            if (totalsRow) {
+                                const paymentDetailsCheckbox = document.getElementById('show-payment-details');
+                                const totalsCheckbox = document.getElementById('show-totals');
+                                const paymentDetailsKey = 'show_payment_details';
+                                const totalsKey = 'show_totals';
+                                const paymentDetailsVisible = paymentDetailsCheckbox ? (savedCustomizations?.[paymentDetailsKey] ?? true) : true;
+                                const totalsVisible = totalsCheckbox ? (savedCustomizations?.[totalsKey] ?? true) : true;
+                                if (!paymentDetailsVisible && !totalsVisible) {
+                                    totalsRow.style.display = 'none';
+                                } else {
+                                    // Make sure row is visible if at least one section is visible
+                                    totalsRow.style.display = '';
+                                }
+                            }
+                        }
+                    }
                 }
-            });
+            }
         }
     });
     
@@ -505,48 +798,56 @@ document.addEventListener('DOMContentLoaded', function() {
     // document.getElementById('issue_date').value = today;
     
     // Add item button
-    document.getElementById('addItemBtn').addEventListener('click', function() {
-        const tbody = document.getElementById('itemsBody');
-        const newRow = document.createElement('tr');
-        newRow.className = 'item-row';
-        newRow.innerHTML = `
-            <td>
-                <input type="text" class="form-control border-0 item-description" name="items[${itemCounter}][description]" placeholder="Enter description" required>
-            </td>
-            <td>
-                <input type="number" class="form-control border-0 item-qty" name="items[${itemCounter}][quantity]" value="1" step="1" min="0" required>
-            </td>
-            <td>
-                <input type="text" class="form-control border-0" name="items[${itemCounter}][unit]" value="items">
-            </td>
-            <td>
-                <input type="number" class="form-control border-0 item-price" name="items[${itemCounter}][unit_price]" value="0" step="1" min="0" required>
-            </td>
-            <td>
-                <div class="d-flex align-items-center justify-content-between">
-                    <span class="item-total">{{ currency_for(0, $drive) }}</span>
-                    <button type="button" class="btn btn-link btn-sm text-danger remove-item">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </td>
-        `;
-        tbody.appendChild(newRow);
-        attachItemListeners(newRow);
-        itemCounter++;
-    });
+    const addItemBtn = document.getElementById('addItemBtn');
+    if (addItemBtn) {
+        addItemBtn.addEventListener('click', function() {
+            const tbody = document.getElementById('itemsBody');
+            if (tbody) {
+                const newRow = document.createElement('tr');
+                newRow.className = 'item-row';
+                newRow.innerHTML = `
+                    <td>
+                        <input type="text" class="form-control border-0 item-description" name="items[${itemCounter}][description]" placeholder="Enter description" required>
+                    </td>
+                    <td>
+                        <input type="number" class="form-control border-0 item-qty" name="items[${itemCounter}][quantity]" value="1" step="1" min="0" required>
+                    </td>
+                    <td>
+                        <input type="text" class="form-control border-0" name="items[${itemCounter}][unit]" value="items">
+                    </td>
+                    <td>
+                        <input type="number" class="form-control border-0 item-price" name="items[${itemCounter}][unit_price]" value="0" step="1" min="0" required>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="item-total">{{ currency_for(0, $drive) }}</span>
+                            <button type="button" class="btn btn-link btn-sm text-danger remove-item">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(newRow);
+                attachItemListeners(newRow);
+                itemCounter++;
+            }
+        });
+    }
     
     // Remove item
-    document.getElementById('itemsTable').addEventListener('click', function(e) {
-        if (e.target.closest('.remove-item')) {
-            const row = e.target.closest('.item-row');
-            const tbody = document.getElementById('itemsBody');
-            if (tbody.children.length > 1) {
-                row.remove();
-                calculateTotals();
+    const itemsTable = document.getElementById('itemsTable');
+    if (itemsTable) {
+        itemsTable.addEventListener('click', function(e) {
+            if (e.target.closest('.remove-item')) {
+                const row = e.target.closest('.item-row');
+                const tbody = document.getElementById('itemsBody');
+                if (tbody && tbody.children.length > 1) {
+                    row.remove();
+                    calculateTotals();
+                }
             }
-        }
-    });
+        });
+    }
     
     // Quick Add Items
     document.querySelectorAll('.quick-add-item').forEach(button => {
@@ -658,27 +959,40 @@ document.addEventListener('DOMContentLoaded', function() {
         let subtotal = 0;
         
         document.querySelectorAll('.item-row').forEach(row => {
-            const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
-            const price = parseFloat(row.querySelector('.item-price').value) || 0;
-            const total = qty * price;
+            const qtyInput = row.querySelector('.item-qty');
+            const priceInput = row.querySelector('.item-price');
+            const totalSpan = row.querySelector('.item-total');
             
-            row.querySelector('.item-total').textContent = formatCurrency(total);
-            subtotal += total;
+            if (qtyInput && priceInput && totalSpan) {
+                const qty = parseFloat(qtyInput.value) || 0;
+                const price = parseFloat(priceInput.value) || 0;
+                const total = qty * price;
+                
+                totalSpan.textContent = formatCurrency(total);
+                subtotal += total;
+            }
         });
         
-        const taxRate = parseFloat(document.getElementById('tax_rate').value) || 0;
+        const taxRateInput = document.getElementById('tax_rate');
+        const taxRate = taxRateInput ? (parseFloat(taxRateInput.value) || 0) : 0;
         const taxAmount = subtotal * (taxRate / 100);
         const grandTotal = subtotal + taxAmount;
         
-        document.getElementById('subtotal').textContent = formatCurrency(subtotal);
-        document.getElementById('taxAmount').textContent = formatCurrency(taxAmount);
-        document.getElementById('total').textContent = formatCurrency(grandTotal);
+        const subtotalEl = document.getElementById('subtotal');
+        const taxAmountEl = document.getElementById('taxAmount');
+        const totalEl = document.getElementById('total');
+        
+        if (subtotalEl) subtotalEl.textContent = formatCurrency(subtotal);
+        if (taxAmountEl) taxAmountEl.textContent = formatCurrency(taxAmount);
+        if (totalEl) totalEl.textContent = formatCurrency(grandTotal);
     }
     
     // Attach listeners to item row
     function attachItemListeners(row) {
-        row.querySelector('.item-qty').addEventListener('input', calculateTotals);
-        row.querySelector('.item-price').addEventListener('input', calculateTotals);
+        const qtyInput = row.querySelector('.item-qty');
+        const priceInput = row.querySelector('.item-price');
+        if (qtyInput) qtyInput.addEventListener('input', calculateTotals);
+        if (priceInput) priceInput.addEventListener('input', calculateTotals);
     }
     
     // Attach to existing items
@@ -687,7 +1001,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Tax rate listener
-    document.getElementById('tax_rate').addEventListener('input', calculateTotals);
+    const taxRateInput = document.getElementById('tax_rate');
+    if (taxRateInput) {
+        taxRateInput.addEventListener('input', calculateTotals);
+    }
     
     // Save button
     const saveBtn = document.getElementById('saveBtn');
@@ -714,6 +1031,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 show_company_address: document.getElementById('show-company-address')?.checked ?? true,
                 show_company_phone: document.getElementById('show-company-phone')?.checked ?? true,
                 show_company_email: document.getElementById('show-company-email')?.checked ?? true,
+                show_company_logo: document.getElementById('show-company-logo')?.checked ?? true,
                 show_invoice_title: document.getElementById('show-invoice-title')?.checked ?? true,
                 show_invoice_number: document.getElementById('show-invoice-number')?.checked ?? true,
                 show_invoice_date: document.getElementById('show-invoice-date')?.checked ?? true,
@@ -748,40 +1066,56 @@ document.addEventListener('DOMContentLoaded', function() {
     calculateTotals();
 
     // Customize Panel Toggle
-    document.getElementById('customizeBtn').addEventListener('click', function() {
-        document.getElementById('customizePanel').classList.add('open');
-        document.getElementById('customizePanelOverlay').classList.add('active');
-    });
+    const customizeBtn = document.getElementById('customizeBtn');
+    if (customizeBtn) {
+        customizeBtn.addEventListener('click', function() {
+            const customizePanel = document.getElementById('customizePanel');
+            const customizePanelOverlay = document.getElementById('customizePanelOverlay');
+            if (customizePanel) customizePanel.classList.add('open');
+            if (customizePanelOverlay) customizePanelOverlay.classList.add('active');
+        });
+    }
 
-    document.getElementById('closeCustomizeBtn').addEventListener('click', function() {
-        document.getElementById('customizePanel').classList.remove('open');
-        document.getElementById('customizePanelOverlay').classList.remove('active');
-    });
+    const closeCustomizeBtn = document.getElementById('closeCustomizeBtn');
+    if (closeCustomizeBtn) {
+        closeCustomizeBtn.addEventListener('click', function() {
+            const customizePanel = document.getElementById('customizePanel');
+            const customizePanelOverlay = document.getElementById('customizePanelOverlay');
+            if (customizePanel) customizePanel.classList.remove('open');
+            if (customizePanelOverlay) customizePanelOverlay.classList.remove('active');
+        });
+    }
 
-    document.getElementById('customizePanelOverlay').addEventListener('click', function() {
-        document.getElementById('customizePanel').classList.remove('open');
-        document.getElementById('customizePanelOverlay').classList.remove('active');
-    });
+    const customizePanelOverlay = document.getElementById('customizePanelOverlay');
+    if (customizePanelOverlay) {
+        customizePanelOverlay.addEventListener('click', function() {
+            const customizePanel = document.getElementById('customizePanel');
+            if (customizePanel) customizePanel.classList.remove('open');
+            this.classList.remove('active');
+        });
+    }
 
     // Invoice color picker
-    document.getElementById('invoice-color').addEventListener('change', function() {
-        const color = this.value;
-        
-        // Update invoice heading
-        document.querySelectorAll('.invoice-heading').forEach(element => {
-            element.style.color = color;
-        });
-        
-        // Update company name - target the brand-teal class on the contenteditable span
-        document.querySelectorAll('.brand-teal').forEach(element => {
-            element.style.color = color;
-        });
-        
-        // Update total amount
-        const totalElement = document.getElementById('total');
-        if (totalElement) {
-            totalElement.style.color = color;
-        }
+    const invoiceColorInput = document.getElementById('invoice-color');
+    if (invoiceColorInput) {
+        invoiceColorInput.addEventListener('change', function() {
+            const color = this.value;
+            
+            // Update invoice heading
+            document.querySelectorAll('.invoice-heading').forEach(element => {
+                element.style.color = color;
+            });
+            
+            // Update company name - target the brand-teal class on the contenteditable span
+            document.querySelectorAll('.brand-teal').forEach(element => {
+                element.style.color = color;
+            });
+            
+            // Update total amount
+            const totalElement = document.getElementById('total');
+            if (totalElement) {
+                totalElement.style.color = color;
+            }
         
         // Update subtotal number
         const subtotalElement = document.getElementById('subtotal');
@@ -807,15 +1141,61 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Store color for print (CSS variable)
         document.documentElement.style.setProperty('--invoice-accent-color', color);
-    });
+        });
+    }
 
     // Field toggles - reuse the fieldMappings declared earlier
     document.querySelectorAll('#customizePanel input[type="checkbox"]').forEach(checkbox => {
         checkbox.addEventListener('change', function() {
             const fieldKey = this.id;
             const fieldName = fieldMappings[fieldKey];
+            const sectionName = sectionMappings[fieldKey];
             
-            if (fieldName) {
+            // Handle sections with data-section attribute FIRST (before regular fields)
+            if (sectionName) {
+                // Try to find the section - use ID first (most reliable), then data-section
+                const targetSection = document.getElementById(sectionName)
+                    || document.querySelector(`[data-section="${sectionName}"]`)
+                    || document.querySelector(`.invoice-container [data-section="${sectionName}"]`);
+                if (targetSection) {
+                    if (this.checked) {
+                        targetSection.style.display = '';
+                        // For totals row, also show the parent row if either payment-details or totals is visible
+                        if (sectionName === 'payment-details' || sectionName === 'totals') {
+                            const totalsRow = targetSection.closest('.row');
+                            if (totalsRow) {
+                                const paymentDetailsCheckbox = document.getElementById('show-payment-details');
+                                const totalsCheckbox = document.getElementById('show-totals');
+                                const paymentDetailsVisible = paymentDetailsCheckbox ? paymentDetailsCheckbox.checked : true;
+                                const totalsVisible = totalsCheckbox ? totalsCheckbox.checked : true;
+                                if (paymentDetailsVisible || totalsVisible) {
+                                    totalsRow.style.display = '';
+                                }
+                            }
+                        }
+                    } else {
+                        targetSection.style.display = 'none';
+                        // For totals row, hide the parent row if both payment-details and totals are hidden
+                        if (sectionName === 'payment-details' || sectionName === 'totals') {
+                            const totalsRow = targetSection.closest('.row');
+                            if (totalsRow) {
+                                const paymentDetailsCheckbox = document.getElementById('show-payment-details');
+                                const totalsCheckbox = document.getElementById('show-totals');
+                                const paymentDetailsVisible = paymentDetailsCheckbox ? paymentDetailsCheckbox.checked : true;
+                                const totalsVisible = totalsCheckbox ? totalsCheckbox.checked : true;
+                                if (!paymentDetailsVisible && !totalsVisible) {
+                                    totalsRow.style.display = 'none';
+                                } else {
+                                    // Make sure row is visible if at least one section is visible
+                                    totalsRow.style.display = '';
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            // Handle regular fields with data-field attribute (only if not a section)
+            else if (fieldName) {
                 const targetElements = document.querySelectorAll(`[data-field="${fieldName}"]`);
                 targetElements.forEach(element => {
                     if (this.checked) {

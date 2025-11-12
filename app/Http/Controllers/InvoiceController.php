@@ -132,7 +132,10 @@ class InvoiceController extends Controller
             // Parse customizations JSON if provided
             $customizations = null;
             if ($request->has('customizations') && !empty($request->customizations)) {
-                $customizations = json_decode($request->customizations, true);
+                $decoded = json_decode($request->customizations, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $customizations = $decoded;
+                }
             }
 
             // Convert dates from user timezone to drive timezone
@@ -149,7 +152,7 @@ class InvoiceController extends Controller
             $validated['due_date'] = $dueDate->format('Y-m-d');
 
             // Create invoice
-            $invoice = Invoice::create([
+            $invoiceData = [
                 'drive_id' => $drive->id,
                 'user_id' => Auth::id(),
                 'client_id' => $validated['client_id'] ?? null,
@@ -163,9 +166,15 @@ class InvoiceController extends Controller
                 'due_date' => $validated['due_date'],
                 'notes' => $validated['notes'] ?? '',
                 'tax_rate' => $validated['tax_rate'] ?? 0,
-                'customizations' => $customizations,
                 'status' => 'draft',
-            ]);
+            ];
+            
+            // Only include customizations if they were provided
+            if ($customizations !== null) {
+                $invoiceData['customizations'] = $customizations;
+            }
+            
+            $invoice = Invoice::create($invoiceData);
 
             // Create invoice items
             foreach ($validated['items'] as $index => $item) {
@@ -215,8 +224,18 @@ class InvoiceController extends Controller
         }
 
         $invoice->load(['client', 'items', 'invoiceProfile', 'user']);
+        
+        // Get invoiceProfile with fallback to drive's default, like in edit method
+        $invoiceProfile = $invoice->invoiceProfile ?? $drive->default_invoice_profile;
+        
+        // Get customizations, ensuring it's an array
+        $customizations = is_array($invoice->customizations) ? $invoice->customizations : [];
+        // Get accent color from customizations first, then profile, then default
+        $accentColor = isset($customizations['accent_color']) && !empty($customizations['accent_color'])
+            ? $customizations['accent_color']
+            : ($invoiceProfile?->accent_color ?? '#31d8b2');
 
-        return view('invoices.show', compact('drive', 'invoice'));
+        return view('invoices.show', compact('drive', 'invoice', 'invoiceProfile', 'customizations', 'accentColor'));
     }
 
     /**
@@ -239,10 +258,14 @@ class InvoiceController extends Controller
         $userItems = $drive->userItems()->orderBy('name')->get();
         $invoiceProfile = $invoice->invoiceProfile ?? $drive->default_invoice_profile;
         
-        // Get the accent color from profile or use default
-        $accentColor = $invoiceProfile?->accent_color ?? '#31d8b2';
+        // Get customizations, ensuring it's an array
+        $customizations = is_array($invoice->customizations) ? $invoice->customizations : [];
+        // Get accent color from customizations first, then profile, then default
+        $accentColor = isset($customizations['accent_color']) && !empty($customizations['accent_color'])
+            ? $customizations['accent_color']
+            : ($invoiceProfile?->accent_color ?? '#31d8b2');
 
-        return view('invoices.edit', compact('drive', 'invoice', 'clients', 'userItems', 'invoiceProfile', 'accentColor'));
+        return view('invoices.edit', compact('drive', 'invoice', 'clients', 'userItems', 'invoiceProfile', 'accentColor', 'customizations'));
     }
 
     /**
@@ -279,7 +302,7 @@ class InvoiceController extends Controller
                 $this->syncService->syncInvoice($invoice);
             }
             
-            return redirect()->route('drives.invoices.index', $drive)
+            return redirect()->route('drives.invoices.show', [$drive, $invoice])
                 ->with('success', 'Invoice status updated successfully!');
         }
 
@@ -316,7 +339,10 @@ class InvoiceController extends Controller
             // Parse customizations JSON if provided
             $customizations = null;
             if ($request->has('customizations') && !empty($request->customizations)) {
-                $customizations = json_decode($request->customizations, true);
+                $decoded = json_decode($request->customizations, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $customizations = $decoded;
+                }
             }
 
             // Convert dates from user timezone to drive timezone
@@ -331,7 +357,7 @@ class InvoiceController extends Controller
             $dueDate->setTimezone($driveTimezone);
             $validated['due_date'] = $dueDate->format('Y-m-d');
 
-            $invoice->update([
+            $updateData = [
                 'client_id' => $validated['client_id'] ?? null,
                 'invoice_profile_id' => $profile->id,
                 'client_name' => $validated['client_name'] ?? '',
@@ -342,9 +368,22 @@ class InvoiceController extends Controller
                 'due_date' => $validated['due_date'],
                 'notes' => $validated['notes'] ?? '',
                 'tax_rate' => $validated['tax_rate'] ?? 0,
-                'customizations' => $customizations,
                 'status' => $validated['status'],
-            ]);
+            ];
+            
+            // Always update customizations if they were provided
+            // If not provided, merge with existing to preserve them
+            if ($customizations !== null) {
+                $updateData['customizations'] = $customizations;
+            } else {
+                // If customizations weren't provided, preserve existing ones
+                $existingCustomizations = is_array($invoice->customizations) ? $invoice->customizations : [];
+                if (!empty($existingCustomizations)) {
+                    $updateData['customizations'] = $existingCustomizations;
+                }
+            }
+
+            $invoice->update($updateData);
 
             // Delete existing items
             $invoice->items()->delete();

@@ -28,7 +28,7 @@
         </div>
     </div>
 
-    <form action="{{ route('drives.invoice-profiles.update', [$drive, $invoiceProfile]) }}" method="POST">
+    <form action="{{ route('drives.invoice-profiles.update', [$drive, $invoiceProfile]) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PATCH')
         
@@ -79,8 +79,24 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="logo_url" class="form-label">Logo URL</label>
-                        <input type="url" class="form-control" id="logo_url" name="logo_url" value="{{ old('logo_url', $invoiceProfile->logo_url) }}" placeholder="https://example.com/logo.png">
+                        <label for="logo" class="form-label">Company Logo</label>
+                        @if($invoiceProfile->logo_path)
+                            <div class="mb-2">
+                                <img src="{{ Storage::url($invoiceProfile->logo_path) }}" alt="Current Logo" class="img-thumbnail" style="max-height: 100px; max-width: 200px;">
+                            </div>
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="remove_logo" name="remove_logo" value="1">
+                                <label class="form-check-label" for="remove_logo">Remove current logo</label>
+                            </div>
+                        @endif
+                        <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
+                        <small class="text-muted">Upload a logo image (JPG, PNG, GIF, SVG, WebP - Max 2MB). @if($invoiceProfile->logo_url) You can also use a URL below. @endif</small>
+                        @if($invoiceProfile->logo_url)
+                            <div class="mt-2">
+                                <label for="logo_url" class="form-label">Or use Logo URL</label>
+                                <input type="url" class="form-control" id="logo_url" name="logo_url" value="{{ old('logo_url', $invoiceProfile->logo_url) }}" placeholder="https://example.com/logo.png">
+                            </div>
+                        @endif
                     </div>
                 </div>
 
