@@ -282,15 +282,29 @@ class ProjectController extends Controller
         $broadcastConnection = config('broadcasting.default');
         $isReverbEnabled = $broadcastConnection === 'reverb';
         // Determine host for JavaScript clients
-        // In production, use the request host if REVERB_HOST is not set
+        // Priority: 1. REVERB_HOST from .env, 2. Request host (if HTTPS/secure), 3. localhost for local dev
         $clientHost = env('REVERB_HOST');
         if (!$clientHost) {
-            if (config('app.env') === 'local') {
-                $clientHost = 'localhost';
-            } else {
-                // In production, use the request host as fallback
+            // If we're on HTTPS or production URL, use request host
+            // This handles cases where APP_ENV might be set to 'local' but we're actually in production
+            if (request()->secure() || str_contains(request()->getHost(), '.')) {
                 $clientHost = request()->getHost();
+            } else {
+                // Truly local development
+                $clientHost = 'localhost';
             }
+        }
+
+        // Determine port - use REVERB_PORT from env, or detect from scheme
+        $clientPort = env('REVERB_PORT');
+        if (!$clientPort) {
+            $clientPort = request()->secure() ? 443 : 8080;
+        }
+
+        // Determine scheme - use REVERB_SCHEME from env, or detect from request
+        $clientScheme = env('REVERB_SCHEME');
+        if (!$clientScheme) {
+            $clientScheme = request()->secure() ? 'https' : 'http';
         }
 
         $reverbConfig = [
@@ -300,8 +314,8 @@ class ProjectController extends Controller
             // For JavaScript clients: browsers need 'localhost' in dev, actual domain in production
             // In production, this should match your domain (e.g., drive.tridah.cloud)
             'host' => $clientHost,
-            'port' => env('REVERB_PORT', config('app.env') === 'local' ? 8080 : 443),
-            'scheme' => env('REVERB_SCHEME', config('app.env') === 'local' ? 'http' : 'https'),
+            'port' => (int)$clientPort,
+            'scheme' => $clientScheme,
         ];
 
         return view('projects.show', compact(
