@@ -3912,7 +3912,7 @@
             wsHost: reverbConfig.wsHost,
             wsPort: reverbConfig.wsPort,
             wssPort: reverbConfig.wssPort,
-            wsPath: '/reverb/app',
+            wsPath: '/reverb',
             forceTLS: reverbConfig.forceTLS === 'true' || reverbConfig.forceTLS === true,
             enabledTransports: reverbConfig.enabledTransports,
             disableStats: true,
