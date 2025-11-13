@@ -3881,17 +3881,15 @@
     })();
 
     function initializeRealtimeUpdates() {
-        // Get CSRF token
         const csrfToken = document
             .querySelector('meta[name="csrf-token"]')
             ?.getAttribute('content') || '{{ csrf_token() }}';
 
-        // Reverb config passed from controller
         const reverbConfig = {
             key: '{{ $reverbConfig['key'] }}',
-            host: '{{ $reverbConfig['host'] }}',           // drive.tridah.cloud
-            port: '{{ $reverbConfig['port'] }}',           // 443
-            scheme: '{{ $reverbConfig['scheme'] }}',       // https
+            host: '{{ $reverbConfig['host'] }}',      // drive.tridah.cloud
+            port: '{{ $reverbConfig['port'] }}',      // 443
+            scheme: '{{ $reverbConfig['scheme'] }}',  // https
             forceTLS: {{ $reverbConfig['scheme'] === 'https' ? 'true' : 'false' }},
             authEndpoint: '{{ url('/broadcasting/auth') }}'
         };
@@ -3901,15 +3899,17 @@
                 broadcaster: 'pusher',
                 key: reverbConfig.key,
 
-                // *** ALWAYS USE DOMAIN FOR WEBSOCKETS ***
-                wsHost: reverbConfig.host,        // drive.tridah.cloud
-                wsPort: reverbConfig.port,        // 443
-                wssPort: reverbConfig.port,       // 443
+                // Pusher JS FIX:
+                cluster: "mt1",       // <= Required dummy cluster
+                encrypted: true,      // <= Enables TLS without Pusher enforcing cluster routing
 
-                // *** REQUIRED WEBSOCKET PATH FOR NGINX REVERSE PROXY ***
+                // Reverb WebSocket endpoint
+                wsHost: reverbConfig.host, 
+                wsPort: reverbConfig.port,
+                wssPort: reverbConfig.port,
                 wsPath: '/reverb',
 
-                forceTLS: reverbConfig.forceTLS,
+                forceTLS: true,
                 enabledTransports: ['ws', 'wss'],
                 disableStats: true,
 
@@ -3923,7 +3923,6 @@
                 }
             });
 
-            // Debug and error logging
             window.Echo.connector.pusher.connection.bind('error', function (err) {
                 console.error('Reverb: Connection error:', err);
             });
@@ -3947,6 +3946,7 @@
             console.error('Reverb: Failed to initialize Echo:', error);
         }
     }
+
 
 
     function handleTaskCreated(taskData) {
