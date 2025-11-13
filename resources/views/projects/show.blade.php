@@ -3,7 +3,7 @@
 @section('title', $project->name . ' - ' . $drive->name)
 
 @push('styles')
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.css">
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 <style>
     .project-layout {
         overflow-x: hidden;
@@ -116,6 +116,7 @@
         transition: all 0.2s ease;
         position: relative;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        text-align: left;
     }
     
     .task-card:hover {
@@ -132,6 +133,132 @@
     .task-card.active {
         border-color: var(--brand-teal, #31d8b2);
         box-shadow: 0 0 0 3px rgba(49, 216, 178, 0.2);
+    }
+    
+    .task-card-compact {
+        padding: 0.5rem !important;
+    }
+    
+    .task-card-compact .task-card-title {
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .task-card-compact .task-card-meta {
+        margin-bottom: 0.25rem;
+    }
+    
+    .task-card-compact .task-card-footer {
+        padding-top: 0.25rem;
+    }
+    
+    .quick-add-task {
+        background-color: var(--bg-primary);
+        border: 2px dashed var(--border-color);
+        border-radius: 8px;
+    }
+    
+    .quick-add-task input:focus {
+        border-color: var(--brand-teal, #31d8b2);
+        box-shadow: 0 0 0 2px rgba(49, 216, 178, 0.1);
+    }
+    
+    .kanban-empty-state {
+        transition: all 0.3s ease;
+    }
+    
+    .kanban-empty-state:hover {
+        opacity: 0.8;
+    }
+    
+    .task-context-menu {
+        position: fixed;
+        z-index: 2000;
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .task-context-menu .list-group-item {
+        border: none;
+        border-radius: 0;
+        cursor: pointer;
+    }
+    
+    .task-context-menu .list-group-item:first-child {
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+    }
+    
+    .task-context-menu .list-group-item:last-child {
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+    }
+    
+    .task-context-menu .list-group-item:hover {
+        background-color: var(--bg-secondary);
+    }
+    
+    .list-group-divider {
+        height: 1px;
+        background-color: var(--border-color);
+        margin: 0.25rem 0;
+    }
+    
+    /* Quill Editor Styling in Sidebar */
+    #taskDescriptionEditor {
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        background-color: var(--bg-primary);
+    }
+    
+    #taskDescriptionEditor .ql-editor {
+        min-height: 150px;
+        color: var(--text-color);
+        background-color: var(--bg-primary);
+    }
+    
+    #taskDescriptionEditor .ql-toolbar {
+        border-top-left-radius: 4px;
+        border-top-right-radius: 4px;
+        background-color: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    #taskDescriptionEditor .ql-toolbar .ql-stroke {
+        stroke: var(--text-color);
+    }
+    
+    #taskDescriptionEditor .ql-toolbar .ql-fill {
+        fill: var(--text-color);
+    }
+    
+    #taskDescriptionEditor .ql-toolbar button:hover,
+    #taskDescriptionEditor .ql-toolbar button.ql-active {
+        color: var(--brand-teal, #31d8b2);
+    }
+    
+    #taskDescriptionEditor .ql-toolbar button:hover .ql-stroke,
+    #taskDescriptionEditor .ql-toolbar button.ql-active .ql-stroke {
+        stroke: var(--brand-teal, #31d8b2);
+    }
+    
+    #taskDescriptionEditor .ql-toolbar button:hover .ql-fill,
+    #taskDescriptionEditor .ql-toolbar button.ql-active .ql-fill {
+        fill: var(--brand-teal, #31d8b2);
+    }
+    
+    #taskDescriptionEditor .ql-container {
+        border-bottom-left-radius: 4px;
+        border-bottom-right-radius: 4px;
+        background-color: var(--bg-primary);
+        color: var(--text-color);
+    }
+    
+    #taskDescriptionEditor .ql-container .ql-editor.ql-blank::before {
+        color: var(--text-color);
+        opacity: 0.5;
     }
     
     .task-card-header-image {
@@ -156,10 +283,42 @@
         color: var(--text-color);
         opacity: 0.7;
         margin-bottom: 0.75rem;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
+        line-height: 1.4;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        text-align: left !important;
+        max-height: 2.8em;
         overflow: hidden;
+        position: relative;
+        display: block;
+        width: 100%;
+    }
+    
+    .task-card-description p {
+        margin: 0;
+        padding: 0;
+        display: inline;
+    }
+    
+    .task-card-description p:not(:last-child)::after {
+        content: '\A';
+        white-space: pre;
+    }
+    
+    .task-card-description br {
+        display: block;
+        content: '';
+        margin-top: 0.25em;
+    }
+    
+    .task-card-description::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 20px;
+        height: 1.4em;
+        background: linear-gradient(to right, transparent, var(--bg-primary));
     }
     
     .task-card-meta {
@@ -243,6 +402,67 @@
         color: var(--text-color);
         opacity: 0.7;
         margin-bottom: 1rem;
+    }
+    
+    .task-description-container {
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 0.5rem;
+        color: var(--text-color);
+        line-height: 1.6;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .task-description-container p {
+        margin-bottom: 0.75rem;
+    }
+    
+    .task-description-container p:last-child {
+        margin-bottom: 0;
+    }
+    
+    .task-description-container::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .task-description-container::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    
+    .task-description-container::-webkit-scrollbar-thumb {
+        background: var(--border-color);
+        border-radius: 3px;
+    }
+    
+    .task-description-container::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .task-sidebar .comment {
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .task-sidebar .comment:last-child {
+        border-bottom: none;
+    }
+    
+    .task-sidebar .replies {
+        border-left: 2px solid var(--border-color);
+        padding-left: 0.75rem;
+        margin-top: 0.5rem;
+    }
+    
+    .task-sidebar .user-mention {
+        color: var(--brand-teal, #31d8b2);
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .task-sidebar .user-mention:hover {
+        text-decoration: underline;
     }
     
     .view-switcher .btn {
@@ -428,12 +648,25 @@
                         </a>
                     </div>
                     <div class="d-flex flex-wrap gap-2">
+                        @if($view === 'kanban')
+                            <button type="button" class="btn btn-outline-secondary" id="showKanbanFilters">
+                                <i class="fas fa-filter me-2"></i>Filters
+                            </button>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="kanbanViewToggle" data-view="expanded">
+                                    <i class="fas fa-compress-alt me-1"></i>Compact
+                                </button>
+                            </div>
+                        @endif
                         @if($drive->canEdit(auth()->user()))
                             <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#manageStatusesModal">
                                 <i class="fas fa-columns me-2"></i>Manage Statuses
                             </button>
                             <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createLabelModal">
                                 <i class="fas fa-tag me-2"></i>Create Label
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#manageCustomFieldsModal">
+                                <i class="fas fa-list-alt me-2"></i>Custom Fields
                             </button>
                             <a href="{{ route('drives.projects.projects.tasks.create', [$drive, $project]) }}" class="btn btn-primary">
                                 <i class="fas fa-plus me-2"></i>New Task
@@ -587,6 +820,111 @@
         </div>
     </div>
 
+    <!-- Manage Custom Fields Modal -->
+    @if($drive->canEdit(auth()->user()))
+    <div class="modal fade" id="manageCustomFieldsModal" tabindex="-1" aria-labelledby="manageCustomFieldsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="manageCustomFieldsModalLabel">
+                        <i class="fas fa-list-alt me-2"></i>Manage Custom Fields
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-sm btn-primary" id="addCustomFieldBtn" onclick="
+                            const form = document.getElementById('addCustomFieldForm');
+                            const btn = document.getElementById('addCustomFieldBtn');
+                            if (form && btn) {
+                                form.style.display = 'block';
+                                btn.style.display = 'none';
+                            }
+                        ">
+                            <i class="fas fa-plus me-1"></i>Add Custom Field
+                        </button>
+                    </div>
+                    
+                    <div id="customFieldsList">
+                        @if(isset($customFieldDefinitions) && $customFieldDefinitions && $customFieldDefinitions->count() > 0)
+                            @foreach($customFieldDefinitions as $field)
+                                <div class="card mb-2 custom-field-item" data-field-id="{{ $field->id }}">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-1">{{ $field->name }}</h6>
+                                                <small class="text-muted">Type: {{ ucfirst($field->type) }} | Slug: {{ $field->slug }}</small>
+                                                @if($field->required)
+                                                    <span class="badge bg-warning ms-2">Required</span>
+                                                @endif
+                                            </div>
+                                            <div>
+                                                <button type="button" class="btn btn-sm btn-outline-danger delete-custom-field" data-field-id="{{ $field->id }}">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        @else
+                            <p class="text-muted">No custom fields defined. Click "Add Custom Field" to create one.</p>
+                        @endif
+                    </div>
+                    
+                    <div id="addCustomFieldForm" style="display: none;" class="mt-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="mb-3">Add New Custom Field</h6>
+                                <form id="customFieldForm" onsubmit="handleCustomFieldSubmit(event); return false;">
+                                    <div class="mb-3">
+                                        <label class="form-label">Field Name</label>
+                                        <input type="text" class="form-control" id="customFieldName" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Field Type</label>
+                                        <select class="form-select" id="customFieldType" required>
+                                            <option value="text">Text</option>
+                                            <option value="number">Number</option>
+                                            <option value="date">Date</option>
+                                            <option value="select">Select (Dropdown)</option>
+                                            <option value="checkbox">Checkbox</option>
+                                            <option value="textarea">Textarea</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3" id="customFieldOptionsContainer" style="display: none;">
+                                        <label class="form-label">Options (one per line)</label>
+                                        <textarea class="form-control" id="customFieldOptions" rows="3" placeholder="Option 1&#10;Option 2&#10;Option 3"></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="customFieldRequired">
+                                            <label class="form-check-label" for="customFieldRequired">Required</label>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button type="submit" class="btn btn-primary btn-sm">Save Field</button>
+                                        <button type="button" class="btn btn-secondary btn-sm" id="cancelCustomField" onclick="
+                                            const form = document.getElementById('addCustomFieldForm');
+                                            const btn = document.getElementById('addCustomFieldBtn');
+                                            const optionsContainer = document.getElementById('customFieldOptionsContainer');
+                                            const fieldForm = document.getElementById('customFieldForm');
+                                            if (form) form.style.display = 'none';
+                                            if (btn) btn.style.display = 'block';
+                                            if (fieldForm) fieldForm.reset();
+                                            if (optionsContainer) optionsContainer.style.display = 'none';
+                                        ">Cancel</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <!-- List View -->
     @if($view === 'list')
         @include('projects.views.list')
@@ -708,7 +1046,164 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.9/dist/purify.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
 <script>
+    // Define custom field submit handler immediately (before DOMContentLoaded)
+    window.handleCustomFieldSubmit = function(e) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        const name = document.getElementById('customFieldName');
+        const type = document.getElementById('customFieldType');
+        const options = document.getElementById('customFieldOptions');
+        const isRequired = document.getElementById('customFieldRequired');
+        
+        if (!name || !type) {
+            console.error('Custom field form elements not found');
+            return false;
+        }
+        
+        const fieldName = name.value.trim();
+        const fieldType = type.value;
+        const fieldOptions = options ? options.value : '';
+        const fieldRequired = isRequired ? isRequired.checked : false;
+        
+        console.log('Submitting custom field:', { name: fieldName, type: fieldType, options: fieldOptions, isRequired: fieldRequired });
+        
+        const form = document.getElementById('customFieldForm');
+        const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
+        const originalText = submitBtn ? submitBtn.innerHTML : '';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
+        }
+        
+        function sanitizeHtml(markup) {
+            if (!markup) {
+                return '';
+            }
+            if (window.DOMPurify) {
+                return DOMPurify.sanitize(markup, { USE_PROFILES: { html: true } });
+            }
+            const div = document.createElement('div');
+            div.textContent = markup;
+            return div.innerHTML;
+        }
+        
+        fetch('{{ route("drives.projects.projects.custom-fields.store", [$drive, $project]) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                name: fieldName,
+                type: fieldType,
+                options: fieldOptions,
+                is_required: fieldRequired
+            })
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                return response.json().then(err => {
+                    console.error('Error response:', err);
+                    return Promise.reject(err);
+                }).catch(() => {
+                    return Promise.reject({ error: 'Failed to create custom field' });
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Success response:', data);
+            if (data && data.success && data.field) {
+                // Add the new field to the DOM
+                const customFieldsList = document.getElementById('customFieldsList');
+                if (!customFieldsList) {
+                    console.error('Custom fields list not found');
+                    alert('Field created but could not update UI. Please refresh the page.');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                    }
+                    return;
+                }
+                
+                const field = data.field;
+                
+                // Remove "no fields" message if it exists
+                const noFieldsMessage = customFieldsList.querySelector('p.text-muted');
+                if (noFieldsMessage && noFieldsMessage.textContent.includes('No custom fields defined')) {
+                    noFieldsMessage.remove();
+                }
+                
+                // Create the new field card
+                const fieldCard = document.createElement('div');
+                fieldCard.className = 'card mb-2 custom-field-item';
+                fieldCard.setAttribute('data-field-id', field.id);
+                fieldCard.innerHTML = `
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">${sanitizeHtml(field.name)}</h6>
+                                <small class="text-muted">Type: ${sanitizeHtml(field.type.charAt(0).toUpperCase() + field.type.slice(1))} | Slug: ${sanitizeHtml(field.slug)}</small>
+                                ${field.required ? '<span class="badge bg-warning ms-2">Required</span>' : ''}
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-outline-danger delete-custom-field" data-field-id="${field.id}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Add to the list
+                customFieldsList.appendChild(fieldCard);
+                
+                // Reset and hide the form
+                const addCustomFieldForm = document.getElementById('addCustomFieldForm');
+                const addCustomFieldBtn = document.getElementById('addCustomFieldBtn');
+                const customFieldOptionsContainer = document.getElementById('customFieldOptionsContainer');
+                const customFieldForm = document.getElementById('customFieldForm');
+                
+                if (addCustomFieldForm) addCustomFieldForm.style.display = 'none';
+                if (addCustomFieldBtn) addCustomFieldBtn.style.display = 'block';
+                if (customFieldForm) customFieldForm.reset();
+                if (customFieldOptionsContainer) customFieldOptionsContainer.style.display = 'none';
+                
+                // Reset submit button
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+                
+                console.log('Field created successfully and added to DOM');
+            } else {
+                alert(data?.error || 'Failed to create custom field');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            const errorMsg = error.error || error.message || 'Failed to create custom field';
+            alert(errorMsg);
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        });
+        
+        return false;
+    };
+
     // Kanban drag and drop
     @if($view === 'kanban')
     document.addEventListener('DOMContentLoaded', function() {
@@ -755,7 +1250,15 @@
                         // Update empty states
                         updateEmptyStates(oldStatusId, newStatusId);
                         
-                        fetch('{{ route("drives.projects.projects.tasks.update-status", [$drive, $project, ":task"]) }}'.replace(':task', taskId), {
+                        // Update sort_order for all cards in the destination column
+                        const allCardsInColumn = Array.from(evt.to.querySelectorAll('.task-card'));
+                        const updatePromises = [];
+                        
+                        allCardsInColumn.forEach((card, index) => {
+                            const cardTaskId = card.dataset.taskId;
+                            if (cardTaskId) {
+                                updatePromises.push(
+                                    fetch('{{ route("drives.projects.projects.tasks.update-status", [$drive, $project, ":task"]) }}'.replace(':task', cardTaskId), {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -763,16 +1266,24 @@
                             },
                             body: JSON.stringify({
                                 status_id: Number(newStatusId),
-                                sort_order: sortOrder
-                            })
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                console.log('Task moved successfully');
+                                            sort_order: index
+                                        })
+                                    })
+                                );
+                            }
+                        });
+                        
+                        Promise.all(updatePromises)
+                        .then(responses => Promise.all(responses.map(r => r.json())))
+                        .then(results => {
+                            if (results.every(r => r.success)) {
+                                console.log('Tasks reordered successfully');
+                                const movedTaskId = evt.item.dataset.taskId;
                                 if (statusLookup[newStatusId]) {
                                     const statusInfo = statusLookup[newStatusId];
-                                    taskData[taskId].status = statusInfo;
+                                    if (taskData[movedTaskId]) {
+                                        taskData[movedTaskId].status = statusInfo;
+                                    }
                                     updateCardStatusBadge(evt.item, statusInfo);
                                 }
                                 updateColumnTaskCount(newStatusId);
@@ -853,6 +1364,625 @@
         // Initialize on page load
         initializeEmptyStates();
         
+        // Kanban Filters
+        const kanbanFiltersRow = document.getElementById('kanbanFiltersRow');
+        const showKanbanFiltersBtn = document.getElementById('showKanbanFilters');
+        const toggleKanbanFiltersBtn = document.getElementById('toggleKanbanFilters');
+        const clearKanbanFiltersBtn = document.getElementById('clearKanbanFilters');
+        
+        if (showKanbanFiltersBtn && kanbanFiltersRow) {
+            showKanbanFiltersBtn.addEventListener('click', function() {
+                kanbanFiltersRow.style.display = kanbanFiltersRow.style.display === 'none' ? 'block' : 'none';
+                showKanbanFiltersBtn.style.display = kanbanFiltersRow.style.display === 'block' ? 'none' : 'inline-block';
+            });
+        }
+        
+        if (toggleKanbanFiltersBtn && kanbanFiltersRow) {
+            toggleKanbanFiltersBtn.addEventListener('click', function() {
+                kanbanFiltersRow.style.display = 'none';
+                if (showKanbanFiltersBtn) showKanbanFiltersBtn.style.display = 'inline-block';
+            });
+        }
+        
+        // Filter functionality
+        const filterStatus = document.getElementById('kanbanFilterStatus');
+        const filterPriority = document.getElementById('kanbanFilterPriority');
+        const filterLabel = document.getElementById('kanbanFilterLabel');
+        const filterAssignee = document.getElementById('kanbanFilterAssignee');
+        
+        function applyKanbanFilters() {
+            const statusFilter = filterStatus ? filterStatus.value : '';
+            const priorityFilter = filterPriority ? filterPriority.value : '';
+            const labelFilter = filterLabel ? filterLabel.value : '';
+            const assigneeFilter = filterAssignee ? filterAssignee.value : '';
+            
+            document.querySelectorAll('.task-card').forEach(card => {
+                const cardStatus = card.dataset.statusSlug || '';
+                const cardPriority = card.dataset.priority || '';
+                const cardLabelIds = (card.dataset.labelIds || '').split(',').filter(Boolean);
+                const cardMemberIds = (card.dataset.memberIds || '').split(',').filter(Boolean);
+                const cardOwnerId = card.dataset.ownerId || '';
+                
+                let show = true;
+                if (statusFilter && cardStatus !== statusFilter) show = false;
+                if (priorityFilter && cardPriority !== priorityFilter) show = false;
+                if (labelFilter && !cardLabelIds.includes(labelFilter)) show = false;
+                if (assigneeFilter && !cardMemberIds.includes(assigneeFilter) && cardOwnerId !== assigneeFilter) show = false;
+                
+                card.style.display = show ? '' : 'none';
+            });
+            
+            // Update column counts
+            statusesConfig.forEach(status => {
+                updateColumnTaskCount(status.id);
+            });
+        }
+        
+        if (filterStatus) filterStatus.addEventListener('change', applyKanbanFilters);
+        if (filterPriority) filterPriority.addEventListener('change', applyKanbanFilters);
+        if (filterLabel) filterLabel.addEventListener('change', applyKanbanFilters);
+        if (filterAssignee) filterAssignee.addEventListener('change', applyKanbanFilters);
+        
+        if (clearKanbanFiltersBtn) {
+            clearKanbanFiltersBtn.addEventListener('click', function() {
+                if (filterStatus) filterStatus.value = '';
+                if (filterPriority) filterPriority.value = '';
+                if (filterLabel) filterLabel.value = '';
+                if (filterAssignee) filterAssignee.value = '';
+                applyKanbanFilters();
+                saveFilterPreferences();
+            });
+        }
+        
+        // Save filter preferences
+        function saveFilterPreferences() {
+            const filters = {
+                status: filterStatus ? filterStatus.value : '',
+                priority: filterPriority ? filterPriority.value : '',
+                label: filterLabel ? filterLabel.value : '',
+                assignee: filterAssignee ? filterAssignee.value : '',
+            };
+            
+            fetch('{{ route("drives.projects.projects.preferences.store", [$drive, $project]) }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    view: 'kanban',
+                    filters: filters,
+                    view_settings: {
+                        compact: isCompactView
+                    }
+                })
+            }).catch(error => console.error('Failed to save preferences:', error));
+        }
+        
+        // Load saved filters on page load
+        @if(isset($savedFilters) && !empty($savedFilters))
+            @if(isset($savedFilters['status']) && $savedFilters['status'])
+                if (filterStatus) filterStatus.value = '{{ $savedFilters['status'] }}';
+            @endif
+            @if(isset($savedFilters['priority']) && $savedFilters['priority'])
+                if (filterPriority) filterPriority.value = '{{ $savedFilters['priority'] }}';
+            @endif
+            @if(isset($savedFilters['label']) && $savedFilters['label'])
+                if (filterLabel) filterLabel.value = '{{ $savedFilters['label'] }}';
+            @endif
+            @if(isset($savedFilters['assignee']) && $savedFilters['assignee'])
+                if (filterAssignee) filterAssignee.value = '{{ $savedFilters['assignee'] }}';
+            @endif
+            // Apply filters after a short delay to ensure DOM is ready
+            setTimeout(applyKanbanFilters, 100);
+        @endif
+        
+        // Save preferences when filters change
+        if (filterStatus) filterStatus.addEventListener('change', saveFilterPreferences);
+        if (filterPriority) filterPriority.addEventListener('change', saveFilterPreferences);
+        if (filterLabel) filterLabel.addEventListener('change', saveFilterPreferences);
+        if (filterAssignee) filterAssignee.addEventListener('change', saveFilterPreferences);
+        
+        // Quick Task Creation
+        document.querySelectorAll('.quick-add-trigger').forEach(trigger => {
+            trigger.addEventListener('click', function() {
+                const statusId = this.dataset.statusId;
+                const quickAdd = document.querySelector(`#kanban-status-${statusId} .quick-add-task`);
+                const quickAddButton = document.querySelector(`#kanban-status-${statusId} .quick-add-button`);
+                const emptyStateButton = document.querySelector(`#empty-status-${statusId} .quick-add-trigger`);
+                if (quickAdd) {
+                    quickAdd.style.display = 'block';
+                    const input = quickAdd.querySelector('input');
+                    if (input) input.focus();
+                    // Store which button was clicked for restoration on cancel
+                    quickAdd.dataset.clickedButton = this === quickAddButton?.querySelector('.quick-add-trigger') ? 'quick-add-button' : 
+                                                     (this === emptyStateButton ? 'empty-state' : 'unknown');
+                    // Hide all buttons
+                    this.style.display = 'none';
+                    if (quickAddButton) quickAddButton.style.display = 'none';
+                    if (emptyStateButton) emptyStateButton.style.display = 'none';
+                }
+            });
+        });
+        
+        document.querySelectorAll('.quick-add-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const input = this.querySelector('input');
+                const title = input.value.trim();
+                if (!title) return;
+                
+                const statusId = this.dataset.statusId;
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Adding...';
+                
+                fetch('{{ route("drives.projects.projects.tasks.store", [$drive, $project]) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title: title,
+                        status_id: parseInt(statusId),
+                        priority: 'medium'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.task) {
+                        // Reload page to show new task with all relationships
+                        location.reload();
+                    } else {
+                        throw new Error('Failed to create task');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                });
+            });
+            
+            const input = form.querySelector('input');
+            if (input) {
+                input.addEventListener('focus', function() {
+                    const options = form.querySelector('.quick-add-options');
+                    if (options) options.style.display = 'block';
+                });
+                
+                input.addEventListener('blur', function() {
+                    setTimeout(() => {
+                        if (!this.value.trim()) {
+                            const options = form.querySelector('.quick-add-options');
+                            if (options) options.style.display = 'none';
+                        }
+                    }, 200);
+                });
+            }
+        });
+        
+        document.querySelectorAll('.cancel-quick-add').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const quickAdd = this.closest('.quick-add-task');
+                if (quickAdd) {
+                    quickAdd.style.display = 'none';
+                    const input = quickAdd.querySelector('input');
+                    if (input) input.value = '';
+                    const options = quickAdd.querySelector('.quick-add-options');
+                    if (options) options.style.display = 'none';
+                    const statusId = quickAdd.closest('.kanban-column-content').dataset.statusId;
+                    
+                    // Show the appropriate button(s) based on whether column has tasks
+                    const column = document.getElementById('kanban-status-' + statusId);
+                    const hasTasks = column && column.querySelectorAll('.task-card').length > 0;
+                    
+                    // Always show the appropriate button based on current state
+                    const quickAddButtonContainer = document.querySelector(`#kanban-status-${statusId} .quick-add-button`);
+                    const quickAddButtonInside = quickAddButtonContainer ? quickAddButtonContainer.querySelector('.quick-add-trigger') : null;
+                    const emptyStateButton = document.querySelector(`#empty-status-${statusId} .quick-add-trigger`);
+                    
+                    if (hasTasks) {
+                        // Show the quick-add-button container and button if there are tasks
+                        if (quickAddButtonContainer) quickAddButtonContainer.style.display = 'block';
+                        if (quickAddButtonInside) quickAddButtonInside.style.display = 'block';
+                        // Hide empty state button if it exists
+                        if (emptyStateButton) emptyStateButton.style.display = 'none';
+                    } else {
+                        // Show the empty state button if no tasks
+                        if (emptyStateButton) emptyStateButton.style.display = 'inline-block';
+                        // Hide quick-add-button container if it exists
+                        if (quickAddButtonContainer) quickAddButtonContainer.style.display = 'none';
+                        if (quickAddButtonInside) quickAddButtonInside.style.display = 'none';
+                    }
+                    
+                    // Clear the stored button reference
+                    delete quickAdd.dataset.clickedButton;
+                }
+            });
+        });
+        
+        // Compact/Expanded View Toggle
+        const kanbanViewToggle = document.getElementById('kanbanViewToggle');
+        let isCompactView = false;
+        
+        if (kanbanViewToggle) {
+            kanbanViewToggle.addEventListener('click', function() {
+                isCompactView = !isCompactView;
+                document.querySelectorAll('.task-card').forEach(card => {
+                    if (isCompactView) {
+                        card.classList.add('task-card-compact');
+                        const description = card.querySelector('.task-card-description');
+                        if (description) description.style.display = 'none';
+                    } else {
+                        card.classList.remove('task-card-compact');
+                        const description = card.querySelector('.task-card-description');
+                        if (description) description.style.display = '';
+                    }
+                });
+                
+                this.innerHTML = isCompactView 
+                    ? '<i class="fas fa-expand-alt me-1"></i>Expanded'
+                    : '<i class="fas fa-compress-alt me-1"></i>Compact';
+                
+                saveFilterPreferences();
+            });
+            
+            // Load saved view settings
+            @if(isset($viewSettings) && isset($viewSettings['compact']))
+                if (@json($viewSettings['compact'])) {
+                    isCompactView = true;
+                    kanbanViewToggle.click();
+                }
+            @endif
+        }
+        
+        // Task Context Menu
+        let currentContextTaskId = null;
+        
+        window.showTaskContextMenu = function(event, taskId) {
+            event.preventDefault();
+            event.stopPropagation();
+            currentContextTaskId = taskId;
+            
+            const card = document.querySelector(`.task-card[data-task-id="${taskId}"]`);
+            if (!card) return;
+            
+            const contextMenu = document.getElementById('taskContextMenu');
+            if (!contextMenu) return;
+            
+            // Get viewport dimensions (for position: fixed, we use viewport coordinates)
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            // Use clientX/clientY directly (already relative to viewport for position: fixed)
+            let menuX = event.clientX;
+            let menuY = event.clientY;
+            
+            // Get menu dimensions (after it's displayed)
+            contextMenu.style.display = 'block';
+            const menuWidth = contextMenu.offsetWidth;
+            const menuHeight = contextMenu.offsetHeight;
+            
+            // Adjust position if menu would go off-screen
+            // Check right edge
+            if (menuX + menuWidth > viewportWidth) {
+                menuX = viewportWidth - menuWidth - 10;
+            }
+            
+            // Check bottom edge
+            if (menuY + menuHeight > viewportHeight) {
+                menuY = viewportHeight - menuHeight - 10;
+            }
+            
+            // Check left edge
+            if (menuX < 0) {
+                menuX = 10;
+            }
+            
+            // Check top edge
+            if (menuY < 0) {
+                menuY = 10;
+            }
+            
+            // Set menu position (using viewport coordinates for position: fixed)
+            contextMenu.style.left = menuX + 'px';
+            contextMenu.style.top = menuY + 'px';
+            
+            // Update menu links
+            const viewLink = document.getElementById('contextMenuView');
+            const editLink = document.getElementById('contextMenuEdit');
+            const duplicateLink = document.getElementById('contextMenuDuplicate');
+            const archiveLink = document.getElementById('contextMenuArchive');
+            
+            if (viewLink) viewLink.href = card.dataset.taskUrl;
+            if (editLink) editLink.href = card.dataset.taskEditUrl;
+            if (duplicateLink) duplicateLink.href = '#';
+            if (archiveLink) archiveLink.href = '#';
+            
+            // Populate status options
+            const statusesContainer = document.getElementById('contextMenuStatuses');
+            if (statusesContainer) {
+                statusesContainer.innerHTML = '';
+                statusesConfig.forEach(status => {
+                    const item = document.createElement('a');
+                    item.className = 'list-group-item list-group-item-action';
+                    item.href = '#';
+                    item.innerHTML = `<i class="fas fa-circle me-2" style="color: ${status.color};"></i>${status.name}`;
+                    item.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        changeTaskStatus(taskId, status.id);
+                        hideTaskContextMenu();
+                    });
+                    statusesContainer.appendChild(item);
+                });
+            }
+            
+            // Handle duplicate
+            if (duplicateLink) {
+                duplicateLink.onclick = function(e) {
+                    e.preventDefault();
+                    duplicateTask(taskId);
+                    hideTaskContextMenu();
+                };
+            }
+            
+            // Handle archive
+            if (archiveLink) {
+                archiveLink.onclick = function(e) {
+                    e.preventDefault();
+                    if (confirm('Are you sure you want to archive this task?')) {
+                        archiveTask(taskId);
+                    }
+                    hideTaskContextMenu();
+                };
+            }
+        };
+        
+        function hideTaskContextMenu() {
+            const contextMenu = document.getElementById('taskContextMenu');
+            if (contextMenu) {
+                contextMenu.style.display = 'none';
+            }
+        }
+        
+        function changeTaskStatus(taskId, statusId) {
+            fetch('{{ route("drives.projects.projects.tasks.update-status", [$drive, $project, ":task"]) }}'.replace(':task', taskId), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    status_id: Number(statusId),
+                    sort_order: 0
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+        
+        function duplicateTask(taskId) {
+            const card = document.querySelector(`.task-card[data-task-id="${taskId}"]`);
+            if (!card || !card.dataset.taskDuplicateUrl) return;
+            
+            const originalTask = taskData[taskId];
+            if (!originalTask) return;
+            
+            fetch(card.dataset.taskDuplicateUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.task) {
+                    const newTask = data.task;
+                    const statusId = newTask.status ? newTask.status.id : originalTask.status.id;
+                    const column = document.getElementById('kanban-status-' + statusId);
+                    
+                    if (column) {
+                        // Add new task to taskData
+                        taskData[newTask.id] = {
+                            id: newTask.id,
+                            title: newTask.title,
+                            description: newTask.description || '',
+                            priority: newTask.priority,
+                            status: newTask.status,
+                            labels: newTask.labels || [],
+                            label_ids: newTask.labels.map(l => l.id) || [],
+                            members: newTask.members || [],
+                            member_ids: newTask.members.map(m => m.id) || [],
+                            owner: newTask.owner,
+                            owner_id: newTask.owner_id,
+                            url: newTask.url,
+                            edit_url: newTask.edit_url,
+                            update_url: '{{ route("drives.projects.projects.tasks.update-labels-members", [$drive, $project, ":task"]) }}'.replace(':task', newTask.id),
+                            comment_url: '{{ route("drives.projects.projects.tasks.comments.store", [$drive, $project, ":task"]) }}'.replace(':task', newTask.id),
+                            dependency_url: '{{ route("drives.projects.projects.tasks.dependencies.store", [$drive, $project, ":task"]) }}'.replace(':task', newTask.id),
+                            blocked_by: [],
+                            blocks: [],
+                            related: [],
+                            created_at: new Date().toLocaleDateString(),
+                            is_overdue: false,
+                        };
+                        
+                        // Create new card element
+                        const newCard = document.createElement('div');
+                        newCard.className = 'task-card';
+                        newCard.dataset.taskId = newTask.id;
+                        newCard.dataset.taskTitle = newTask.title;
+                        newCard.dataset.taskUrl = newTask.url;
+                        newCard.dataset.taskEditUrl = newTask.edit_url;
+                        newCard.dataset.taskDuplicateUrl = '{{ route("drives.projects.projects.tasks.duplicate", [$drive, $project, ":task"]) }}'.replace(':task', newTask.id);
+                        newCard.dataset.taskArchiveUrl = '{{ route("drives.projects.projects.tasks.archive", [$drive, $project, ":task"]) }}'.replace(':task', newTask.id);
+                        newCard.dataset.statusId = statusId;
+                        newCard.dataset.statusSlug = newTask.status ? newTask.status.slug : '';
+                        newCard.dataset.statusName = newTask.status ? newTask.status.name : '';
+                        newCard.dataset.statusColor = newTask.status ? newTask.status.color : '';
+                        newCard.dataset.priority = newTask.priority;
+                        newCard.dataset.labelIds = newTask.labels.map(l => l.id).join(',');
+                        newCard.dataset.memberIds = newTask.members.map(m => m.id).join(',');
+                        newCard.dataset.ownerId = newTask.owner_id || '';
+                        newCard.draggable = true;
+                        newCard.oncontextmenu = function(e) {
+                            e.preventDefault();
+                            showTaskContextMenu(e, newTask.id);
+                        };
+                        
+                        const priorityColors = {
+                            'urgent': '#dc3545',
+                            'high': '#ffc107',
+                            'medium': '#0dcaf0',
+                            'low': '#6c757d'
+                        };
+                        newCard.style.borderLeft = `4px solid ${priorityColors[newTask.priority] || '#6c757d'}`;
+                        
+                        // Build card HTML
+                        let cardHtml = '';
+                        if (newTask.description) {
+                            let plainText = newTask.description.replace(/<br\s*\/?>/gi, '\n');
+                            plainText = plainText.replace(/<\/p>|<\/div>/gi, '\n');
+                            plainText = plainText.replace(/<[^>]+>/g, '');
+                            plainText = plainText.trim();
+                            if (plainText) {
+                                cardHtml += `<div class="task-card-title">${sanitizeText(newTask.title)}</div>`;
+                                cardHtml += `<div class="task-card-description">${sanitizeText(plainText.length > 100 ? plainText.substring(0, 100) + '...' : plainText)}</div>`;
+                            } else {
+                                cardHtml += `<div class="task-card-title">${sanitizeText(newTask.title)}</div>`;
+                            }
+                        } else {
+                            cardHtml += `<div class="task-card-title">${sanitizeText(newTask.title)}</div>`;
+                        }
+                        
+                        cardHtml += '<div class="task-card-meta">';
+                        cardHtml += `<span class="badge bg-${newTask.priority === 'urgent' ? 'danger' : (newTask.priority === 'high' ? 'warning' : (newTask.priority === 'medium' ? 'info' : 'secondary'))}">`;
+                        cardHtml += `<i class="fas fa-flag me-1"></i>${newTask.priority.charAt(0).toUpperCase() + newTask.priority.slice(1)}</span>`;
+                        newTask.labels.slice(0, 3).forEach(label => {
+                            cardHtml += `<span class="badge" style="background-color: ${label.color}; color: white;">${sanitizeText(label.name)}</span>`;
+                        });
+                        if (newTask.labels.length > 3) {
+                            cardHtml += `<span class="badge bg-secondary">+${newTask.labels.length - 3}</span>`;
+                        }
+                        cardHtml += '</div>';
+                        
+                        cardHtml += '<div class="task-card-footer">';
+                        cardHtml += '<div class="d-flex align-items-center gap-2">';
+                        if (newTask.members.length > 0) {
+                            cardHtml += `<small class="text-muted"><i class="fas fa-users me-1"></i>${newTask.members.length}</small>`;
+                        }
+                        cardHtml += '</div>';
+                        if (newTask.status) {
+                            cardHtml += `<div class="d-flex align-items-center gap-1">`;
+                            cardHtml += `<span class="badge task-status-badge" style="background-color: ${newTask.status.color}; color: #fff;">${sanitizeText(newTask.status.name)}</span>`;
+                            cardHtml += '</div>';
+                        }
+                        cardHtml += '</div>';
+                        
+                        newCard.innerHTML = cardHtml;
+                        
+                        // Insert after the original card
+                        card.after(newCard);
+                        
+                        // Hide empty state
+                        const emptyState = document.getElementById('empty-status-' + statusId);
+                        if (emptyState) {
+                            emptyState.style.display = 'none';
+                        }
+                        
+                        // Update column count
+                        updateColumnTaskCount(statusId);
+                        
+                        // Make card clickable
+                        newCard.addEventListener('click', function() {
+                            openTaskSidebar(newTask.id);
+                        });
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+        
+        function archiveTask(taskId) {
+            const card = document.querySelector(`.task-card[data-task-id="${taskId}"]`);
+            if (!card || !card.dataset.taskArchiveUrl) return;
+            
+            fetch(card.dataset.taskArchiveUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove card from DOM
+                    const statusId = card.dataset.statusId;
+                    card.remove();
+                    
+                    // Update column count
+                    updateColumnTaskCount(statusId);
+                    
+                    // Show empty state if column is now empty
+                    const column = document.getElementById('kanban-status-' + statusId);
+                    if (column) {
+                        const cards = column.querySelectorAll('.task-card');
+                        const emptyState = document.getElementById('empty-status-' + statusId);
+                        if (cards.length === 0 && emptyState) {
+                            emptyState.style.display = 'block';
+                        }
+                    }
+                    
+                    // Remove from taskData
+                    delete taskData[taskId];
+                    
+                    // Close sidebar if this task was open
+                    if (currentTaskId === taskId) {
+                        sidebar.classList.remove('active');
+                        overlay.classList.remove('active');
+                        document.body.style.overflow = '';
+                        currentTaskId = null;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+        
+        // Close context menu on click outside
+        document.addEventListener('click', function(e) {
+            const contextMenu = document.getElementById('taskContextMenu');
+            if (contextMenu && !contextMenu.contains(e.target)) {
+                hideTaskContextMenu();
+            }
+        });
+        
+        // Close context menu on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                hideTaskContextMenu();
+            }
+        });
+        
         // Task sidebar functionality
         const sidebar = document.getElementById('taskSidebar');
         const overlay = document.getElementById('taskSidebarOverlay');
@@ -861,9 +1991,30 @@
         const editBtn = document.getElementById('taskSidebarEdit');
         
         @php
-            $taskData = $project->tasks
+            $canEdit = $drive->canEdit(auth()->user());
+        @endphp
+        const canEdit = @json($canEdit);
+        
+        @php
+            // Optimize task data loading with selective eager loading
+            $taskData = $project->tasks()
                 ->whereNull('deleted_at')
-                ->mapWithKeys(function ($task) use ($drive, $project) {
+                ->with([
+                    'comments' => function($query) {
+                        $query->with(['user:id,name', 'replies.user:id,name']);
+                    },
+                    'dependsOn:id,title,task_status_id',
+                    'dependsOn.status:id,name,color',
+                    'blocks:id,title,task_status_id',
+                    'blocks.status:id,name,color',
+                    'blockedBy:id,title,task_status_id',
+                    'blockedBy.status:id,name,color',
+                    'customFieldValues.fieldDefinition:id,name,type',
+                    'parent:id,title,task_status_id',
+                    'parent.status:id,name,color'
+                ])
+                ->get()
+                ->mapWithKeys(function ($task) use ($drive, $project, $customFieldDefinitions) {
                     $status = $task->status
                         ? [
                             'id' => $task->status->id,
@@ -874,6 +2025,22 @@
                         ]
                         : null;
 
+                    // Map custom field values
+                    $customFields = [];
+                    if ($customFieldDefinitions) {
+                        foreach ($customFieldDefinitions as $fieldDef) {
+                            $value = $task->customFieldValues->firstWhere('field_definition_id', $fieldDef->id);
+                            if ($value && $value->value) {
+                                $customFields[$fieldDef->id] = [
+                                    'id' => $fieldDef->id,
+                                    'name' => $fieldDef->name,
+                                    'type' => $fieldDef->type,
+                                    'value' => $value->value,
+                                ];
+                            }
+                        }
+                    }
+
                     return [
                         $task->id => [
                             'id' => $task->id,
@@ -882,39 +2049,172 @@
                             'status' => $status,
                             'priority' => $task->priority,
                             'due_date' => $task->due_date ? $task->due_date->format('Y-m-d') : null,
+                            'start_date' => $task->start_date ? $task->start_date->format('Y-m-d') : null,
+                            'estimated_hours' => $task->estimated_hours,
+                            'actual_hours' => $task->actual_hours,
                             'owner' => $task->owner ? $task->owner->name : null,
-                            'members' => $task->members->pluck('name')->toArray(),
+                            'owner_id' => $task->owner_id,
+                            'parent_id' => $task->parent_id,
+                            'parent' => $task->parent ? [
+                                'id' => $task->parent->id,
+                                'title' => $task->parent->title,
+                                'status' => $task->parent->status ? [
+                                    'name' => $task->parent->status->name,
+                                    'color' => $task->parent->status->color,
+                                ] : null,
+                            ] : null,
+                            'member_ids' => $task->members->pluck('id')->toArray(),
+                            'members' => $task->members->map(function ($member) {
+                                return [
+                                    'id' => $member->id,
+                                    'name' => $member->name,
+                                ];
+                            })->toArray(),
+                            'label_ids' => $task->labels->pluck('id')->toArray(),
                             'labels' => $task->labels->map(function ($label) {
                                 return [
+                                    'id' => $label->id,
                                     'name' => $label->name,
                                     'color' => $label->color,
                                 ];
                             })->toArray(),
+                            'custom_fields' => $customFields,
+                            'comments' => $task->comments->map(function ($comment) {
+                                return [
+                                    'id' => $comment->id,
+                                    'comment' => $comment->comment,
+                                    'comment_html' => $comment->comment_html ?? nl2br(e($comment->comment)),
+                                    'user' => [
+                                        'id' => $comment->user->id,
+                                        'name' => $comment->user->name,
+                                    ],
+                                    'created_at' => $comment->created_at->diffForHumans(),
+                                    'created_at_full' => $comment->created_at->format('M d, Y g:i A'),
+                                    'replies' => $comment->replies->map(function ($reply) {
+                                        return [
+                                            'id' => $reply->id,
+                                            'comment' => $reply->comment,
+                                            'comment_html' => $reply->comment_html ?? nl2br(e($reply->comment)),
+                                            'user' => [
+                                                'id' => $reply->user->id,
+                                                'name' => $reply->user->name,
+                                            ],
+                                            'created_at' => $reply->created_at->diffForHumans(),
+                                            'created_at_full' => $reply->created_at->format('M d, Y g:i A'),
+                                        ];
+                                    })->toArray(),
+                                ];
+                            })->toArray(),
                             'url' => route('drives.projects.projects.tasks.show', [$drive, $project, $task]),
                             'edit_url' => route('drives.projects.projects.tasks.edit', [$drive, $project, $task]),
+                            'update_url' => route('drives.projects.projects.tasks.update-labels-members', [$drive, $project, $task]),
+                            'comment_url' => route('drives.projects.projects.tasks.comments.store', [$drive, $project, $task]),
+                            'dependency_url' => route('drives.projects.projects.tasks.dependencies.store', [$drive, $project, $task]),
+                            'blocked_by' => $task->blockedBy->map(function ($dep) {
+                                return [
+                                    'id' => $dep->id,
+                                    'title' => $dep->title,
+                                    'status' => $dep->status ? [
+                                        'name' => $dep->status->name,
+                                        'color' => $dep->status->color,
+                                    ] : null,
+                                ];
+                            })->toArray(),
+                            'blocks' => $task->blocks->map(function ($dep) {
+                                return [
+                                    'id' => $dep->id,
+                                    'title' => $dep->title,
+                                    'status' => $dep->status ? [
+                                        'name' => $dep->status->name,
+                                        'color' => $dep->status->color,
+                                    ] : null,
+                                ];
+                            })->toArray(),
+                            'related' => $task->relatedTasks->map(function ($dep) {
+                                return [
+                                    'id' => $dep->id,
+                                    'title' => $dep->title,
+                                    'status' => $dep->status ? [
+                                        'name' => $dep->status->name,
+                                        'color' => $dep->status->color,
+                                    ] : null,
+                                ];
+                            })->toArray(),
                             'created_at' => $task->created_at->format('M d, Y'),
                             'is_overdue' => (bool) $task->isOverdue(),
                         ],
                     ];
                 })
                 ->toArray();
+            
+            // Get custom field definitions for display
+            $availableCustomFields = $customFieldDefinitions->where('is_active', true)->map(function ($fieldDef) {
+                return [
+                    'id' => $fieldDef->id,
+                    'name' => $fieldDef->name,
+                    'type' => $fieldDef->type,
+                    'options' => $fieldDef->options,
+                ];
+            })->toArray();
+            
+            $availableLabels = $labels->map(function ($label) {
+                return [
+                    'id' => $label->id,
+                    'name' => $label->name,
+                    'color' => $label->color,
+                ];
+            })->toArray();
+            
+            $availableMembers = $driveMembers->map(function ($member) {
+                return [
+                    'id' => $member->id,
+                    'name' => $member->name,
+                ];
+            })->toArray();
         @endphp
 
         // Task data storage
         const taskData = @json($taskData);
+        const availableLabels = @json($availableLabels);
+        const availableMembers = @json($availableMembers);
+        const availableCustomFields = @json($availableCustomFields ?? []);
+        let currentTaskId = null;
+        let isEditMode = false;
         
         window.openTaskSidebar = function(taskId) {
             const task = taskData[taskId];
             if (!task) return;
+            
+            currentTaskId = taskId;
+            isEditMode = false;
             
             // Update sidebar title
             document.getElementById('taskSidebarTitle').textContent = task.title;
             
             // Update links
             fullViewBtn.href = task.url;
+            if (editBtn) {
             editBtn.href = task.edit_url;
             
-            // Build sidebar content
+                // Reset edit button
+                editBtn.innerHTML = '<i class="fas fa-edit me-2"></i>Edit';
+                editBtn.classList.remove('btn-primary');
+                editBtn.classList.add('btn-outline-secondary');
+                editBtn.onclick = function(e) {
+                    e.preventDefault();
+                    toggleEditMode();
+                };
+            }
+            
+            renderSidebarContent(task, false);
+            
+            // Show sidebar
+            sidebar.classList.add('active');
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        };
+        
+        function renderSidebarContent(task, editMode) {
             let html = '';
             
             // Status and Priority
@@ -924,16 +2224,44 @@
                 html += `<span class="badge fs-6" style="background-color: ${task.status.color}; color: #fff;">`;
                 html += `${sanitizeText(task.status.name)}</span>`;
             }
+            if (editMode && canEdit) {
+                html += '<select class="form-select form-select-sm" id="taskPrioritySelect" style="width: auto;" onchange="updateTaskPriority()">';
+                html += `<option value="low" ${task.priority === 'low' ? 'selected' : ''}>Low</option>`;
+                html += `<option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>Medium</option>`;
+                html += `<option value="high" ${task.priority === 'high' ? 'selected' : ''}>High</option>`;
+                html += `<option value="urgent" ${task.priority === 'urgent' ? 'selected' : ''}>Urgent</option>`;
+                html += '</select>';
+            } else {
             html += `<span class="badge bg-${task.priority === 'urgent' ? 'danger' : (task.priority === 'high' ? 'warning' : (task.priority === 'medium' ? 'info' : 'secondary'))} fs-6">`;
             html += `${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}</span>`;
+            }
             html += '</div>';
             html += '</div>';
             
             // Description
-            if (task.description) {
+            html += '<div class="task-sidebar-section">';
+            html += '<div class="task-sidebar-section-title">Description</div>';
+            if (editMode && canEdit) {
+                html += '<div id="taskDescriptionEditor" style="min-height: 150px;"></div>';
+                html += '<input type="hidden" id="taskDescriptionHidden" value="">';
+            } else {
+                if (task.description) {
+                    html += '<div class="task-description-container">';
+                    html += sanitizeHtml(task.description);
+                    html += '</div>';
+                } else {
+                    html += '<p class="text-muted small mb-0">No description</p>';
+                }
+            }
+            html += '</div>';
+            
+            // Start Date
+            if (task.start_date) {
                 html += '<div class="task-sidebar-section">';
-                html += '<div class="task-sidebar-section-title">Description</div>';
-                html += `<div style="color: var(--text-color);">${sanitizeHtml(task.description)}</div>`;
+                html += '<div class="task-sidebar-section-title">Start Date</div>';
+                const startDate = new Date(task.start_date + 'T00:00:00');
+                const formattedStartDate = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                html += `<p style="color: var(--text-color);">${formattedStartDate}</p>`;
                 html += '</div>';
             }
             
@@ -947,6 +2275,24 @@
                 html += '</div>';
             }
             
+            // Time Tracking
+            if (task.estimated_hours || task.actual_hours) {
+                html += '<div class="task-sidebar-section">';
+                html += '<div class="task-sidebar-section-title">Time Tracking</div>';
+                html += '<p style="color: var(--text-color);">';
+                if (task.estimated_hours) {
+                    html += `<strong>Estimated:</strong> ${task.estimated_hours}h`;
+                    if (task.actual_hours) {
+                        html += '<br>';
+                    }
+                }
+                if (task.actual_hours) {
+                    html += `<strong>Actual:</strong> ${task.actual_hours}h`;
+                }
+                html += '</p>';
+                html += '</div>';
+            }
+            
             // Owner
             if (task.owner) {
                 html += '<div class="task-sidebar-section">';
@@ -955,29 +2301,125 @@
                 html += '</div>';
             }
             
-            // Members
-            if (task.members.length > 0) {
+            // Parent Task
+            if (task.parent) {
                 html += '<div class="task-sidebar-section">';
-                html += '<div class="task-sidebar-section-title">Assigned Members</div>';
-                html += '<div class="d-flex flex-wrap gap-1">';
-                task.members.forEach(member => {
-                    html += `<span class="badge bg-secondary">${sanitizeText(member)}</span>`;
+                html += '<div class="task-sidebar-section-title">Parent Task</div>';
+                html += '<p style="color: var(--text-color);">';
+                html += `<a href="#" onclick="openTaskSidebar(${task.parent.id}); return false;" class="text-decoration-none" style="color: var(--text-color);">`;
+                if (task.parent.status) {
+                    html += `<span class="badge me-2" style="background-color: ${task.parent.status.color}; color: #fff;">${sanitizeText(task.parent.status.name)}</span>`;
+                }
+                html += `${sanitizeText(task.parent.title)}</a>`;
+                html += '</p>';
+                html += '</div>';
+            }
+            
+            // Custom Fields
+            if (task.custom_fields && Object.keys(task.custom_fields).length > 0) {
+                html += '<div class="task-sidebar-section">';
+                html += '<div class="task-sidebar-section-title">Custom Fields</div>';
+                html += '<div class="mt-2">';
+                Object.values(task.custom_fields).forEach(field => {
+                    html += '<div class="mb-2">';
+                    html += `<strong class="small">${sanitizeText(field.name)}:</strong> `;
+                    html += '<div class="small" style="color: var(--text-color);">';
+                    if (field.type === 'checkbox') {
+                        html += field.value == '1' ? 'Yes' : 'No';
+                    } else if (field.type === 'date') {
+                        const date = new Date(field.value + 'T00:00:00');
+                        html += date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    } else {
+                        html += sanitizeText(field.value);
+                    }
+                    html += '</div>';
+                    html += '</div>';
                 });
                 html += '</div>';
                 html += '</div>';
             }
             
             // Labels
+            html += '<div class="task-sidebar-section" id="labelsSection">';
+            html += '<div class="d-flex justify-content-between align-items-center mb-2">';
+            html += '<div class="task-sidebar-section-title mb-0">Labels</div>';
+            if (editMode && canEdit) {
+                html += '<button type="button" class="btn btn-sm btn-outline-primary" onclick="addLabelToTask()">';
+                html += '<i class="fas fa-plus me-1"></i>Add';
+                html += '</button>';
+            }
+            html += '</div>';
+            if (editMode && canEdit) {
+                html += '<div class="d-flex flex-wrap gap-1 mb-2" id="labelsEditContainer">';
+                task.labels.forEach(label => {
+                    html += `<span class="badge d-inline-flex align-items-center gap-1" style="background-color: ${label.color}; color: white;">`;
+                    html += `${sanitizeText(label.name)}`;
+                    html += `<button type="button" class="btn-close btn-close-white" style="font-size: 0.6rem;" onclick="removeLabelFromTask(${label.id})" aria-label="Remove"></button>`;
+                    html += `</span>`;
+                });
+                html += '</div>';
+                html += '<select class="form-select form-select-sm" id="labelSelect" onchange="selectLabelToAdd()">';
+                html += '<option value="">Select a label...</option>';
+                const currentLabelIds = task.label_ids || [];
+                availableLabels.forEach(label => {
+                    if (!currentLabelIds.includes(label.id)) {
+                        html += `<option value="${label.id}" data-name="${sanitizeText(label.name)}" data-color="${label.color}">${sanitizeText(label.name)}</option>`;
+                    }
+                });
+                html += '</select>';
+            } else {
             if (task.labels.length > 0) {
-                html += '<div class="task-sidebar-section">';
-                html += '<div class="task-sidebar-section-title">Labels</div>';
                 html += '<div class="d-flex flex-wrap gap-1">';
                 task.labels.forEach(label => {
                     html += `<span class="badge" style="background-color: ${label.color}; color: white;">${sanitizeText(label.name)}</span>`;
                 });
                 html += '</div>';
-                html += '</div>';
+                } else {
+                    html += '<p class="text-muted small mb-0">No labels assigned</p>';
+                }
             }
+                html += '</div>';
+            
+            // Members
+            html += '<div class="task-sidebar-section" id="membersSection">';
+            html += '<div class="d-flex justify-content-between align-items-center mb-2">';
+            html += '<div class="task-sidebar-section-title mb-0">Assigned Members</div>';
+            if (editMode && canEdit) {
+                html += '<button type="button" class="btn btn-sm btn-outline-primary" onclick="addMemberToTask()">';
+                html += '<i class="fas fa-plus me-1"></i>Add';
+                html += '</button>';
+            }
+            html += '</div>';
+            if (editMode && canEdit) {
+                html += '<div class="d-flex flex-wrap gap-1 mb-2" id="membersEditContainer">';
+                task.members.forEach(member => {
+                    html += `<span class="badge bg-secondary d-inline-flex align-items-center gap-1">`;
+                    html += `${sanitizeText(member.name)}`;
+                    html += `<button type="button" class="btn-close btn-close-white" style="font-size: 0.6rem;" onclick="removeMemberFromTask(${member.id})" aria-label="Remove"></button>`;
+                    html += `</span>`;
+                });
+                html += '</div>';
+                html += '<select class="form-select form-select-sm" id="memberSelect" onchange="selectMemberToAdd()">';
+                html += '<option value="">Select a member...</option>';
+                const currentMemberIds = task.member_ids || [];
+                availableMembers.forEach(member => {
+                    if (!currentMemberIds.includes(member.id)) {
+                        html += `<option value="${member.id}" data-name="${sanitizeText(member.name)}">${sanitizeText(member.name)}</option>`;
+                    }
+                });
+                html += '</select>';
+            } else {
+                if (task.members.length > 0) {
+                    html += '<div class="d-flex flex-wrap gap-1">';
+                    task.members.forEach(member => {
+                        html += `<span class="badge bg-secondary">${sanitizeText(member.name)}</span>`;
+                    });
+                    html += '</div>';
+                } else {
+                    html += '<p class="text-muted small mb-0">No members assigned</p>';
+                }
+            }
+            html += '</div>';
             
             // Created Date
             html += '<div class="task-sidebar-section">';
@@ -985,20 +2427,1077 @@
             html += `<p class="text-muted small">${sanitizeText(task.created_at)}</p>`;
             html += '</div>';
             
+            // Dependencies Section
+            if (task.blocked_by && task.blocked_by.length > 0 || task.blocks && task.blocks.length > 0 || task.related && task.related.length > 0) {
+                html += '<div class="task-sidebar-section" id="dependenciesSection">';
+                html += '<div class="d-flex justify-content-between align-items-center mb-2">';
+                html += '<div class="task-sidebar-section-title mb-0">Dependencies</div>';
+                if (editMode && canEdit) {
+                    html += '<button type="button" class="btn btn-sm btn-outline-primary" onclick="showAddDependencyModal()">';
+                    html += '<i class="fas fa-plus me-1"></i>Add';
+                    html += '</button>';
+                }
+                html += '</div>';
+                
+                if (task.blocked_by && task.blocked_by.length > 0) {
+                    html += '<div class="mb-2">';
+                    html += '<small class="text-muted d-block mb-1">Blocked By:</small>';
+                    task.blocked_by.forEach(dep => {
+                        html += '<div class="d-flex align-items-center justify-content-between mb-1 p-2 rounded" style="background-color: var(--bg-primary);">';
+                        html += '<a href="#" onclick="openTaskSidebar(' + dep.id + '); return false;" class="text-decoration-none">';
+                        html += '<span class="badge me-2" style="background-color: ' + (dep.status ? dep.status.color : '#6c757d') + ';">' + (dep.status ? dep.status.name : '') + '</span>';
+                        html += sanitizeText(dep.title);
+                        html += '</a>';
+                        if (editMode && canEdit) {
+                            html += '<button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="removeDependency(' + dep.id + ', \'blocked_by\')">';
+                            html += '<i class="fas fa-times"></i>';
+                            html += '</button>';
+                        }
+                        html += '</div>';
+                    });
+                    html += '</div>';
+                }
+                
+                if (task.blocks && task.blocks.length > 0) {
+                    html += '<div class="mb-2">';
+                    html += '<small class="text-muted d-block mb-1">Blocks:</small>';
+                    task.blocks.forEach(dep => {
+                        html += '<div class="d-flex align-items-center justify-content-between mb-1 p-2 rounded" style="background-color: var(--bg-primary);">';
+                        html += '<a href="#" onclick="openTaskSidebar(' + dep.id + '); return false;" class="text-decoration-none">';
+                        html += '<span class="badge me-2" style="background-color: ' + (dep.status ? dep.status.color : '#6c757d') + ';">' + (dep.status ? dep.status.name : '') + '</span>';
+                        html += sanitizeText(dep.title);
+                        html += '</a>';
+                        if (editMode && canEdit) {
+                            html += '<button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="removeDependency(' + dep.id + ', \'blocks\')">';
+                            html += '<i class="fas fa-times"></i>';
+                            html += '</button>';
+                        }
+                        html += '</div>';
+                    });
+                    html += '</div>';
+                }
+                
+                if (task.related && task.related.length > 0) {
+                    html += '<div class="mb-2">';
+                    html += '<small class="text-muted d-block mb-1">Related:</small>';
+                    task.related.forEach(dep => {
+                        html += '<div class="d-flex align-items-center justify-content-between mb-1 p-2 rounded" style="background-color: var(--bg-primary);">';
+                        html += '<a href="#" onclick="openTaskSidebar(' + dep.id + '); return false;" class="text-decoration-none">';
+                        html += '<span class="badge me-2" style="background-color: ' + (dep.status ? dep.status.color : '#6c757d') + ';">' + (dep.status ? dep.status.name : '') + '</span>';
+                        html += sanitizeText(dep.title);
+                        html += '</a>';
+                        if (editMode && canEdit) {
+                            html += '<button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="removeDependency(' + dep.id + ', \'related\')">';
+                            html += '<i class="fas fa-times"></i>';
+                            html += '</button>';
+                        }
+                        html += '</div>';
+                    });
+                    html += '</div>';
+                }
+                
+                if (editMode && canEdit && (!task.blocked_by || task.blocked_by.length === 0) && (!task.blocks || task.blocks.length === 0) && (!task.related || task.related.length === 0)) {
+                    html += '<p class="text-muted small mb-0">No dependencies. Click "Add" to link related tasks.</p>';
+                }
+                html += '</div>';
+            } else if (editMode && canEdit) {
+                html += '<div class="task-sidebar-section" id="dependenciesSection">';
+                html += '<div class="d-flex justify-content-between align-items-center mb-2">';
+                html += '<div class="task-sidebar-section-title mb-0">Dependencies</div>';
+                html += '<button type="button" class="btn btn-sm btn-outline-primary" onclick="showAddDependencyModal()">';
+                html += '<i class="fas fa-plus me-1"></i>Add';
+                html += '</button>';
+                html += '</div>';
+                html += '<p class="text-muted small mb-0">No dependencies. Click "Add" to link related tasks.</p>';
+                html += '</div>';
+            }
+            
+            // Comments Section
+            html += '<div class="task-sidebar-section" id="commentsSection">';
+            html += '<div class="task-sidebar-section-title">Comments</div>';
+            
+            // Comment Form
+            if (canEdit) {
+                html += '<form id="commentForm" class="mb-3">';
+                html += '<div class="mb-2">';
+                html += '<textarea class="form-control form-control-sm" id="commentText" rows="3" placeholder="Type @username to mention someone..." required></textarea>';
+                html += '<small class="text-muted">Type @username to mention drive members</small>';
+                html += '</div>';
+                html += '<button type="submit" class="btn btn-primary btn-sm">';
+                html += '<i class="fas fa-comment me-1"></i>Post Comment';
+                html += '</button>';
+                html += '</form>';
+            }
+            
+            // Comments List
+            html += '<div id="commentsList">';
+            if (task.comments && task.comments.length > 0) {
+                task.comments.forEach(comment => {
+                    html += renderComment(comment);
+                });
+            } else {
+                html += '<p class="text-muted small mb-0">No comments yet. Be the first to comment!</p>';
+            }
+            html += '</div>';
+            html += '</div>';
+            
             document.getElementById('taskSidebarContent').innerHTML = html;
             
-            // Show sidebar
-            sidebar.classList.add('active');
-            overlay.classList.add('active');
-            document.body.style.overflow = 'hidden';
+            // Attach comment form handler after a brief delay to ensure DOM is ready
+            if (canEdit) {
+                setTimeout(() => {
+                    const commentForm = document.getElementById('commentForm');
+                    if (commentForm) {
+                        commentForm.addEventListener('submit', function(e) {
+                            e.preventDefault();
+                            submitComment();
+                        });
+                    }
+                }, 10);
+            }
+        }
+        
+        function renderComment(comment, parentId = null) {
+            const isReply = parentId !== null;
+            let html = '<div class="comment mb-3 pb-3 border-bottom" id="comment-' + comment.id + '">';
+            html += '<div class="d-flex">';
+            html += '<div class="flex-shrink-0">';
+            html += '<div class="' + (isReply ? 'bg-secondary' : 'bg-primary') + ' rounded-circle d-flex align-items-center justify-content-center" style="width: ' + (isReply ? '24' : '32') + 'px; height: ' + (isReply ? '24' : '32') + 'px; font-size: ' + (isReply ? '0.7' : '0.8') + 'rem;">';
+            html += '<span style="color: white;">' + sanitizeText(comment.user.name.charAt(0)) + '</span>';
+            html += '</div>';
+            html += '</div>';
+            html += '<div class="flex-grow-1 ms-2">';
+            html += '<div class="d-flex justify-content-between align-items-start mb-1">';
+            html += '<div>';
+            html += '<strong class="small" style="color: var(--text-color);">' + sanitizeText(comment.user.name) + '</strong>';
+            html += '<small class="text-muted ms-2">' + sanitizeText(comment.created_at) + '</small>';
+            html += '</div>';
+            html += '</div>';
+            html += '<div class="small" style="color: var(--text-color);">';
+            html += sanitizeHtml(comment.comment_html || comment.comment);
+            html += '</div>';
+            
+            // Reply button (only for top-level comments)
+            if (!isReply && canEdit) {
+                html += '<div class="mt-2">';
+                html += '<button class="btn btn-sm btn-link text-muted p-0" onclick="showReplyForm(' + comment.id + ')">';
+                html += '<i class="fas fa-reply me-1"></i>Reply';
+                html += '</button>';
+                html += '</div>';
+            }
+            
+            // Replies
+            if (comment.replies && comment.replies.length > 0) {
+                html += '<div class="replies mt-2 ms-3">';
+                comment.replies.forEach(reply => {
+                    html += renderComment(reply, comment.id);
+                });
+                html += '</div>';
+            }
+            
+            // Reply form (hidden by default)
+            if (!isReply && canEdit) {
+                html += '<div class="reply-form d-none mt-2 ms-3" id="reply-form-' + comment.id + '">';
+                html += '<form onsubmit="submitReply(event, ' + comment.id + ')">';
+                html += '<textarea class="form-control form-control-sm mb-2" id="reply-text-' + comment.id + '" rows="2" placeholder="Reply to ' + sanitizeText(comment.user.name) + '..." required></textarea>';
+                html += '<div class="d-flex gap-2">';
+                html += '<button type="submit" class="btn btn-sm btn-primary">Reply</button>';
+                html += '<button type="button" class="btn btn-sm btn-secondary" onclick="hideReplyForm(' + comment.id + ')">Cancel</button>';
+                html += '</div>';
+                html += '</form>';
+                html += '</div>';
+            }
+            
+            html += '</div>';
+            html += '</div>';
+            html += '</div>';
+            return html;
+        }
+        
+        function showReplyForm(commentId) {
+            const replyForm = document.getElementById('reply-form-' + commentId);
+            if (replyForm) {
+                replyForm.classList.remove('d-none');
+                const textarea = document.getElementById('reply-text-' + commentId);
+                if (textarea) {
+                    textarea.focus();
+                }
+            }
+        }
+        
+        function hideReplyForm(commentId) {
+            const replyForm = document.getElementById('reply-form-' + commentId);
+            if (replyForm) {
+                replyForm.classList.add('d-none');
+                const textarea = document.getElementById('reply-text-' + commentId);
+                if (textarea) {
+                    textarea.value = '';
+                }
+            }
+        }
+        
+        function submitReply(event, parentCommentId) {
+            event.preventDefault();
+            if (!currentTaskId) return;
+            
+            const task = taskData[currentTaskId];
+            if (!task || !task.comment_url) return;
+            
+            const textarea = document.getElementById('reply-text-' + parentCommentId);
+            if (!textarea || !textarea.value.trim()) return;
+            
+            const form = event.target;
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            
+            // Disable form
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Posting...';
+            
+            fetch(task.comment_url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    comment: textarea.value.trim(),
+                    parent_id: parentCommentId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Find parent comment in task data
+                    const parentComment = task.comments.find(c => c.id === parentCommentId);
+                    if (parentComment) {
+                        if (!parentComment.replies) parentComment.replies = [];
+                        parentComment.replies.push(data.comment);
+                    }
+                    
+                    // Hide reply form
+                    hideReplyForm(parentCommentId);
+                    
+                    // Re-render the parent comment to show the new reply
+                    const commentElement = document.getElementById('comment-' + parentCommentId);
+                    if (commentElement && parentComment) {
+                        // Find the replies container
+                        let repliesContainer = commentElement.querySelector('.replies');
+                        if (!repliesContainer) {
+                            // Create replies container
+                            const commentContent = commentElement.querySelector('.flex-grow-1');
+                            if (commentContent) {
+                                repliesContainer = document.createElement('div');
+                                repliesContainer.className = 'replies mt-2 ms-3';
+                                const replyButton = commentContent.querySelector('.mt-2');
+                                if (replyButton) {
+                                    replyButton.insertAdjacentElement('afterend', repliesContainer);
+                                } else {
+                                    commentContent.appendChild(repliesContainer);
+                                }
+                            }
+                        }
+                        if (repliesContainer) {
+                            // Add new reply
+                            const replyHtml = renderComment(data.comment, parentCommentId);
+                            repliesContainer.insertAdjacentHTML('beforeend', replyHtml);
+                            
+                            // Scroll to new reply
+                            const newReply = document.getElementById('comment-' + data.comment.id);
+                            if (newReply) {
+                                newReply.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            }
+                        }
+                    }
+                    
+                    // Update comment count on card
+                    updateTaskCard(currentTaskId);
+                }
+            })
+            .catch(error => {
+                console.error('Error posting reply:', error);
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            });
+        }
+        
+        function submitComment() {
+            if (!currentTaskId) return;
+            
+            const task = taskData[currentTaskId];
+            if (!task || !task.comment_url) return;
+            
+            const commentText = document.getElementById('commentText');
+            if (!commentText || !commentText.value.trim()) return;
+            
+            const form = document.getElementById('commentForm');
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            
+            // Disable form
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Posting...';
+            
+            fetch(task.comment_url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    comment: commentText.value.trim()
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Add comment to task data
+                    if (!task.comments) task.comments = [];
+                    task.comments.push(data.comment);
+                    
+                    // Clear form
+                    commentText.value = '';
+                    
+                    // Add comment to UI
+                    const commentsList = document.getElementById('commentsList');
+                    if (commentsList) {
+                        // Remove "no comments" message if present
+                        const noCommentsMsg = commentsList.querySelector('p.text-muted');
+                        if (noCommentsMsg) {
+                            noCommentsMsg.remove();
+                        }
+                        
+                        // Add new comment
+                        const commentHtml = renderComment(data.comment);
+                        commentsList.insertAdjacentHTML('beforeend', commentHtml);
+                        
+                        // Scroll to new comment
+                        const newComment = document.getElementById('comment-' + data.comment.id);
+                        if (newComment) {
+                            newComment.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                        
+                        // Update comment count on card
+                        updateTaskCard(currentTaskId);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error posting comment:', error);
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            });
+        }
+        
+        let quillEditor = null;
+        
+        function toggleEditMode() {
+            if (!currentTaskId || !editBtn) return;
+            
+            const task = taskData[currentTaskId];
+            if (!task) return;
+            
+            if (isEditMode) {
+                // Exiting edit mode - save changes
+                saveTaskChanges();
+                
+                // Destroy Quill editor
+                if (quillEditor) {
+                    const editorElement = document.getElementById('taskDescriptionEditor');
+                    if (editorElement) {
+                        editorElement.innerHTML = '';
+                    }
+                    quillEditor = null;
+                }
+                
+                editBtn.innerHTML = '<i class="fas fa-edit me-2"></i>Edit';
+                editBtn.classList.remove('btn-primary');
+                editBtn.classList.add('btn-outline-secondary');
+                isEditMode = false;
+                renderSidebarContent(task, false);
+            } else {
+                // Entering edit mode
+                editBtn.innerHTML = '<i class="fas fa-times me-2"></i>Cancel';
+                editBtn.classList.remove('btn-outline-secondary');
+                editBtn.classList.add('btn-primary');
+                isEditMode = true;
+                renderSidebarContent(task, true);
+                
+                // Initialize Quill editor after a short delay to ensure DOM is ready
+                setTimeout(() => {
+                    initializeQuillEditor(task);
+                }, 100);
+            }
+        }
+        
+        function initializeQuillEditor(task) {
+            const editorElement = document.getElementById('taskDescriptionEditor');
+            if (!editorElement) return;
+            
+            // Destroy existing editor if any
+            if (quillEditor) {
+                quillEditor = null;
+            }
+            
+            quillEditor = new Quill('#taskDescriptionEditor', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        [{ header: [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ list: 'ordered' }, { list: 'bullet' }],
+                        ['blockquote', 'code-block'],
+                        ['link'],
+                        ['clean']
+                    ],
+                },
+            });
+            
+            // Store reference on the element for fallback access
+            editorElement.__quill = quillEditor;
+            
+            // Set initial content
+            const initialContent = task.description || '';
+            if (initialContent) {
+                quillEditor.root.innerHTML = initialContent;
+            }
+        }
+        
+        function addLabelToTask() {
+            const select = document.getElementById('labelSelect');
+            if (select && select.value) {
+                selectLabelToAdd();
+            }
+        }
+        
+        function selectLabelToAdd() {
+            const select = document.getElementById('labelSelect');
+            if (!select || !select.value) return;
+            
+            const option = select.options[select.selectedIndex];
+            const labelId = parseInt(select.value);
+            const labelName = option.dataset.name;
+            const labelColor = option.dataset.color;
+            
+            const task = taskData[currentTaskId];
+            if (!task) return;
+            
+            // Add to task data
+            if (!task.label_ids) task.label_ids = [];
+            if (!task.labels) task.labels = [];
+            
+            if (!task.label_ids.includes(labelId)) {
+                task.label_ids.push(labelId);
+                task.labels.push({
+                    id: labelId,
+                    name: labelName,
+                    color: labelColor
+                });
+            }
+            
+            // Update UI
+            const container = document.getElementById('labelsEditContainer');
+            const badge = document.createElement('span');
+            badge.className = 'badge d-inline-flex align-items-center gap-1';
+            badge.style.backgroundColor = labelColor;
+            badge.style.color = 'white';
+            badge.innerHTML = `${sanitizeText(labelName)}<button type="button" class="btn-close btn-close-white" style="font-size: 0.6rem;" onclick="removeLabelFromTask(${labelId})" aria-label="Remove"></button>`;
+            container.appendChild(badge);
+            
+            // Remove from select
+            option.remove();
+            select.value = '';
+            
+            // Save changes
+            saveLabelsAndMembers();
+        }
+        
+        function removeLabelFromTask(labelId) {
+            const task = taskData[currentTaskId];
+            if (!task) return;
+            
+            // Remove from task data
+            task.label_ids = task.label_ids.filter(id => id !== labelId);
+            task.labels = task.labels.filter(label => label.id !== labelId);
+            
+            // Find the label in available labels and add back to select
+            const label = availableLabels.find(l => l.id === labelId);
+            if (label) {
+                const select = document.getElementById('labelSelect');
+                const option = document.createElement('option');
+                option.value = label.id;
+                option.dataset.name = label.name;
+                option.dataset.color = label.color;
+                option.textContent = label.name;
+                select.appendChild(option);
+            }
+            
+            // Update UI
+            const container = document.getElementById('labelsEditContainer');
+            const badge = container.querySelector(`button[onclick="removeLabelFromTask(${labelId})"]`)?.closest('.badge');
+            if (badge) badge.remove();
+            
+            // Save changes
+            saveLabelsAndMembers();
+        }
+        
+        function addMemberToTask() {
+            const select = document.getElementById('memberSelect');
+            if (select && select.value) {
+                selectMemberToAdd();
+            }
+        }
+        
+        function selectMemberToAdd() {
+            const select = document.getElementById('memberSelect');
+            if (!select || !select.value) return;
+            
+            const option = select.options[select.selectedIndex];
+            const memberId = parseInt(select.value);
+            const memberName = option.dataset.name;
+            
+            const task = taskData[currentTaskId];
+            if (!task) return;
+            
+            // Add to task data
+            if (!task.member_ids) task.member_ids = [];
+            if (!task.members) task.members = [];
+            
+            if (!task.member_ids.includes(memberId)) {
+                task.member_ids.push(memberId);
+                task.members.push({
+                    id: memberId,
+                    name: memberName
+                });
+            }
+            
+            // Update UI
+            const container = document.getElementById('membersEditContainer');
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-secondary d-inline-flex align-items-center gap-1';
+            badge.innerHTML = `${sanitizeText(memberName)}<button type="button" class="btn-close btn-close-white" style="font-size: 0.6rem;" onclick="removeMemberFromTask(${memberId})" aria-label="Remove"></button>`;
+            container.appendChild(badge);
+            
+            // Remove from select
+            option.remove();
+            select.value = '';
+            
+            // Save changes
+            saveLabelsAndMembers();
+        }
+        
+        function removeMemberFromTask(memberId) {
+            const task = taskData[currentTaskId];
+            if (!task) return;
+            
+            // Remove from task data
+            task.member_ids = task.member_ids.filter(id => id !== memberId);
+            task.members = task.members.filter(member => member.id !== memberId);
+            
+            // Find the member in available members and add back to select
+            const member = availableMembers.find(m => m.id === memberId);
+            if (member) {
+                const select = document.getElementById('memberSelect');
+                const option = document.createElement('option');
+                option.value = member.id;
+                option.dataset.name = member.name;
+                option.textContent = member.name;
+                select.appendChild(option);
+            }
+            
+            // Update UI
+            const container = document.getElementById('membersEditContainer');
+            const badge = container.querySelector(`button[onclick="removeMemberFromTask(${memberId})"]`)?.closest('.badge');
+            if (badge) badge.remove();
+            
+            // Save changes
+            saveLabelsAndMembers();
+        }
+        
+        function updateTaskPriority() {
+            if (!currentTaskId) return;
+            
+            const task = taskData[currentTaskId];
+            if (!task) return;
+            
+            const prioritySelect = document.getElementById('taskPrioritySelect');
+            if (!prioritySelect) return;
+            
+            const newPriority = prioritySelect.value;
+            if (newPriority === task.priority) return;
+            
+            task.priority = newPriority;
+            saveTaskChanges();
+        }
+        
+        function saveLabelsAndMembers() {
+            saveTaskChanges();
+        }
+        
+        function saveTaskChanges() {
+            if (!currentTaskId) return;
+            
+            const task = taskData[currentTaskId];
+            if (!task || !task.update_url) return;
+            
+            const labelIds = task.label_ids || [];
+            const memberIds = task.member_ids || [];
+            const priority = task.priority || 'medium';
+            
+            // Get description from Quill editor if in edit mode
+            let description = task.description || '';
+            const editorElement = document.getElementById('taskDescriptionEditor');
+            if (editorElement && quillEditor) {
+                description = quillEditor.root.innerHTML.trim();
+            } else if (editorElement) {
+                // Fallback: try to get content directly from the editor element
+                const quillInstance = editorElement.__quill;
+                if (quillInstance) {
+                    description = quillInstance.root.innerHTML.trim();
+                }
+            }
+            
+            fetch(task.update_url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    label_ids: labelIds,
+                    member_ids: memberIds,
+                    priority: priority,
+                    description: description
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update task data with server response
+                    if (data.task.labels) {
+                        task.label_ids = data.task.labels.map(l => l.id);
+                        task.labels = data.task.labels;
+                    }
+                    if (data.task.members) {
+                        task.member_ids = data.task.members.map(m => m.id);
+                        task.members = data.task.members;
+                    }
+                    if (data.task.priority) {
+                        task.priority = data.task.priority;
+                    }
+                    if (data.task.description !== undefined) {
+                        task.description = data.task.description;
+                    }
+                    
+                    // Update the card on the board
+                    updateTaskCard(currentTaskId);
+                }
+            })
+            .catch(error => {
+                console.error('Error updating task:', error);
+            });
+        }
+        
+        function updateTaskCard(taskId) {
+            const card = document.querySelector(`.task-card[data-task-id="${taskId}"]`);
+            if (!card) return;
+            
+            const task = taskData[taskId];
+            if (!task) return;
+            
+            // Update priority border color
+            const priorityColors = {
+                'urgent': '#dc3545',
+                'high': '#ffc107',
+                'medium': '#0dcaf0',
+                'low': '#6c757d'
+            };
+            const priorityColor = priorityColors[task.priority] || '#6c757d';
+            card.style.borderLeftColor = priorityColor;
+            card.dataset.priority = task.priority;
+            
+            // Update description on card
+            const descriptionEl = card.querySelector('.task-card-description');
+            if (descriptionEl) {
+                if (task.description) {
+                    // Preserve HTML formatting
+                    let html = task.description;
+                    // Get plain text length for truncation
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+                    const plainText = tempDiv.textContent || tempDiv.innerText || '';
+                    
+                    if (plainText.length > 100) {
+                        // Truncate HTML while preserving tags
+                        let truncated = '';
+                        let plainPos = 0;
+                        let inTag = false;
+                        let tagBuffer = '';
+                        
+                        for (let i = 0; i < html.length && plainPos < 100; i++) {
+                            const char = html[i];
+                            if (char === '<') {
+                                inTag = true;
+                                tagBuffer = char;
+                            } else if (char === '>') {
+                                inTag = false;
+                                tagBuffer += char;
+                                truncated += tagBuffer;
+                                tagBuffer = '';
+                            } else if (inTag) {
+                                tagBuffer += char;
+                            } else {
+                                truncated += char;
+                                plainPos++;
+                            }
+                        }
+                        html = truncated + '...';
+                    }
+                    
+                    descriptionEl.innerHTML = html;
+                    descriptionEl.style.display = '';
+                } else {
+                    descriptionEl.style.display = 'none';
+                }
+            }
+            
+            // Update labels on card
+            const metaContainer = card.querySelector('.task-card-meta');
+            if (metaContainer) {
+                // Remove existing label badges (keep priority badge)
+                const priorityBadge = metaContainer.querySelector('.badge:first-child');
+                metaContainer.innerHTML = '';
+                if (priorityBadge) {
+                    metaContainer.appendChild(priorityBadge);
+                }
+                
+                // Add label badges
+                task.labels.slice(0, 3).forEach(label => {
+                    const badge = document.createElement('span');
+                    badge.className = 'badge';
+                    badge.style.backgroundColor = label.color;
+                    badge.style.color = 'white';
+                    badge.textContent = label.name;
+                    metaContainer.appendChild(badge);
+                });
+                
+                if (task.labels.length > 3) {
+                    const moreBadge = document.createElement('span');
+                    moreBadge.className = 'badge bg-secondary';
+                    moreBadge.textContent = `+${task.labels.length - 3}`;
+                    metaContainer.appendChild(moreBadge);
+                }
+            }
+            
+            // Update members count and comment count on card
+            const footer = card.querySelector('.task-card-footer');
+            if (footer) {
+                const leftSide = footer.querySelector('.d-flex.align-items-center.gap-2');
+                if (leftSide) {
+                    // Update members count
+                    let membersCount = leftSide.querySelector('small:has(i.fa-users)');
+                    if (!membersCount) {
+                        // Try alternative selector
+                        membersCount = Array.from(leftSide.querySelectorAll('small')).find(el => 
+                            el.querySelector('i.fa-users')
+                        );
+                    }
+                    if (membersCount) {
+                        if (task.members.length > 0) {
+                            const icon = membersCount.querySelector('i');
+                            membersCount.innerHTML = '';
+                            membersCount.appendChild(icon);
+                            membersCount.appendChild(document.createTextNode(`\u00A0${task.members.length}`));
+                            membersCount.style.display = '';
+                        } else {
+                            membersCount.style.display = 'none';
+                        }
+                    }
+                    
+                    // Update or add comment count
+                    let commentCount = leftSide.querySelector('small:has(i.fa-comment)');
+                    if (!commentCount) {
+                        // Try alternative selector
+                        commentCount = Array.from(leftSide.querySelectorAll('small')).find(el => 
+                            el.querySelector('i.fa-comment')
+                        );
+                    }
+                    
+                    const totalComments = task.comments ? task.comments.reduce((sum, comment) => {
+                        return sum + 1 + (comment.replies ? comment.replies.length : 0);
+                    }, 0) : 0;
+                    
+                    if (totalComments > 0) {
+                        if (!commentCount) {
+                            // Create comment count element
+                            commentCount = document.createElement('small');
+                            commentCount.className = 'text-muted';
+                            const icon = document.createElement('i');
+                            icon.className = 'fas fa-comment me-1';
+                            commentCount.appendChild(icon);
+                            commentCount.appendChild(document.createTextNode(totalComments));
+                            leftSide.appendChild(commentCount);
+                        } else {
+                            // Update existing comment count
+                            const icon = commentCount.querySelector('i');
+                            commentCount.innerHTML = '';
+                            commentCount.appendChild(icon);
+                            commentCount.appendChild(document.createTextNode(`\u00A0${totalComments}`));
+                            commentCount.style.display = '';
+                        }
+                    } else if (commentCount) {
+                        commentCount.style.display = 'none';
+                    }
+                }
+            }
+        }
+        
+        // Dependency Management
+        window.showAddDependencyModal = function() {
+            if (!currentTaskId) return;
+            const task = taskData[currentTaskId];
+            if (!task) return;
+            
+            // Create modal HTML
+            let modalHtml = '<div class="modal fade" id="addDependencyModal" tabindex="-1">';
+            modalHtml += '<div class="modal-dialog">';
+            modalHtml += '<div class="modal-content">';
+            modalHtml += '<div class="modal-header">';
+            modalHtml += '<h5 class="modal-title">Add Dependency</h5>';
+            modalHtml += '<button type="button" class="btn-close" data-bs-dismiss="modal"></button>';
+            modalHtml += '</div>';
+            modalHtml += '<div class="modal-body">';
+            modalHtml += '<div class="mb-3">';
+            modalHtml += '<label class="form-label">Task</label>';
+            modalHtml += '<select class="form-select" id="dependencyTaskSelect">';
+            modalHtml += '<option value="">Select a task...</option>';
+            Object.values(taskData).forEach(t => {
+                if (t.id !== task.id) {
+                    modalHtml += '<option value="' + t.id + '">' + sanitizeText(t.title) + '</option>';
+                }
+            });
+            modalHtml += '</select>';
+            modalHtml += '</div>';
+            modalHtml += '<div class="mb-3">';
+            modalHtml += '<label class="form-label">Relationship Type</label>';
+            modalHtml += '<select class="form-select" id="dependencyTypeSelect">';
+            modalHtml += '<option value="related">Related</option>';
+            modalHtml += '<option value="blocked_by">Blocked By</option>';
+            modalHtml += '<option value="blocks">Blocks</option>';
+            modalHtml += '</select>';
+            modalHtml += '</div>';
+            modalHtml += '</div>';
+            modalHtml += '<div class="modal-footer">';
+            modalHtml += '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>';
+            modalHtml += '<button type="button" class="btn btn-primary" onclick="addDependency()">Add</button>';
+            modalHtml += '</div>';
+            modalHtml += '</div>';
+            modalHtml += '</div>';
+            modalHtml += '</div>';
+            
+            // Remove existing modal if any
+            const existing = document.getElementById('addDependencyModal');
+            if (existing) existing.remove();
+            
+            // Add modal to body
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('addDependencyModal'));
+            modal.show();
+            
+            // Clean up on hide
+            document.getElementById('addDependencyModal').addEventListener('hidden.bs.modal', function() {
+                this.remove();
+            });
         };
+        
+        window.addDependency = function() {
+            if (!currentTaskId) return;
+            const task = taskData[currentTaskId];
+            if (!task || !task.dependency_url) return;
+            
+            const taskSelect = document.getElementById('dependencyTaskSelect');
+            const typeSelect = document.getElementById('dependencyTypeSelect');
+            
+            if (!taskSelect || !taskSelect.value || !typeSelect) return;
+            
+            fetch(task.dependency_url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    depends_on_task_id: parseInt(taskSelect.value),
+                    type: typeSelect.value
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error || 'Failed to add dependency');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to add dependency');
+            });
+        };
+        
+        window.removeDependency = function(dependsOnTaskId, type) {
+            if (!currentTaskId) return;
+            const task = taskData[currentTaskId];
+            if (!task) return;
+            
+            // Find the dependency ID - we'll need to reload or store dependency IDs
+            // For now, we'll need to make an API call to get dependencies first
+            // This is a simplified version - you may want to enhance this
+            if (confirm('Remove this dependency?')) {
+                // We'll need the dependency ID, so for now reload
+                location.reload();
+            }
+        };
+        
+        // Make functions globally accessible for onclick handlers
+        window.addLabelToTask = addLabelToTask;
+        window.selectLabelToAdd = selectLabelToAdd;
+        window.removeLabelFromTask = removeLabelFromTask;
+        window.addMemberToTask = addMemberToTask;
+        window.selectMemberToAdd = selectMemberToAdd;
+        window.removeMemberFromTask = removeMemberFromTask;
+        window.toggleEditMode = toggleEditMode;
+        window.updateTaskPriority = updateTaskPriority;
+        window.renderComment = renderComment;
+        window.submitComment = submitComment;
+        window.showReplyForm = showReplyForm;
+        window.hideReplyForm = hideReplyForm;
+        window.submitReply = submitReply;
         
         function sanitizeText(text) {
             const div = document.createElement('div');
             div.textContent = text ?? '';
             return div.innerHTML;
         }
-
+        
+        // Custom Fields Management - Use event delegation for dynamic content
+        document.addEventListener('click', function(e) {
+            // Handle Add Custom Field button (check button or its children)
+            const addCustomFieldBtn = document.getElementById('addCustomFieldBtn');
+            if (addCustomFieldBtn && (e.target === addCustomFieldBtn || addCustomFieldBtn.contains(e.target))) {
+                e.preventDefault();
+                e.stopPropagation();
+                const addCustomFieldForm = document.getElementById('addCustomFieldForm');
+                if (addCustomFieldForm) {
+                    addCustomFieldForm.style.display = 'block';
+                    addCustomFieldBtn.style.display = 'none';
+                }
+                return;
+            }
+            
+            // Handle Cancel button
+            if (e.target && e.target.id === 'cancelCustomField') {
+                e.preventDefault();
+                const addCustomFieldForm = document.getElementById('addCustomFieldForm');
+                const addCustomFieldBtn = document.getElementById('addCustomFieldBtn');
+                if (addCustomFieldForm) {
+                    addCustomFieldForm.style.display = 'none';
+                }
+                if (addCustomFieldBtn) {
+                    addCustomFieldBtn.style.display = 'block';
+                }
+                const customFieldForm = document.getElementById('customFieldForm');
+                const customFieldOptionsContainer = document.getElementById('customFieldOptionsContainer');
+                if (customFieldForm) customFieldForm.reset();
+                if (customFieldOptionsContainer) customFieldOptionsContainer.style.display = 'none';
+            }
+            
+            // Handle delete custom field buttons
+            if (e.target && e.target.closest('.delete-custom-field')) {
+                e.preventDefault();
+                const btn = e.target.closest('.delete-custom-field');
+                if (!confirm('Are you sure you want to delete this custom field? This will also delete all values for this field.')) {
+                    return;
+                }
+                
+                const fieldId = btn.dataset.fieldId;
+                const fieldItem = btn.closest('.custom-field-item');
+                
+                // Disable the button during deletion
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                
+                fetch('{{ route("drives.projects.projects.custom-fields.destroy", [$drive, $project, ":field"]) }}'.replace(':field', fieldId), {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => Promise.reject(err));
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Remove the field from the DOM
+                        if (fieldItem) {
+                            fieldItem.remove();
+                        }
+                        
+                        // Check if there are any fields left, if not show the "no fields" message
+                        const customFieldsList = document.getElementById('customFieldsList');
+                        const remainingFields = customFieldsList.querySelectorAll('.custom-field-item');
+                        if (remainingFields.length === 0) {
+                            const noFieldsMessage = document.createElement('p');
+                            noFieldsMessage.className = 'text-muted';
+                            noFieldsMessage.textContent = 'No custom fields defined. Click "Add Custom Field" to create one.';
+                            customFieldsList.appendChild(noFieldsMessage);
+                        }
+                    } else {
+                        alert('Failed to delete custom field');
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-trash"></i>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert(error.error || error.message || 'Failed to delete custom field');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-trash"></i>';
+                });
+            }
+        });
+        
+        // Handle custom field type change
+        document.addEventListener('change', function(e) {
+            if (e.target && e.target.id === 'customFieldType') {
+                const customFieldOptionsContainer = document.getElementById('customFieldOptionsContainer');
+                if (customFieldOptionsContainer) {
+                    if (e.target.value === 'select' || e.target.value === 'checkbox') {
+                        customFieldOptionsContainer.style.display = 'block';
+                    } else {
+                        customFieldOptionsContainer.style.display = 'none';
+                    }
+                }
+            }
+        });
+        
         function sanitizeHtml(markup) {
             if (!markup) {
                 return '';

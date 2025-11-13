@@ -17,6 +17,8 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskCommentController;
 use App\Http\Controllers\TaskLabelController;
 use App\Http\Controllers\TaskStatusController;
+use App\Http\Controllers\TaskCustomFieldController;
+use App\Http\Controllers\TaskTemplateController;
 use App\Http\Controllers\UserItemController;
 use App\Http\Controllers\PeopleManagerController;
 use App\Http\Controllers\PeopleController;
@@ -110,7 +112,13 @@ Route::middleware('auth')->group(function () {
         
                Route::prefix('projects/{project}')->name('projects.')->group(function () {
                    Route::resource('tasks', TaskController::class);
+                   Route::post('tasks/{task}/duplicate', [TaskController::class, 'duplicate'])->name('tasks.duplicate');
                    Route::post('tasks/{task}/update-status', [TaskController::class, 'updateStatus'])->name('tasks.update-status');
+                   Route::post('tasks/{task}/update-labels-members', [TaskController::class, 'updateLabelsAndMembers'])->name('tasks.update-labels-members');
+                   Route::post('tasks/{task}/archive', [TaskController::class, 'archive'])->name('tasks.archive');
+                   Route::post('tasks/{task}/unarchive', [TaskController::class, 'unarchive'])->name('tasks.unarchive');
+                   Route::post('tasks/{task}/dependencies', [TaskController::class, 'addDependency'])->name('tasks.dependencies.store');
+                   Route::delete('tasks/{task}/dependencies/{dependency}', [TaskController::class, 'removeDependency'])->name('tasks.dependencies.destroy');
                    Route::get('tasks/{task}/attachments/{attachment}', [TaskController::class, 'showAttachment'])->name('tasks.attachments.show');
                    Route::delete('tasks/{task}/attachments/{attachment}', [TaskController::class, 'destroyAttachment'])->name('tasks.attachments.destroy');
 
@@ -126,6 +134,14 @@ Route::middleware('auth')->group(function () {
                    
                    // Project people assignment
                    Route::post('assign-people', [ProjectController::class, 'assignPeople'])->name('assign-people');
+                   
+                   // User preferences
+                   Route::post('preferences', [ProjectController::class, 'savePreferences'])->name('preferences.store');
+                   
+                   // Task templates
+                   Route::resource('task-templates', TaskTemplateController::class);
+                   Route::post('custom-fields', [TaskCustomFieldController::class, 'store'])->name('custom-fields.store');
+                   Route::delete('custom-fields/{customField}', [TaskCustomFieldController::class, 'destroy'])->name('custom-fields.destroy')->where('customField', '[0-9]+');
                });
         
         Route::resource('task-labels', TaskLabelController::class);

@@ -110,6 +110,41 @@ class Task extends Model
         return $this->hasMany(TaskComment::class)->orderBy('created_at');
     }
 
+    public function dependencies(): HasMany
+    {
+        return $this->hasMany(TaskDependency::class, 'task_id');
+    }
+
+    public function dependsOn(): BelongsToMany
+    {
+        return $this->belongsToMany(Task::class, 'task_dependencies', 'task_id', 'depends_on_task_id')
+            ->withPivot('type', 'notes')
+            ->withTimestamps();
+    }
+
+    public function blockedBy(): BelongsToMany
+    {
+        return $this->dependsOn()->wherePivot('type', 'blocked_by');
+    }
+
+    public function blocks(): BelongsToMany
+    {
+        return $this->belongsToMany(Task::class, 'task_dependencies', 'depends_on_task_id', 'task_id')
+            ->wherePivot('type', 'blocks')
+            ->withPivot('type', 'notes')
+            ->withTimestamps();
+    }
+
+    public function relatedTasks(): BelongsToMany
+    {
+        return $this->dependsOn()->wherePivot('type', 'related');
+    }
+
+    public function customFieldValues(): HasMany
+    {
+        return $this->hasMany(TaskCustomFieldValue::class);
+    }
+
     public function isOverdue(): bool
     {
         if (!$this->due_date || $this->due_date >= now()) {

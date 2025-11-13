@@ -16,7 +16,7 @@ class TaskCommentController extends Controller
     /**
      * Store a new comment
      */
-    public function store(Request $request, Drive $drive, Project $project, Task $task): RedirectResponse
+    public function store(Request $request, Drive $drive, Project $project, Task $task)
     {
         $this->authorize('view', $drive);
         
@@ -57,6 +57,9 @@ class TaskCommentController extends Controller
             'mentioned_users' => $mentions['user_ids'],
             'parent_id' => $validated['parent_id'] ?? null,
         ]);
+
+        // Load relationships for response
+        $comment->load(['user', 'replies.user']);
 
         // Create notifications for mentioned users
         $this->createMentionNotifications($comment, $mentions['users'], $drive, $project, $task);
@@ -101,6 +104,26 @@ class TaskCommentController extends Controller
                     ]
                 );
             }
+        }
+
+        // Return JSON response for AJAX requests
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'comment' => [
+                    'id' => $comment->id,
+                    'comment' => $comment->comment,
+                    'comment_html' => $comment->comment_html,
+                    'user' => [
+                        'id' => $comment->user->id,
+                        'name' => $comment->user->name,
+                    ],
+                    'created_at' => $comment->created_at->diffForHumans(),
+                    'created_at_full' => $comment->created_at->format('M d, Y g:i A'),
+                    'parent_id' => $comment->parent_id,
+                    'replies' => [],
+                ],
+            ]);
         }
 
         return redirect()->route('drives.projects.projects.tasks.show', [$drive, $project, $task])

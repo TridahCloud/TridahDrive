@@ -96,4 +96,14 @@ class Project extends Model
         return $this->belongsToMany(User::class, 'project_user')
             ->withTimestamps();
     }
+
+    public function customFieldDefinitions(): HasMany
+    {
+        return $this->hasMany(TaskCustomFieldDefinition::class)->orderBy('sort_order');
+    }
+
+    public function userPreferences(): HasMany
+    {
+        return $this->hasMany(UserProjectPreference::class);
+    }
 }

@@ -7,6 +7,7 @@ use App\Models\Project;
 use App\Models\Task;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -183,15 +184,35 @@ class ProjectController extends Controller
             abort(404);
         }
 
-        $view = $request->get('view', 'list'); // list, kanban, gantt, calendar, workload
+        // Get user preferences for saved view and filters
+        $userPreference = null;
+        $savedFilters = [];
+        $viewSettings = [];
+        
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('user_project_preferences')) {
+                $userPreference = \App\Models\UserProjectPreference::where('user_id', auth()->id())
+                    ->where('project_id', $project->id)
+                    ->first();
+                
+                $savedFilters = $userPreference?->filters ?? [];
+                $viewSettings = $userPreference?->view_settings ?? [];
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist yet - migrations haven't run
+            // Use defaults
+        }
+        
+        $view = $request->get('view', $userPreference?->view ?? 'list'); // list, kanban, gantt, calendar, workload
 
+        // Optimize queries with eager loading and pagination for large projects
         $project->load([
-            'tasks.members',
-            'tasks.labels',
-            'tasks.owner',
-            'tasks.creator',
-            'tasks.attachments',
-            'tasks.status',
+            'tasks' => function($query) {
+                $query->whereNull('deleted_at')
+                    ->with(['members', 'labels', 'owner', 'creator', 'attachments', 'status'])
+                    ->orderBy('sort_order')
+                    ->orderBy('created_at', 'desc');
+            },
             'users',
         ]);
 
@@ -226,6 +247,9 @@ class ProjectController extends Controller
         
         // Get task labels
         $labels = $drive->taskLabels()->where('is_active', true)->get();
+        
+        // Get custom field definitions (load all, not just active)
+        $customFieldDefinitions = $project->customFieldDefinitions()->get();
 
         // For workload view, prepare member statistics
         $memberStats = [];
@@ -264,7 +288,10 @@ class ProjectController extends Controller
             'labels',
             'memberStats',
             'statuses',
-            'statusSummary'
+            'statusSummary',
+            'savedFilters',
+            'viewSettings',
+            'customFieldDefinitions'
         ));
     }
 

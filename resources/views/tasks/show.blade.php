@@ -248,7 +248,39 @@
                             <a href="{{ route('drives.projects.projects.tasks.show', [$drive, $project, $task->parent]) }}" class="text-decoration-none">
                                 {{ $task->parent->title }}
                             </a>
+                            @if($task->parent->status)
+                                <span class="badge ms-2" style="background-color: {{ $task->parent->status->color }}; color: #fff;">
+                                    {{ $task->parent->status->name }}
+                                </span>
+                            @endif
                         </p>
+                    </div>
+                @endif
+
+                @if(isset($customFieldDefinitions) && $customFieldDefinitions && $customFieldDefinitions->count() > 0)
+                    <div class="mb-3">
+                        <label class="text-muted small">Custom Fields</label>
+                        <div class="mt-2">
+                            @foreach($customFieldDefinitions as $fieldDef)
+                                @php
+                                    $value = $task->customFieldValues->firstWhere('field_definition_id', $fieldDef->id);
+                                @endphp
+                                @if($value && $value->value)
+                                    <div class="mb-2">
+                                        <strong class="small">{{ $fieldDef->name }}:</strong>
+                                        <div class="small" style="color: var(--text-color);">
+                                            @if($fieldDef->type === 'checkbox')
+                                                {{ $value->value == '1' ? 'Yes' : 'No' }}
+                                            @elseif($fieldDef->type === 'date')
+                                                {{ \Carbon\Carbon::parse($value->value)->format('F d, Y') }}
+                                            @else
+                                                {{ $value->value }}
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
                     </div>
                 @endif
 
@@ -260,6 +292,82 @@
             </div>
         </div>
     </div>
+
+    <!-- Task Dependencies -->
+    @php
+        $blockedBy = $task->dependencies()->where('type', 'blocked_by')->with('dependsOnTask.status')->get();
+        $blocks = $task->dependencies()->where('type', 'blocks')->with('dependsOnTask.status')->get();
+        $related = $task->dependencies()->where('type', 'related')->with('dependsOnTask.status')->get();
+    @endphp
+    @if($blockedBy->count() > 0 || $blocks->count() > 0 || $related->count() > 0)
+        <div class="row">
+            <div class="col-12">
+                <div class="dashboard-card mb-4">
+                    <h5 class="mb-3" style="color: var(--text-color);"><i class="fas fa-project-diagram me-2"></i>Task Dependencies</h5>
+                    
+                    @if($blockedBy->count() > 0)
+                        <div class="mb-3">
+                            <label class="text-muted small">Blocked By</label>
+                            <div class="mt-2">
+                                @foreach($blockedBy as $dependency)
+                                    <div class="d-flex align-items-center gap-2 mb-2 p-2 border rounded">
+                                        <a href="{{ route('drives.projects.projects.tasks.show', [$drive, $project, $dependency->dependsOnTask]) }}" class="flex-grow-1 text-decoration-none" style="color: var(--text-color);">
+                                            @if($dependency->dependsOnTask->status)
+                                                <span class="badge me-2" style="background-color: {{ $dependency->dependsOnTask->status->color }}; color: #fff;">
+                                                    {{ $dependency->dependsOnTask->status->name }}
+                                                </span>
+                                            @endif
+                                            {{ $dependency->dependsOnTask->title }}
+                                        </a>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if($blocks->count() > 0)
+                        <div class="mb-3">
+                            <label class="text-muted small">Blocks</label>
+                            <div class="mt-2">
+                                @foreach($blocks as $dependency)
+                                    <div class="d-flex align-items-center gap-2 mb-2 p-2 border rounded">
+                                        <a href="{{ route('drives.projects.projects.tasks.show', [$drive, $project, $dependency->dependsOnTask]) }}" class="flex-grow-1 text-decoration-none" style="color: var(--text-color);">
+                                            @if($dependency->dependsOnTask->status)
+                                                <span class="badge me-2" style="background-color: {{ $dependency->dependsOnTask->status->color }}; color: #fff;">
+                                                    {{ $dependency->dependsOnTask->status->name }}
+                                                </span>
+                                            @endif
+                                            {{ $dependency->dependsOnTask->title }}
+                                        </a>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if($related->count() > 0)
+                        <div class="mb-3">
+                            <label class="text-muted small">Related Tasks</label>
+                            <div class="mt-2">
+                                @foreach($related as $dependency)
+                                    <div class="d-flex align-items-center gap-2 mb-2 p-2 border rounded">
+                                        <a href="{{ route('drives.projects.projects.tasks.show', [$drive, $project, $dependency->dependsOnTask]) }}" class="flex-grow-1 text-decoration-none" style="color: var(--text-color);">
+                                            @if($dependency->dependsOnTask->status)
+                                                <span class="badge me-2" style="background-color: {{ $dependency->dependsOnTask->status->color }}; color: #fff;">
+                                                    {{ $dependency->dependsOnTask->status->name }}
+                                                </span>
+                                            @endif
+                                            {{ $dependency->dependsOnTask->title }}
+                                        </a>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
 
     <!-- Comments Section -->
     <div class="row">

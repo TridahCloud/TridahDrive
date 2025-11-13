@@ -9,11 +9,19 @@
      data-task-title="{{ $task->title }}"
      data-task-url="{{ route('drives.projects.projects.tasks.show', [$drive, $project, $task]) }}"
      data-task-edit-url="{{ route('drives.projects.projects.tasks.edit', [$drive, $project, $task]) }}"
+     data-task-duplicate-url="{{ route('drives.projects.projects.tasks.duplicate', [$drive, $project, $task]) }}"
+     data-task-archive-url="{{ route('drives.projects.projects.tasks.archive', [$drive, $project, $task]) }}"
      data-status-id="{{ $statusModel?->id }}"
      data-status-name="{{ $statusModel?->name }}"
      data-status-slug="{{ $statusModel?->slug }}"
      data-status-color="{{ $statusModel?->color }}"
-     draggable="true">
+     data-priority="{{ $task->priority }}"
+     data-label-ids="{{ $task->labels->pluck('id')->join(',') }}"
+     data-member-ids="{{ $task->members->pluck('id')->join(',') }}"
+     data-owner-id="{{ $task->owner_id }}"
+     draggable="true"
+     style="border-left: 4px solid {{ $task->priority === 'urgent' ? '#dc3545' : ($task->priority === 'high' ? '#ffc107' : ($task->priority === 'medium' ? '#0dcaf0' : '#6c757d')) }};"
+     oncontextmenu="event.preventDefault(); showTaskContextMenu(event, {{ $task->id }});">
     
     @if($headerImage)
         <img src="{{ route('drives.projects.projects.tasks.attachments.show', [$drive, $project, $task, $headerImage]) }}" 
@@ -27,7 +35,38 @@
     
     @if($task->description)
         <div class="task-card-description">
-            {{ Str::limit(strip_tags($task->description), 100) }}
+            @php
+                // Preserve HTML formatting but limit length
+                $description = $task->description;
+                // Get plain text length for truncation
+                $plainTextLength = strlen(strip_tags($description));
+                if ($plainTextLength > 100) {
+                    // Truncate HTML while preserving tags
+                    $truncated = Str::limit(strip_tags($description), 100);
+                    // Find where to cut in the HTML
+                    $pos = 0;
+                    $plainPos = 0;
+                    $inTag = false;
+                    $result = '';
+                    for ($i = 0; $i < strlen($description) && $plainPos < 100; $i++) {
+                        $char = $description[$i];
+                        if ($char === '<') {
+                            $inTag = true;
+                            $result .= $char;
+                        } elseif ($char === '>') {
+                            $inTag = false;
+                            $result .= $char;
+                        } elseif (!$inTag) {
+                            $result .= $char;
+                            $plainPos++;
+                        } else {
+                            $result .= $char;
+                        }
+                    }
+                    $description = $result . '...';
+                }
+            @endphp
+            {!! $description !!}
         </div>
     @endif
 
@@ -63,6 +102,16 @@
             @if($task->members->count() > 0)
                 <small class="text-muted">
                     <i class="fas fa-users me-1"></i>{{ $task->members->count() }}
+                </small>
+            @endif
+            @php
+                $commentCount = $task->comments->count() + $task->comments->sum(function($comment) {
+                    return $comment->replies->count();
+                });
+            @endphp
+            @if($commentCount > 0)
+                <small class="text-muted">
+                    <i class="fas fa-comment me-1"></i>{{ $commentCount }}
                 </small>
             @endif
         </div>
