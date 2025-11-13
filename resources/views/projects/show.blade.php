@@ -3881,83 +3881,73 @@
     })();
 
     function initializeRealtimeUpdates() {
-        // Reverb uses Pusher protocol, so we configure Echo to use Pusher client
-        // but point it to the Reverb server
-        // Get CSRF token from meta tag to ensure it matches the session
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
-        
+        // Get CSRF token
+        const csrfToken = document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content') || '{{ csrf_token() }}';
+
+        // Reverb config passed from controller
         const reverbConfig = {
             key: '{{ $reverbConfig['key'] }}',
-            wsHost: '{{ $reverbConfig['host'] }}',
-            wsPort: {{ $reverbConfig['scheme'] === 'https' ? 443 : $reverbConfig['port'] }},
-            wssPort: {{ $reverbConfig['scheme'] === 'https' ? 443 : $reverbConfig['port'] }},
+            host: '{{ $reverbConfig['host'] }}',           // drive.tridah.cloud
+            port: '{{ $reverbConfig['port'] }}',           // 443
+            scheme: '{{ $reverbConfig['scheme'] }}',       // https
             forceTLS: {{ $reverbConfig['scheme'] === 'https' ? 'true' : 'false' }},
-            enabledTransports: ['ws', 'wss'],
-            authEndpoint: '{{ url('/broadcasting/auth') }}',
-            auth: {
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                }
-            }
+            authEndpoint: '{{ url('/broadcasting/auth') }}'
         };
 
-        // Initialize Laravel Echo with Pusher client configured for Reverb
         try {
             window.Echo = new Echo({
-            broadcaster: 'pusher',
-            key: reverbConfig.key,
-            cluster: '',
-            wsHost: reverbConfig.wsHost,
-            wsPort: reverbConfig.wsPort,
-            wssPort: reverbConfig.wssPort,
-            wsPath: '/reverb',
-            forceTLS: reverbConfig.forceTLS === 'true' || reverbConfig.forceTLS === true,
-            enabledTransports: reverbConfig.enabledTransports,
-            disableStats: true,
-            authEndpoint: reverbConfig.authEndpoint,
-            auth: reverbConfig.auth
-        });
+                broadcaster: 'pusher',
+                key: reverbConfig.key,
 
+                // *** ALWAYS USE DOMAIN FOR WEBSOCKETS ***
+                wsHost: reverbConfig.host,        // drive.tridah.cloud
+                wsPort: reverbConfig.port,        // 443
+                wssPort: reverbConfig.port,       // 443
 
-            // Add connection event listeners
-            window.Echo.connector.pusher.connection.bind('error', function(err) {
+                // *** REQUIRED WEBSOCKET PATH FOR NGINX REVERSE PROXY ***
+                wsPath: '/reverb',
+
+                forceTLS: reverbConfig.forceTLS,
+                enabledTransports: ['ws', 'wss'],
+                disableStats: true,
+
+                authEndpoint: reverbConfig.authEndpoint,
+                auth: {
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                }
+            });
+
+            // Debug and error logging
+            window.Echo.connector.pusher.connection.bind('error', function (err) {
                 console.error('Reverb: Connection error:', err);
             });
 
             const projectId = {{ $project->id }};
-            // Echo.private() automatically adds 'private-' prefix, so we use 'project.{id}' not 'private-project.{id}'
             const projectChannel = `project.${projectId}`;
 
-            // Listen for task created events
-            // Echo.private() will automatically prefix with 'private-', making it 'private-project.{id}'
             const channel = window.Echo.private(projectChannel);
-            
-            // Listen for events
+
             channel
-                .listen('.task.created', (e) => {
-                    handleTaskCreated(e.task);
-                })
-                .listen('.task.updated', (e) => {
-                    handleTaskUpdated(e.task);
-                })
-                .listen('.task.deleted', (e) => {
-                    handleTaskDeleted(e.task_id);
-                })
-                .listen('.task.moved', (e) => {
-                    handleTaskMoved(e);
-                })
-                .listen('.task.comment.added', (e) => {
-                    handleTaskCommentAdded(e);
-                })
+                .listen('.task.created', (e) => handleTaskCreated(e.task))
+                .listen('.task.updated', (e) => handleTaskUpdated(e.task))
+                .listen('.task.deleted', (e) => handleTaskDeleted(e.task_id))
+                .listen('.task.moved', (e) => handleTaskMoved(e))
+                .listen('.task.comment.added', (e) => handleTaskCommentAdded(e))
                 .error((error) => {
                     console.error('Reverb: Channel subscription error:', error);
                 });
+
         } catch (error) {
             console.error('Reverb: Failed to initialize Echo:', error);
         }
     }
+
 
     function handleTaskCreated(taskData) {
         // Only update if we're on the kanban view
