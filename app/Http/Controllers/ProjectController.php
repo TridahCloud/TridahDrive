@@ -285,9 +285,11 @@ class ProjectController extends Controller
             'connection' => $broadcastConnection,
             'isEnabled' => $isReverbEnabled && auth()->check(),
             'key' => config('broadcasting.connections.reverb.key'),
-            'host' => config('broadcasting.connections.reverb.options.host', 'localhost'),
-            'port' => config('broadcasting.connections.reverb.options.port', 8080),
-            'scheme' => config('broadcasting.connections.reverb.options.scheme', 'http'),
+            // For JavaScript clients: browsers need 'localhost' (not 'host.docker.internal' which only works inside Docker)
+            // In production, use the public domain name
+            'host' => env('REVERB_HOST', config('app.env') === 'local' ? 'localhost' : 'localhost'),
+            'port' => env('REVERB_PORT', config('app.env') === 'local' ? 8080 : 443),
+            'scheme' => env('REVERB_SCHEME', config('app.env') === 'local' ? 'http' : 'https'),
         ];
 
         return view('projects.show', compact(

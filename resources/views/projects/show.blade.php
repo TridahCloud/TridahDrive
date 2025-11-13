@@ -3887,40 +3887,38 @@
 
         const reverbConfig = {
             key: '{{ $reverbConfig['key'] }}',
-            host: '{{ $reverbConfig['host'] }}',      // drive.tridah.cloud
-            port: '{{ $reverbConfig['port'] }}',      // 443
-            scheme: '{{ $reverbConfig['scheme'] }}',  // https
+            wsHost: '{{ $reverbConfig['host'] }}',
+            // Port is already set correctly in ProjectController (8080 for dev, 443 for prod)
+            wsPort: {{ $reverbConfig['port'] }},
+            wssPort: {{ $reverbConfig['port'] }},
             forceTLS: {{ $reverbConfig['scheme'] === 'https' ? 'true' : 'false' }},
-            authEndpoint: '{{ url('/broadcasting/auth') }}'
+            enabledTransports: ['ws', 'wss'],
+            authEndpoint: '{{ url('/broadcasting/auth') }}',
+            auth: {
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            }
         };
 
+        // Initialize Laravel Echo with Pusher client configured for Reverb
         try {
             window.Echo = new Echo({
                 broadcaster: 'pusher',
                 key: reverbConfig.key,
-
-                // Pusher JS FIX:
-                cluster: "mt1",       // <= Required dummy cluster
-                encrypted: true,      // <= Enables TLS without Pusher enforcing cluster routing
-
-                // Reverb WebSocket endpoint
-                wsHost: reverbConfig.host, 
-                wsPort: reverbConfig.port,
-                wssPort: reverbConfig.port,
-                wsPath: '/reverb',
-
-                forceTLS: true,
-                enabledTransports: ['ws', 'wss'],
+                cluster: '', // Required by Pusher JS library, but not used by Reverb
+                wsHost: reverbConfig.wsHost,
+                wsPort: reverbConfig.wsPort,
+                wssPort: reverbConfig.wssPort,
+                // Don't set wsPath - Pusher JS automatically uses '/app' path
+                // Setting it explicitly causes duplicate '/app/app/' in the URL
+                forceTLS: reverbConfig.forceTLS === 'true' || reverbConfig.forceTLS === true,
+                enabledTransports: reverbConfig.enabledTransports,
                 disableStats: true,
-
                 authEndpoint: reverbConfig.authEndpoint,
-                auth: {
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json'
-                    }
-                }
+                auth: reverbConfig.auth
             });
 
             window.Echo.connector.pusher.connection.bind('error', function (err) {

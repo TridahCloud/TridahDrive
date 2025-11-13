@@ -38,11 +38,13 @@ return [
             'app_id' => env('REVERB_APP_ID'),
 
             'options' => [
-                // Laravel backend should talk directly to the Reverb server on localhost:6001
-                'host'   => env('REVERB_SERVER_HOST', '127.0.0.1'),
-                'port'   => env('REVERB_SERVER_PORT', 6001),
-                'scheme' => env('REVERB_SERVER_SCHEME', 'http'),
-                'useTLS' => false,
+                // For Laravel to send HTTP requests to Reverb server (server-to-server)
+                // In production: use 127.0.0.1:6001 (direct connection, bypassing Nginx)
+                // In development: use host.docker.internal:8080
+                'host' => env('REVERB_SERVER_HOST', config('app.env') === 'local' ? 'host.docker.internal' : '127.0.0.1'),
+                'port' => env('REVERB_SERVER_PORT', env('REVERB_PORT', config('app.env') === 'local' ? 8080 : 6001)),
+                'scheme' => env('REVERB_SERVER_SCHEME', 'http'), // Always HTTP for server-to-server
+                'useTLS' => false, // Server-to-server is always HTTP
             ],
 
             'client_options' => [
