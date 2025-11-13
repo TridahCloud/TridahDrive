@@ -3906,18 +3906,20 @@
         // Initialize Laravel Echo with Pusher client configured for Reverb
         try {
             window.Echo = new Echo({
-                broadcaster: 'pusher',
-                key: reverbConfig.key,
-                cluster: '', // Required by Pusher JS library, but not used by Reverb
-                wsHost: reverbConfig.wsHost,
-                wsPort: reverbConfig.wsPort,
-                wssPort: reverbConfig.wssPort,
-                forceTLS: reverbConfig.forceTLS === 'true' || reverbConfig.forceTLS === true,
-                enabledTransports: reverbConfig.enabledTransports,
-                disableStats: true,
-                authEndpoint: reverbConfig.authEndpoint,
-                auth: reverbConfig.auth
-            });
+            broadcaster: 'pusher',
+            key: reverbConfig.key,
+            cluster: '',
+            wsHost: reverbConfig.wsHost,
+            wsPort: reverbConfig.wsPort,
+            wssPort: reverbConfig.wssPort,
+            wsPath: '/reverb',   //  ⭐ REQUIRED ⭐
+            forceTLS: reverbConfig.forceTLS === 'true' || reverbConfig.forceTLS === true,
+            enabledTransports: reverbConfig.enabledTransports,
+            disableStats: true,
+            authEndpoint: reverbConfig.authEndpoint,
+            auth: reverbConfig.auth
+        });
+
 
             // Add connection event listeners
             window.Echo.connector.pusher.connection.bind('error', function(err) {
