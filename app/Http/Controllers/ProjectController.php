@@ -281,13 +281,25 @@ class ProjectController extends Controller
         // Reverb configuration for real-time updates
         $broadcastConnection = config('broadcasting.default');
         $isReverbEnabled = $broadcastConnection === 'reverb';
+        // Determine host for JavaScript clients
+        // In production, use the request host if REVERB_HOST is not set
+        $clientHost = env('REVERB_HOST');
+        if (!$clientHost) {
+            if (config('app.env') === 'local') {
+                $clientHost = 'localhost';
+            } else {
+                // In production, use the request host as fallback
+                $clientHost = request()->getHost();
+            }
+        }
+
         $reverbConfig = [
             'connection' => $broadcastConnection,
             'isEnabled' => $isReverbEnabled && auth()->check(),
             'key' => config('broadcasting.connections.reverb.key'),
-            // For JavaScript clients: browsers need 'localhost' (not 'host.docker.internal' which only works inside Docker)
-            // In production, use the public domain name
-            'host' => env('REVERB_HOST', config('app.env') === 'local' ? 'localhost' : 'localhost'),
+            // For JavaScript clients: browsers need 'localhost' in dev, actual domain in production
+            // In production, this should match your domain (e.g., drive.tridah.cloud)
+            'host' => $clientHost,
             'port' => env('REVERB_PORT', config('app.env') === 'local' ? 8080 : 443),
             'scheme' => env('REVERB_SCHEME', config('app.env') === 'local' ? 'http' : 'https'),
         ];
