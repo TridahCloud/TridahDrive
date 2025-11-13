@@ -32,23 +32,28 @@ return [
 
         'reverb' => [
             'driver' => 'reverb',
-            'key' => env('REVERB_APP_KEY'),
+
+            'key'    => env('REVERB_APP_KEY'),
             'secret' => env('REVERB_APP_SECRET'),
             'app_id' => env('REVERB_APP_ID'),
+
             'options' => [
-                'host' => env('REVERB_HOST', config('app.env') === 'local' ? 'host.docker.internal' : 'localhost'),
-                'port' => env('REVERB_PORT', 8080),
-                'scheme' => env('REVERB_SCHEME', config('app.env') === 'local' ? 'http' : 'https'),
-                'useTLS' => (env('REVERB_SCHEME') ?: (config('app.env') === 'local' ? 'http' : 'https')) === 'https',
+                // Laravel backend should talk directly to the Reverb server on localhost:6001
+                'host'   => env('REVERB_SERVER_HOST', '127.0.0.1'),
+                'port'   => env('REVERB_SERVER_PORT', 6001),
+                'scheme' => env('REVERB_SERVER_SCHEME', 'http'),
+                'useTLS' => false,
             ],
+
             'client_options' => [
-                // Guzzle client options: https://docs.guzzlephp.org/en/stable/request-options.html
                 'timeout' => 5,
                 'connect_timeout' => 5,
-                'verify' => env('REVERB_VERIFY_SSL', config('app.env') === 'production'),
+                'verify' => false,
             ],
-            'log' => env('REVERB_LOG', config('app.env') === 'local'),
+
+            'log' => env('REVERB_LOG', true),
         ],
+
 
         'pusher' => [
             'driver' => 'pusher',
