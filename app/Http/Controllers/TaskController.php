@@ -2,6 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\TaskCreated;
+use App\Events\TaskDeleted;
+use App\Events\TaskMoved;
+use App\Events\TaskUpdated;
 use App\Models\Drive;
 use App\Models\Project;
 use App\Models\Task;
@@ -172,6 +176,25 @@ class TaskController extends Controller
 
         // Reload relationships for JSON response
         $task->load(['status', 'labels', 'members', 'owner', 'customFieldValues']);
+
+        // Broadcast task created event (catch errors so they don't break the request)
+        try {
+            \Log::info('About to fire TaskCreated event', [
+                'task_id' => $task->id,
+                'project_id' => $task->project_id,
+            ]);
+            event(new TaskCreated($task));
+            \Log::info('TaskCreated event fired', [
+                'task_id' => $task->id,
+                'project_id' => $task->project_id,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to broadcast TaskCreated event', [
+                'task_id' => $task->id,
+                'error' => $e->getMessage(),
+            ]);
+            // Don't fail the request if broadcasting fails
+        }
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
@@ -383,6 +406,12 @@ class TaskController extends Controller
             $this->syncCustomFields($task, $request->input('custom_fields', []));
         }
 
+        // Reload relationships for response
+        $task->load(['status', 'labels', 'members', 'owner', 'customFieldValues']);
+
+        // Broadcast task updated event
+        event(new TaskUpdated($task));
+
         return redirect()->route('drives.projects.projects.tasks.show', [$drive, $project, $task])
             ->with('success', 'Task updated successfully!');
     }
@@ -403,7 +432,13 @@ class TaskController extends Controller
             abort(404);
         }
 
+        $taskId = $task->id;
+        $projectId = $task->project_id;
+
         $task->delete();
+
+        // Broadcast task deleted event
+        event(new TaskDeleted($taskId, $projectId));
 
         return redirect()->route('drives.projects.projects.show', [$drive, $project])
             ->with('success', 'Task deleted successfully!');
@@ -433,12 +468,27 @@ class TaskController extends Controller
             'sort_order' => 'nullable|integer',
         ]);
 
+        $oldStatusId = $task->task_status_id;
+        $newStatusId = $validated['status_id'];
+        $newSortOrder = $validated['sort_order'] ?? $task->sort_order;
+
         $task->update([
-            'task_status_id' => $validated['status_id'],
-            'sort_order' => $validated['sort_order'] ?? $task->sort_order,
+            'task_status_id' => $newStatusId,
+            'sort_order' => $newSortOrder,
         ]);
 
         $task->load('status');
+
+        // Broadcast task moved event (catch errors so they don't break the request)
+        try {
+            event(new TaskMoved($task, $oldStatusId, $newStatusId, $newSortOrder));
+        } catch (\Exception $e) {
+            \Log::error('Failed to broadcast TaskMoved event', [
+                'task_id' => $task->id,
+                'error' => $e->getMessage(),
+            ]);
+            // Don't fail the request if broadcasting fails
+        }
 
         return response()->json(['success' => true, 'task' => $task]);
     }
@@ -539,8 +589,19 @@ class TaskController extends Controller
             abort(404);
         }
 
-        // Soft delete the task
-        $task->update(['deleted_at' => now()]);
+        // Soft delete the task (use delete() method for SoftDeletes)
+        $task->delete();
+
+        // Broadcast task deleted event so other browsers remove it
+        try {
+            event(new TaskDeleted($task->id, $project->id));
+        } catch (\Exception $e) {
+            \Log::error('Failed to broadcast TaskDeleted event', [
+                'task_id' => $task->id,
+                'error' => $e->getMessage(),
+            ]);
+            // Don't fail the request if broadcasting fails
+        }
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json(['success' => true, 'message' => 'Task archived successfully']);
@@ -564,7 +625,29 @@ class TaskController extends Controller
             abort(404);
         }
 
-        $task->update(['deleted_at' => null]);
+        // Restore the soft-deleted task
+        $task->restore();
+
+        // Reload task relationships for broadcasting
+        $task->load([
+            'status:id,name,slug,color',
+            'owner:id,name,email',
+            'creator:id,name,email',
+            'members:id,name,email',
+            'labels:id,name,color',
+            'customFieldValues.fieldDefinition:id,name,type',
+        ]);
+
+        // Broadcast task created event so other browsers add it back
+        try {
+            event(new \App\Events\TaskCreated($task));
+        } catch (\Exception $e) {
+            \Log::error('Failed to broadcast TaskCreated event', [
+                'task_id' => $task->id,
+                'error' => $e->getMessage(),
+            ]);
+            // Don't fail the request if broadcasting fails
+        }
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json(['success' => true, 'message' => 'Task unarchived successfully']);

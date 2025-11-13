@@ -278,6 +278,18 @@ class ProjectController extends Controller
             }
         }
 
+        // Reverb configuration for real-time updates
+        $broadcastConnection = config('broadcasting.default');
+        $isReverbEnabled = $broadcastConnection === 'reverb';
+        $reverbConfig = [
+            'connection' => $broadcastConnection,
+            'isEnabled' => $isReverbEnabled && auth()->check(),
+            'key' => config('broadcasting.connections.reverb.key'),
+            'host' => config('broadcasting.connections.reverb.options.host', 'localhost'),
+            'port' => config('broadcasting.connections.reverb.options.port', 8080),
+            'scheme' => config('broadcasting.connections.reverb.options.scheme', 'http'),
+        ];
+
         return view('projects.show', compact(
             'drive',
             'project',
@@ -291,7 +303,8 @@ class ProjectController extends Controller
             'statusSummary',
             'savedFilters',
             'viewSettings',
-            'customFieldDefinitions'
+            'customFieldDefinitions',
+            'reverbConfig'
         ));
     }
 

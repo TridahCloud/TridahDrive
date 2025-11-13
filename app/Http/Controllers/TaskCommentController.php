@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\TaskCommentAdded;
 use App\Models\Drive;
 use App\Models\Notification;
 use App\Models\Project;
@@ -59,7 +60,10 @@ class TaskCommentController extends Controller
         ]);
 
         // Load relationships for response
-        $comment->load(['user', 'replies.user']);
+        $comment->load(['user', 'replies.user', 'task']);
+
+        // Broadcast task comment added event
+        event(new TaskCommentAdded($comment));
 
         // Create notifications for mentioned users
         $this->createMentionNotifications($comment, $mentions['users'], $drive, $project, $task);

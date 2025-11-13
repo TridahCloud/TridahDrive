@@ -1070,8 +1070,6 @@
         const fieldOptions = options ? options.value : '';
         const fieldRequired = isRequired ? isRequired.checked : false;
         
-        console.log('Submitting custom field:', { name: fieldName, type: fieldType, options: fieldOptions, isRequired: fieldRequired });
-        
         const form = document.getElementById('customFieldForm');
         const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
         const originalText = submitBtn ? submitBtn.innerHTML : '';
@@ -1107,7 +1105,6 @@
             })
         })
         .then(response => {
-            console.log('Response status:', response.status);
             if (!response.ok) {
                 return response.json().then(err => {
                     console.error('Error response:', err);
@@ -1119,7 +1116,6 @@
             return response.json();
         })
         .then(data => {
-            console.log('Success response:', data);
             if (data && data.success && data.field) {
                 // Add the new field to the DOM
                 const customFieldsList = document.getElementById('customFieldsList');
@@ -1181,8 +1177,6 @@
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalText;
                 }
-                
-                console.log('Field created successfully and added to DOM');
             } else {
                 alert(data?.error || 'Failed to create custom field');
                 if (submitBtn) {
@@ -1277,7 +1271,6 @@
                         .then(responses => Promise.all(responses.map(r => r.json())))
                         .then(results => {
                             if (results.every(r => r.success)) {
-                                console.log('Tasks reordered successfully');
                                 const movedTaskId = evt.item.dataset.taskId;
                                 if (statusLookup[newStatusId]) {
                                     const statusInfo = statusLookup[newStatusId];
@@ -1336,7 +1329,8 @@
             }
         }
 
-        function updateColumnTaskCount(statusId) {
+        // Make updateColumnTaskCount globally accessible
+        window.updateColumnTaskCount = function(statusId) {
             const column = document.getElementById('kanban-status-' + statusId);
             if (!column) {
                 return;
@@ -1347,7 +1341,7 @@
             if (headerBadge) {
                 headerBadge.textContent = cardCount;
             }
-        }
+        };
 
         // Initialize empty states visibility
         function initializeEmptyStates() {
@@ -3860,6 +3854,666 @@
             });
         }
     });
+
+    // Laravel Reverb Real-time Updates
+    @if(isset($reverbConfig) && $reverbConfig['isEnabled'] && !empty($reverbConfig['key']))
+    // Load Laravel Echo and Pusher JS
+    (function() {
+        // Check if Echo is already loaded
+        if (typeof Echo !== 'undefined') {
+            initializeRealtimeUpdates();
+            return;
+        }
+
+        // Load Pusher JS first
+        const pusherScript = document.createElement('script');
+        pusherScript.src = 'https://js.pusher.com/8.2.0/pusher.min.js';
+        pusherScript.onload = function() {
+            // Load Laravel Echo
+            const echoScript = document.createElement('script');
+            echoScript.src = 'https://cdn.jsdelivr.net/npm/laravel-echo@1.16.1/dist/echo.iife.min.js';
+            echoScript.onload = function() {
+                initializeRealtimeUpdates();
+            };
+            document.head.appendChild(echoScript);
+        };
+        document.head.appendChild(pusherScript);
+    })();
+
+    function initializeRealtimeUpdates() {
+        // Reverb uses Pusher protocol, so we configure Echo to use Pusher client
+        // but point it to the Reverb server
+        // Get CSRF token from meta tag to ensure it matches the session
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+        
+        const reverbConfig = {
+            key: '{{ $reverbConfig['key'] }}',
+            wsHost: '{{ $reverbConfig['host'] }}',
+            wsPort: {{ $reverbConfig['port'] }},
+            wssPort: {{ $reverbConfig['scheme'] === 'https' ? 443 : $reverbConfig['port'] }},
+            forceTLS: {{ $reverbConfig['scheme'] === 'https' ? 'true' : 'false' }},
+            enabledTransports: ['ws', 'wss'],
+            authEndpoint: '{{ url('/broadcasting/auth') }}',
+            auth: {
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            }
+        };
+
+        // Initialize Laravel Echo with Pusher client configured for Reverb
+        try {
+            window.Echo = new Echo({
+                broadcaster: 'pusher',
+                key: reverbConfig.key,
+                cluster: '', // Required by Pusher JS library, but not used by Reverb
+                wsHost: reverbConfig.wsHost,
+                wsPort: reverbConfig.wsPort,
+                wssPort: reverbConfig.wssPort,
+                forceTLS: reverbConfig.forceTLS === 'true' || reverbConfig.forceTLS === true,
+                enabledTransports: reverbConfig.enabledTransports,
+                disableStats: true,
+                authEndpoint: reverbConfig.authEndpoint,
+                auth: reverbConfig.auth
+            });
+
+            // Add connection event listeners
+            window.Echo.connector.pusher.connection.bind('error', function(err) {
+                console.error('Reverb: Connection error:', err);
+            });
+
+            const projectId = {{ $project->id }};
+            // Echo.private() automatically adds 'private-' prefix, so we use 'project.{id}' not 'private-project.{id}'
+            const projectChannel = `project.${projectId}`;
+
+            // Listen for task created events
+            // Echo.private() will automatically prefix with 'private-', making it 'private-project.{id}'
+            const channel = window.Echo.private(projectChannel);
+            
+            // Listen for events
+            channel
+                .listen('.task.created', (e) => {
+                    handleTaskCreated(e.task);
+                })
+                .listen('.task.updated', (e) => {
+                    handleTaskUpdated(e.task);
+                })
+                .listen('.task.deleted', (e) => {
+                    handleTaskDeleted(e.task_id);
+                })
+                .listen('.task.moved', (e) => {
+                    handleTaskMoved(e);
+                })
+                .listen('.task.comment.added', (e) => {
+                    handleTaskCommentAdded(e);
+                })
+                .error((error) => {
+                    console.error('Reverb: Channel subscription error:', error);
+                });
+        } catch (error) {
+            console.error('Reverb: Failed to initialize Echo:', error);
+        }
+    }
+
+    function handleTaskCreated(taskData) {
+        // Only update if we're on the kanban view
+        if (typeof currentView === 'undefined' || currentView !== 'kanban') {
+            return;
+        }
+
+        // Add task to the appropriate column
+        const statusId = taskData.status?.id;
+        if (!statusId) {
+            return;
+        }
+
+        // Check if task already exists (to prevent duplicates from own actions)
+        if (document.querySelector(`[data-task-id="${taskData.id}"]`)) {
+            return;
+        }
+
+        // Add task to kanban board
+        const column = document.querySelector(`#kanban-status-${statusId}`);
+        if (column) {
+            // Hide empty state if it exists
+            const emptyState = document.getElementById(`empty-status-${statusId}`);
+            if (emptyState) {
+                emptyState.style.display = 'none';
+            }
+            
+            // Hide quick add button if it exists
+            const quickAddButton = column.querySelector('.quick-add-button');
+            if (quickAddButton) {
+                quickAddButton.style.display = 'block';
+            }
+            
+            // Create and add task card
+            const taskCard = createTaskCard(taskData);
+            const quickAdd = column.querySelector('.quick-add-task');
+            if (quickAdd && quickAdd.nextSibling) {
+                column.insertBefore(taskCard, quickAdd.nextSibling);
+            } else {
+                column.appendChild(taskCard);
+            }
+            
+            // Update task data
+            if (typeof window.taskData !== 'undefined') {
+                window.taskData[taskData.id] = formatTaskData(taskData);
+            }
+            
+            // Update column task count
+            updateColumnTaskCount(statusId);
+            
+            // Show notification
+            showToast('New task created: ' + taskData.title, 'success');
+        }
+    }
+
+    function handleTaskUpdated(taskData) {
+        // Update task in kanban board if it exists
+        const taskCard = document.querySelector(`[data-task-id="${taskData.id}"]`);
+        if (!taskCard) {
+            // Task might not be on the board, check if we should add it
+            if (currentView === 'kanban') {
+                handleTaskCreated(taskData);
+            }
+            return;
+        }
+
+        // Update task card content
+        updateTaskCard(taskCard, taskData);
+        
+        // Update task data
+        if (typeof window.taskData !== 'undefined') {
+            window.taskData[taskData.id] = formatTaskData(taskData);
+        }
+        
+        // If task is open in sidebar, refresh it
+        if (window.currentOpenTaskId === taskData.id) {
+            renderSidebarContent(taskData);
+        }
+    }
+
+    function handleTaskDeleted(taskId) {
+        // Remove task from kanban board
+        const taskCard = document.querySelector(`[data-task-id="${taskId}"]`);
+        if (taskCard) {
+            const statusId = taskCard.getAttribute('data-status-id');
+            taskCard.remove();
+            
+            // Update task data
+            if (typeof window.taskData !== 'undefined') {
+                delete window.taskData[taskId];
+            }
+            
+            // Update column task count
+            if (statusId) {
+                updateColumnTaskCount(statusId);
+                
+                // Show empty state if column is now empty
+                const column = document.getElementById(`kanban-status-${statusId}`);
+                if (column) {
+                    const cards = column.querySelectorAll('.task-card:not(.dragging)');
+                    const emptyState = document.getElementById(`empty-status-${statusId}`);
+                    if (cards.length === 0 && emptyState) {
+                        emptyState.style.display = 'block';
+                    }
+                    // Hide quick add button if column is empty
+                    const quickAddButton = column.querySelector('.quick-add-button');
+                    if (quickAddButton && cards.length === 0) {
+                        quickAddButton.style.display = 'none';
+                    }
+                }
+            }
+            
+            // Close sidebar if this task was open
+            if (typeof window.currentOpenTaskId !== 'undefined' && window.currentOpenTaskId === taskId) {
+                if (typeof closeTaskSidebar === 'function') {
+                    closeTaskSidebar();
+                }
+            }
+            
+            // Show notification
+            showToast('Task deleted', 'info');
+        }
+    }
+
+    function handleTaskMoved(eventData) {
+        const taskData = eventData.task;
+        const oldStatusId = eventData.old_status_id;
+        const newStatusId = eventData.new_status_id;
+        
+        // Find task card
+        const taskCard = document.querySelector(`[data-task-id="${taskData.id}"]`);
+        if (!taskCard) {
+            return;
+        }
+
+        // If status changed, move to new column
+        if (oldStatusId !== newStatusId) {
+            const oldColumn = document.getElementById(`kanban-status-${oldStatusId}`);
+            const newColumn = document.getElementById(`kanban-status-${newStatusId}`);
+            
+            if (oldColumn && newColumn && taskCard.parentElement === oldColumn) {
+                // Hide empty state for new column
+                const newEmptyState = document.getElementById(`empty-status-${newStatusId}`);
+                if (newEmptyState) {
+                    newEmptyState.style.display = 'none';
+                }
+                
+                // Show quick add button for new column if it exists
+                const newQuickAddButton = newColumn.querySelector('.quick-add-button');
+                if (newQuickAddButton) {
+                    newQuickAddButton.style.display = 'block';
+                }
+                
+                // Remove from old column
+                taskCard.remove();
+                
+                // Update task card attributes first
+                taskCard.setAttribute('data-status-id', newStatusId);
+                if (taskData.status) {
+                    taskCard.setAttribute('data-status-slug', taskData.status.slug || '');
+                }
+                
+                // Update status badge
+                if (taskData.status) {
+                    const statusBadge = taskCard.querySelector('[data-role="task-status-badge"]');
+                    if (statusBadge) {
+                        statusBadge.textContent = taskData.status.name;
+                        statusBadge.style.backgroundColor = taskData.status.color;
+                    }
+                }
+                
+                // Update sort order
+                const newSortOrder = eventData.new_sort_order !== undefined ? eventData.new_sort_order : (taskData.sort_order || 0);
+                taskCard.style.order = newSortOrder;
+                
+                // Insert task card in the correct position based on new_sort_order (which is the index)
+                // Get all existing task cards in the new column (in DOM order, only before quick-add-task)
+                const quickAdd = newColumn.querySelector('.quick-add-task');
+                
+                // Get all children of the column
+                const allChildren = Array.from(newColumn.children);
+                
+                // Find task cards that come before quick-add-task
+                const existingCards = [];
+                for (const child of allChildren) {
+                    if (child === quickAdd) {
+                        break; // Stop when we reach quick-add-task
+                    }
+                    if (child.classList.contains('task-card') && !child.classList.contains('dragging') && child !== taskCard) {
+                        existingCards.push(child);
+                    }
+                }
+                
+                // new_sort_order is the 0-based index where the card should be positioned
+                // Insert the card at that index position
+                // NEVER insert before quick-add-task - always insert before task cards
+                let insertBefore = null;
+                
+                if (newSortOrder < existingCards.length && existingCards[newSortOrder]) {
+                    // Insert at the specified index position (before the card at that index)
+                    insertBefore = existingCards[newSortOrder];
+                } else {
+                    // Index is beyond existing cards - find the last task card and insert after it
+                    // Get ALL task cards in the column (including any that might be after quick-add-task)
+                    const allTaskCards = Array.from(newColumn.querySelectorAll('.task-card:not(.dragging)'))
+                        .filter(card => card !== taskCard);
+                    
+                    if (allTaskCards.length > 0) {
+                        // Insert after the last task card
+                        const lastTaskCard = allTaskCards[allTaskCards.length - 1];
+                        insertBefore = lastTaskCard.nextSibling; // This will be quick-add-task or null
+                    } else if (quickAdd && quickAdd.parentNode === newColumn) {
+                        // No task cards exist, insert before quick-add-task as last resort
+                        insertBefore = quickAdd;
+                    }
+                }
+                
+                // Insert the card at the correct position
+                if (insertBefore && insertBefore.parentNode === newColumn) {
+                    newColumn.insertBefore(taskCard, insertBefore);
+                } else if (quickAdd && quickAdd.parentNode === newColumn) {
+                    // Fallback: insert before quick-add-task only if absolutely necessary
+                    newColumn.insertBefore(taskCard, quickAdd);
+                } else {
+                    // Last resort: append to end
+                    newColumn.appendChild(taskCard);
+                }
+                
+                // Update column task counts
+                if (typeof updateColumnTaskCount === 'function') {
+                    updateColumnTaskCount(oldStatusId);
+                    updateColumnTaskCount(newStatusId);
+                } else if (typeof window.updateColumnTaskCount === 'function') {
+                    window.updateColumnTaskCount(oldStatusId);
+                    window.updateColumnTaskCount(newStatusId);
+                }
+                
+                // Show empty state for old column if it's now empty
+                const oldCards = oldColumn.querySelectorAll('.task-card:not(.dragging)');
+                const oldEmptyState = document.getElementById(`empty-status-${oldStatusId}`);
+                if (oldCards.length === 0 && oldEmptyState) {
+                    oldEmptyState.style.display = 'block';
+                }
+                // Hide quick add button for old column if it's empty
+                const oldQuickAddButton = oldColumn.querySelector('.quick-add-button');
+                if (oldQuickAddButton && oldCards.length === 0) {
+                    oldQuickAddButton.style.display = 'none';
+                }
+            }
+        } else {
+            // Same column - just reorder within the column
+            const column = document.getElementById(`kanban-status-${newStatusId}`);
+            if (!column) {
+                return;
+            }
+            
+            // Update sort order CSS property
+            const newSortOrder = eventData.new_sort_order !== undefined ? eventData.new_sort_order : (taskData.sort_order || 0);
+            taskCard.style.order = newSortOrder;
+            
+            // Temporarily remove the card from DOM to get accurate list of remaining cards
+            const wasInDOM = taskCard.parentNode === column;
+            if (wasInDOM) {
+                taskCard.remove();
+            }
+            
+            // Get all children of the column
+            const allChildren = Array.from(column.children);
+            const quickAdd = column.querySelector('.quick-add-task');
+            
+            // Find task cards that come before quick-add-task
+            const existingCards = [];
+            for (const child of allChildren) {
+                if (child === quickAdd) {
+                    break; // Stop when we reach quick-add-task
+                }
+                if (child.classList.contains('task-card') && !child.classList.contains('dragging')) {
+                    existingCards.push(child);
+                }
+            }
+            
+            // Find the correct insertion point based on the new sort order (index)
+            // NEVER insert before quick-add-task - always insert before task cards
+            let insertBefore = null;
+            
+            if (newSortOrder < existingCards.length && existingCards[newSortOrder]) {
+                // Insert at the specified index position (before the card at that index)
+                insertBefore = existingCards[newSortOrder];
+            } else {
+                // Index is beyond existing cards - find the last task card and insert after it
+                // Get ALL task cards in the column (including any that might be after quick-add-task)
+                const allTaskCards = Array.from(column.querySelectorAll('.task-card:not(.dragging)'));
+                
+                if (allTaskCards.length > 0) {
+                    // Insert after the last task card
+                    const lastTaskCard = allTaskCards[allTaskCards.length - 1];
+                    insertBefore = lastTaskCard.nextSibling; // This will be quick-add-task or null
+                } else if (quickAdd && quickAdd.parentNode === column) {
+                    // No task cards exist, insert before quick-add-task as last resort
+                    insertBefore = quickAdd;
+                }
+            }
+            
+            // Move the card to the correct position
+            if (insertBefore && insertBefore.parentNode === column) {
+                column.insertBefore(taskCard, insertBefore);
+            } else if (quickAdd && quickAdd.parentNode === column) {
+                // Fallback: insert before quick-add-task only if absolutely necessary
+                column.insertBefore(taskCard, quickAdd);
+            } else if (!wasInDOM) {
+                // If card wasn't in DOM and we couldn't find insertion point, append
+                column.appendChild(taskCard);
+            }
+        }
+        
+        // Update task data
+        if (typeof window.taskData !== 'undefined' && window.taskData[taskData.id]) {
+            window.taskData[taskData.id].status = taskData.status;
+            window.taskData[taskData.id].sort_order = taskData.sort_order;
+        }
+    }
+
+    function handleTaskCommentAdded(eventData) {
+        // Update task comment count if displayed
+        const taskCard = document.querySelector(`[data-task-id="${eventData.task_id}"]`);
+        if (taskCard) {
+            // You can update comment count here if you display it on the card
+            // For now, just show a notification
+            showToast('New comment added to task', 'info');
+        }
+        
+        // If task is open in sidebar, refresh comments
+        if (window.currentOpenTaskId === eventData.task_id) {
+            // Reload task data and refresh sidebar
+            // This would require an API call to get updated task with comments
+            // For now, just show a notification
+        }
+    }
+
+    function formatTaskData(taskData) {
+        // Format task data to match the structure used in the kanban view
+        return {
+            id: taskData.id,
+            title: taskData.title,
+            description: taskData.description || '',
+            priority: taskData.priority,
+            due_date: taskData.due_date,
+            start_date: taskData.start_date,
+            estimated_hours: taskData.estimated_hours,
+            actual_hours: taskData.actual_hours,
+            status: taskData.status ? {
+                id: taskData.status.id,
+                name: taskData.status.name,
+                color: taskData.status.color,
+            } : null,
+            owner: taskData.owner,
+            members: taskData.members || [],
+            labels: taskData.labels || [],
+            custom_fields: taskData.custom_fields || {},
+            sort_order: taskData.sort_order || 0,
+        };
+    }
+
+    function createTaskCard(taskData) {
+        // Create a task card element matching the structure from the Blade partial
+        const card = document.createElement('div');
+        card.className = 'task-card';
+        card.setAttribute('data-task-id', taskData.id);
+        card.setAttribute('data-task-title', taskData.title);
+        card.setAttribute('data-status-id', taskData.status?.id || '');
+        // Note: slug might not be available in event data, will be set when card is rendered
+        card.setAttribute('data-status-slug', '');
+        card.setAttribute('data-priority', taskData.priority || '');
+        card.setAttribute('data-label-ids', (taskData.labels || []).map(l => l.id).join(','));
+        card.setAttribute('data-member-ids', (taskData.members || []).map(m => m.id).join(','));
+        card.setAttribute('data-owner-id', taskData.owner?.id || '');
+        card.setAttribute('draggable', 'true');
+        card.style.order = taskData.sort_order || 0;
+        
+        // Set priority border color
+        const priorityColors = {
+            'urgent': '#dc3545',
+            'high': '#ffc107',
+            'medium': '#0dcaf0',
+            'low': '#6c757d'
+        };
+        card.style.borderLeft = `4px solid ${priorityColors[taskData.priority] || '#6c757d'}`;
+        
+        // Build task card HTML
+        let cardHTML = '';
+        
+        // Task card title
+        cardHTML += `<div class="task-card-title">${sanitizeText(taskData.title)}</div>`;
+        
+        // Task card description
+        if (taskData.description) {
+            const desc = sanitizeText(taskData.description.substring(0, 100));
+            cardHTML += `<div class="task-card-description">${desc}${taskData.description.length > 100 ? '...' : ''}</div>`;
+        }
+        
+        // Task card meta (priority and labels)
+        cardHTML += '<div class="task-card-meta">';
+        const priorityClasses = {
+            'urgent': 'danger',
+            'high': 'warning',
+            'medium': 'info',
+            'low': 'secondary'
+        };
+        cardHTML += `<span class="badge bg-${priorityClasses[taskData.priority] || 'secondary'}"><i class="fas fa-flag me-1"></i>${(taskData.priority || '').charAt(0).toUpperCase() + (taskData.priority || '').slice(1)}</span>`;
+        if (taskData.labels && taskData.labels.length > 0) {
+            taskData.labels.slice(0, 3).forEach(label => {
+                cardHTML += `<span class="badge" style="background-color: ${label.color}; color: white;">${sanitizeText(label.name)}</span>`;
+            });
+            if (taskData.labels.length > 3) {
+                cardHTML += `<span class="badge bg-secondary">+${taskData.labels.length - 3}</span>`;
+            }
+        }
+        cardHTML += '</div>';
+        
+        // Task card footer
+        cardHTML += '<div class="task-card-footer">';
+        cardHTML += '<div class="d-flex align-items-center gap-2">';
+        if (taskData.due_date) {
+            const dueDate = new Date(taskData.due_date + 'T00:00:00');
+            const isOverdue = dueDate < new Date();
+            cardHTML += `<small class="text-${isOverdue ? 'danger' : 'muted'}"><i class="fas fa-calendar-alt me-1"></i>${dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</small>`;
+        }
+        if (taskData.owner) {
+            const ownerInitial = taskData.owner.name ? taskData.owner.name.charAt(0).toUpperCase() : '?';
+            cardHTML += `<div class="bg-info rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.7rem;" title="${sanitizeText(taskData.owner.name)}"><span style="color: white;">${ownerInitial}</span></div>`;
+        }
+        if (taskData.members && taskData.members.length > 0) {
+            cardHTML += `<small class="text-muted"><i class="fas fa-users me-1"></i>${taskData.members.length}</small>`;
+        }
+        cardHTML += '</div>';
+        cardHTML += '<div class="d-flex align-items-center gap-1">';
+        if (taskData.status) {
+            cardHTML += `<span class="badge task-status-badge" style="background-color: ${taskData.status.color}; color: #fff;" data-role="task-status-badge">${sanitizeText(taskData.status.name)}</span>`;
+        }
+        cardHTML += '</div>';
+        cardHTML += '</div>';
+        
+        card.innerHTML = cardHTML;
+        
+        // Add event listeners
+        card.addEventListener('click', function(e) {
+            if (typeof openTaskSidebar === 'function') {
+                openTaskSidebar(taskData.id);
+            }
+        });
+        
+        card.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            if (typeof showTaskContextMenu === 'function') {
+                showTaskContextMenu(e, taskData.id);
+            }
+        });
+        
+        // Initialize drag and drop if available
+        if (typeof initializeDragAndDrop === 'function') {
+            initializeDragAndDrop(card);
+        }
+        
+        return card;
+    }
+
+    function updateTaskCard(taskCard, taskData) {
+        // Update task card title
+        const titleEl = taskCard.querySelector('.task-card-title');
+        if (titleEl) {
+            titleEl.textContent = taskData.title;
+        }
+        taskCard.setAttribute('data-task-title', taskData.title);
+        
+        // Update task card description
+        const descEl = taskCard.querySelector('.task-card-description');
+        if (taskData.description) {
+            const desc = sanitizeText(taskData.description.substring(0, 100));
+            if (descEl) {
+                descEl.innerHTML = desc + (taskData.description.length > 100 ? '...' : '');
+                descEl.style.display = '';
+            } else {
+                // Create description element if it doesn't exist
+                const titleEl = taskCard.querySelector('.task-card-title');
+                if (titleEl) {
+                    const newDescEl = document.createElement('div');
+                    newDescEl.className = 'task-card-description';
+                    newDescEl.innerHTML = desc + (taskData.description.length > 100 ? '...' : '');
+                    titleEl.after(newDescEl);
+                }
+            }
+        } else {
+            if (descEl) {
+                descEl.style.display = 'none';
+            }
+        }
+        
+        // Update priority border
+        const priorityColors = {
+            'urgent': '#dc3545',
+            'high': '#ffc107',
+            'medium': '#0dcaf0',
+            'low': '#6c757d'
+        };
+        taskCard.style.borderLeft = `4px solid ${priorityColors[taskData.priority] || '#6c757d'}`;
+        taskCard.setAttribute('data-priority', taskData.priority || '');
+        
+        // Update status badge
+        if (taskData.status) {
+            const statusBadge = taskCard.querySelector('[data-role="task-status-badge"]');
+            if (statusBadge) {
+                statusBadge.textContent = taskData.status.name;
+                statusBadge.style.backgroundColor = taskData.status.color;
+            }
+            taskCard.setAttribute('data-status-id', taskData.status.id);
+            taskCard.setAttribute('data-status-slug', taskData.status.slug || '');
+        }
+        
+        // Update labels (simplified - would need to rebuild meta section for full update)
+        if (taskData.labels) {
+            taskCard.setAttribute('data-label-ids', taskData.labels.map(l => l.id).join(','));
+        }
+        
+        // Update members
+        if (taskData.members) {
+            taskCard.setAttribute('data-member-ids', taskData.members.map(m => m.id).join(','));
+            const memberCountEl = taskCard.querySelector('.task-card-footer .fa-users')?.parentElement;
+            if (memberCountEl && taskData.members.length > 0) {
+                memberCountEl.innerHTML = `<i class="fas fa-users me-1"></i>${taskData.members.length}`;
+            }
+        }
+        
+        // Update owner
+        if (taskData.owner) {
+            taskCard.setAttribute('data-owner-id', taskData.owner.id);
+        }
+    }
+
+    function showToast(message, type = 'info') {
+        // Use your existing toast system (from public/js/toast.js)
+        // Use toastManager directly to avoid recursion with window.showToast
+        if (typeof window.toastManager !== 'undefined' && typeof window.toastManager.show === 'function') {
+            window.toastManager.show(message, type);
+        } else {
+            // Fallback to console log
+            console.log('Toast:', message, type);
+        }
+    }
+    @elseif(isset($reverbConfig))
+        console.warn('Reverb: Real-time updates are DISABLED');
+        console.warn('Current broadcasting connection:', '{{ $reverbConfig['connection'] ?? 'not set' }}');
+        console.warn('Expected: reverb');
+        console.warn('To enable real-time updates:');
+        console.warn('1. Set BROADCAST_CONNECTION=reverb in your .env file');
+        console.warn('2. Set REVERB_APP_KEY, REVERB_APP_SECRET, REVERB_APP_ID in your .env file');
+        console.warn('3. Start the Reverb server: php artisan reverb:start');
+        console.warn('4. Refresh this page');
+    @endif
 </script>
 @endpush
 

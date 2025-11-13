@@ -30,7 +30,29 @@ use App\Http\Controllers\UserSelfServiceController;
 use App\Http\Controllers\DriveRoleController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
+
+// Register broadcasting routes for real-time updates
+// Broadcast::routes() uses 'web' middleware by default, which includes session and CSRF
+// We need to add 'auth' middleware for authentication
+Broadcast::routes(['middleware' => ['web', 'auth']]);
+
+// Temporary debug route to test broadcasting auth
+Route::post('/broadcasting/auth-debug', function (\Illuminate\Http\Request $request) {
+    \Log::info('Broadcasting auth debug', [
+        'user' => auth()->user()?->id,
+        'authenticated' => auth()->check(),
+        'csrf_token' => $request->header('X-CSRF-TOKEN'),
+        'session_token' => csrf_token(),
+        'all_headers' => $request->headers->all(),
+    ]);
+    return response()->json([
+        'user' => auth()->user()?->id,
+        'authenticated' => auth()->check(),
+        'csrf_match' => $request->header('X-CSRF-TOKEN') === csrf_token(),
+    ]);
+})->middleware(['web', 'auth']);
 
 Route::get('/', function () {
     return view('home');
