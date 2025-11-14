@@ -145,6 +145,23 @@ class Task extends Model
         return $this->hasMany(TaskCustomFieldValue::class);
     }
 
+    public function checklistItems(): HasMany
+    {
+        return $this->hasMany(TaskChecklistItem::class)->orderBy('sort_order');
+    }
+
+    public function getChecklistProgressAttribute(): array
+    {
+        $total = $this->checklistItems()->count();
+        $completed = $this->checklistItems()->where('is_completed', true)->count();
+        
+        return [
+            'completed' => $completed,
+            'total' => $total,
+            'percentage' => $total > 0 ? round(($completed / $total) * 100) : 0,
+        ];
+    }
+
     public function isOverdue(): bool
     {
         if (!$this->due_date || $this->due_date >= now()) {

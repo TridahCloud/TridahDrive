@@ -86,6 +86,14 @@
 
     <div class="task-card-footer">
         <div class="d-flex align-items-center gap-2">
+            @php
+                $checklistProgress = $task->checklist_progress;
+            @endphp
+            @if($checklistProgress['total'] > 0)
+                <small class="text-muted">
+                    <i class="fas fa-tasks me-1"></i>{{ $checklistProgress['completed'] }}/{{ $checklistProgress['total'] }}
+                </small>
+            @endif
             @if($task->due_date)
                 <small class="text-{{ $task->isOverdue() ? 'danger' : 'muted' }}">
                     <i class="fas fa-calendar-alt me-1"></i>

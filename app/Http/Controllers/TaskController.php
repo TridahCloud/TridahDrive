@@ -10,6 +10,7 @@ use App\Models\Drive;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\TaskAttachment;
+use App\Models\TaskChecklistItem;
 use App\Models\TaskDependency;
 use App\Models\TaskLabel;
 use Illuminate\Http\Request;
@@ -174,8 +175,33 @@ class TaskController extends Controller
             $this->syncCustomFields($task, $request->input('custom_fields', []));
         }
 
+        // Handle checklist items (new items)
+        if ($request->has('checklist_items_new')) {
+            // Sort new items by their sort_order before creating them
+            $newItems = $request->input('checklist_items_new', []);
+            usort($newItems, function($a, $b) {
+                $sortA = isset($a['sort_order']) ? (int)$a['sort_order'] : 999;
+                $sortB = isset($b['sort_order']) ? (int)$b['sort_order'] : 999;
+                return $sortA <=> $sortB;
+            });
+            
+            foreach ($newItems as $item) {
+                if (!empty($item['title'])) {
+                    // Use the sort_order from the form, or assign incrementally
+                    $sortOrder = isset($item['sort_order']) ? (int)$item['sort_order'] : 0;
+                    
+                    $task->checklistItems()->create([
+                        'title' => $item['title'],
+                        'is_completed' => false,
+                        'sort_order' => $sortOrder,
+                        'created_by' => Auth::id(),
+                    ]);
+                }
+            }
+        }
+
         // Reload relationships for JSON response
-        $task->load(['status', 'labels', 'members', 'owner', 'customFieldValues']);
+        $task->load(['status', 'labels', 'members', 'owner', 'customFieldValues', 'checklistItems']);
 
         // Broadcast task created event (catch errors so they don't break the request)
         try {
@@ -259,7 +285,8 @@ class TaskController extends Controller
             'status',
             'customFieldValues.fieldDefinition',
             'dependencies.dependsOnTask.status',
-            'parent.status'
+            'parent.status',
+            'checklistItems'
         ]);
         $driveMembers = $drive->users()->get();
         $labels = $drive->taskLabels()->where('is_active', true)->get();
@@ -294,7 +321,7 @@ class TaskController extends Controller
         $statuses = $project->taskStatuses()->get();
         $customFieldDefinitions = $project->customFieldDefinitions()->where('is_active', true)->orderBy('sort_order')->get();
 
-        $task->load(['members', 'labels', 'attachments', 'status', 'customFieldValues.fieldDefinition']);
+        $task->load(['members', 'labels', 'attachments', 'status', 'customFieldValues.fieldDefinition', 'checklistItems']);
 
         return view('tasks.edit', compact('drive', 'project', 'task', 'driveMembers', 'labels', 'parentTasks', 'statuses', 'customFieldDefinitions'));
     }
@@ -406,11 +433,68 @@ class TaskController extends Controller
             $this->syncCustomFields($task, $request->input('custom_fields', []));
         }
 
-        // Reload relationships for response
-        $task->load(['status', 'labels', 'members', 'owner', 'customFieldValues']);
+        // Handle checklist items
+        if ($request->has('checklist_items')) {
+            foreach ($request->input('checklist_items', []) as $item) {
+                if (isset($item['id'])) {
+                    $checklistItem = $task->checklistItems()->find($item['id']);
+                    if ($checklistItem) {
+                        $checklistItem->update([
+                            'title' => $item['title'] ?? $checklistItem->title,
+                            'is_completed' => isset($item['is_completed']) && $item['is_completed'] == '1',
+                            'sort_order' => isset($item['sort_order']) ? (int)$item['sort_order'] : $checklistItem->sort_order,
+                        ]);
+                    }
+                }
+            }
+        }
+        
+        // Handle new checklist items
+        if ($request->has('checklist_items_new')) {
+            // Get max sort_order from existing items (after updating existing items above)
+            $maxSortOrder = $task->checklistItems()->max('sort_order') ?? -1;
+            
+            // Sort new items by their sort_order before creating them
+            $newItems = $request->input('checklist_items_new', []);
+            usort($newItems, function($a, $b) {
+                $sortA = isset($a['sort_order']) ? (int)$a['sort_order'] : 999;
+                $sortB = isset($b['sort_order']) ? (int)$b['sort_order'] : 999;
+                return $sortA <=> $sortB;
+            });
+            
+            foreach ($newItems as $item) {
+                if (!empty($item['title'])) {
+                    $sortOrder = isset($item['sort_order']) ? (int)$item['sort_order'] : (++$maxSortOrder);
+                    // Ensure sort_order doesn't conflict with existing items
+                    if ($sortOrder <= $maxSortOrder) {
+                        $maxSortOrder = max($maxSortOrder, $sortOrder);
+                    }
+                    
+                    $task->checklistItems()->create([
+                        'title' => $item['title'],
+                        'is_completed' => false,
+                        'sort_order' => $sortOrder,
+                        'created_by' => Auth::id(),
+                    ]);
+                    
+                    $maxSortOrder = max($maxSortOrder, $sortOrder);
+                }
+            }
+        }
 
-        // Broadcast task updated event
-        event(new TaskUpdated($task));
+        // Reload relationships for response
+        $task->load(['status', 'labels', 'members', 'owner', 'customFieldValues', 'checklistItems']);
+
+        // Broadcast task updated event (catch errors so they don't break the request)
+        try {
+            event(new TaskUpdated($task));
+        } catch (\Exception $e) {
+            \Log::error('Failed to broadcast TaskUpdated event', [
+                'task_id' => $task->id,
+                'error' => $e->getMessage(),
+            ]);
+            // Don't fail the request if broadcasting fails
+        }
 
         return redirect()->route('drives.projects.projects.tasks.show', [$drive, $project, $task])
             ->with('success', 'Task updated successfully!');
@@ -437,8 +521,16 @@ class TaskController extends Controller
 
         $task->delete();
 
-        // Broadcast task deleted event
-        event(new TaskDeleted($taskId, $projectId));
+        // Broadcast task deleted event (catch errors so they don't break the request)
+        try {
+            event(new TaskDeleted($taskId, $projectId));
+        } catch (\Exception $e) {
+            \Log::error('Failed to broadcast TaskDeleted event', [
+                'task_id' => $taskId,
+                'error' => $e->getMessage(),
+            ]);
+            // Don't fail the request if broadcasting fails
+        }
 
         return redirect()->route('drives.projects.projects.show', [$drive, $project])
             ->with('success', 'Task deleted successfully!');
@@ -947,6 +1039,356 @@ class TaskController extends Controller
                 ['value' => $value]
             );
         }
+    }
+
+    /**
+     * Store a checklist item for a task
+     */
+    public function storeChecklistItem(Request $request, Drive $drive, Project $project, Task $task)
+    {
+        $this->authorize('view', $drive);
+        
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot modify tasks.');
+        }
+
+        if ($project->drive_id !== $drive->id || $task->project_id !== $project->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'sort_order' => 'nullable|integer',
+        ]);
+
+        // Get max sort_order for this task
+        $maxSortOrder = $task->checklistItems()->max('sort_order') ?? -1;
+
+        $checklistItem = $task->checklistItems()->create([
+            'title' => $validated['title'],
+            'sort_order' => $validated['sort_order'] ?? ($maxSortOrder + 1),
+            'created_by' => Auth::id(),
+        ]);
+
+        $checklistItem->load('creator');
+        $progress = $task->fresh()->checklist_progress;
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'checklist_item' => $checklistItem,
+                'progress' => $progress,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Checklist item added successfully!');
+    }
+
+    /**
+     * Update a checklist item
+     */
+    public function updateChecklistItem(Request $request, Drive $drive, Project $project, Task $task, TaskChecklistItem $checklistItem)
+    {
+        $this->authorize('view', $drive);
+        
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot modify tasks.');
+        }
+
+        if ($project->drive_id !== $drive->id || 
+            $task->project_id !== $project->id || 
+            $checklistItem->task_id !== $task->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'title' => 'sometimes|required|string|max:255',
+            'is_completed' => 'sometimes|boolean',
+            'sort_order' => 'sometimes|integer',
+        ]);
+
+        $checklistItem->update($validated);
+        $progress = $task->fresh()->checklist_progress;
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'checklist_item' => $checklistItem->fresh(),
+                'progress' => $progress,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Checklist item updated successfully!');
+    }
+
+    /**
+     * Toggle checklist item completion
+     */
+    public function toggleChecklistItem(Request $request, Drive $drive, Project $project, Task $task, TaskChecklistItem $checklistItem)
+    {
+        $this->authorize('view', $drive);
+        
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot modify tasks.');
+        }
+
+        if ($project->drive_id !== $drive->id || 
+            $task->project_id !== $project->id || 
+            $checklistItem->task_id !== $task->id) {
+            abort(404);
+        }
+
+        $checklistItem->update([
+            'is_completed' => !$checklistItem->is_completed,
+        ]);
+
+        $progress = $task->fresh()->checklist_progress;
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'checklist_item' => $checklistItem->fresh(),
+                'progress' => $progress,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Checklist item updated successfully!');
+    }
+
+    /**
+     * Delete a checklist item
+     */
+    public function destroyChecklistItem(Drive $drive, Project $project, Task $task, TaskChecklistItem $checklistItem)
+    {
+        $this->authorize('view', $drive);
+        
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot modify tasks.');
+        }
+
+        if ($project->drive_id !== $drive->id || 
+            $task->project_id !== $project->id || 
+            $checklistItem->task_id !== $task->id) {
+            abort(404);
+        }
+
+        $checklistItem->delete();
+        $progress = $task->fresh()->checklist_progress;
+
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Checklist item deleted successfully',
+                'progress' => $progress,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Checklist item deleted successfully!');
+    }
+
+    /**
+     * Reorder checklist items for a task
+     */
+    public function reorderChecklistItems(Request $request, Drive $drive, Project $project, Task $task)
+    {
+        $this->authorize('view', $drive);
+        
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot modify tasks.');
+        }
+
+        if ($project->drive_id !== $drive->id || $task->project_id !== $project->id) {
+            abort(404);
+        }
+
+        // Log the request - this should always fire if the route is hit
+        \Log::info('=== REORDER CHECKLIST ITEMS REQUEST RECEIVED ===', [
+            'task_id' => $task->id,
+            'project_id' => $project->id,
+            'drive_id' => $drive->id,
+            'request_data' => $request->all(),
+            'item_ids' => $request->input('item_ids'),
+            'user_id' => auth()->id(),
+            'method' => $request->method(),
+            'url' => $request->fullUrl(),
+        ]);
+
+        // Validate input
+        try {
+            $validated = $request->validate([
+                'item_ids' => 'required|array',
+                'item_ids.*' => 'exists:task_checklist_items,id',
+            ]);
+            \Log::info('Validation passed', ['validated' => $validated]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation failed', [
+                'errors' => $e->errors(),
+                'input' => $request->all(),
+            ]);
+            throw $e;
+        }
+
+        // Get all checklist items for this task
+        $taskItemIds = $task->checklistItems()->pluck('id')->toArray();
+        $requestedItemIds = $validated['item_ids'];
+        
+        // Verify all requested items belong to this task
+        $invalidItems = array_diff($requestedItemIds, $taskItemIds);
+        if (!empty($invalidItems)) {
+            \Log::warning('Invalid checklist items in reorder request', [
+                'task_id' => $task->id,
+                'requested_ids' => $requestedItemIds,
+                'task_item_ids' => $taskItemIds,
+                'invalid_ids' => $invalidItems,
+            ]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Some checklist items do not belong to this task',
+            ], 400);
+        }
+
+        // Verify we have all items (count should match)
+        if (count($requestedItemIds) !== count($taskItemIds)) {
+            \Log::warning('Item count mismatch in reorder request', [
+                'task_id' => $task->id,
+                'requested_count' => count($requestedItemIds),
+                'task_item_count' => count($taskItemIds),
+            ]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Item count mismatch. All checklist items must be included in reorder.',
+            ], 400);
+        }
+
+        // Update sort_order for each item based on the order in the array
+        // Use a transaction to ensure all updates happen atomically
+        try {
+            $updateResults = [];
+            \DB::transaction(function () use ($task, $validated, &$updateResults) {
+                foreach ($validated['item_ids'] as $index => $itemId) {
+                    // First, check current state
+                    $currentItem = \DB::table('task_checklist_items')
+                        ->where('id', $itemId)
+                        ->where('task_id', $task->id)
+                        ->first(['id', 'sort_order', 'title']);
+                    
+                    if (!$currentItem) {
+                        \Log::warning('Item not found for update', [
+                            'item_id' => $itemId,
+                            'task_id' => $task->id,
+                        ]);
+                        $updateResults[] = ['item_id' => $itemId, 'status' => 'not_found'];
+                        continue;
+                    }
+                    
+                    // Only update if sort_order is different
+                    if ($currentItem->sort_order != $index) {
+                        // Use direct database update for reliability
+                        $updated = \DB::table('task_checklist_items')
+                            ->where('id', $itemId)
+                            ->where('task_id', $task->id)
+                            ->update([
+                                'sort_order' => $index,
+                                'updated_at' => now(),
+                            ]);
+                        
+                        $updateResults[] = [
+                            'item_id' => $itemId,
+                            'old_sort_order' => $currentItem->sort_order,
+                            'new_sort_order' => $index,
+                            'updated' => $updated > 0,
+                            'rows_affected' => $updated,
+                        ];
+                        
+                        \Log::info('Updated checklist item sort_order via DB', [
+                            'item_id' => $itemId,
+                            'task_id' => $task->id,
+                            'old_sort_order' => $currentItem->sort_order,
+                            'new_sort_order' => $index,
+                            'rows_affected' => $updated,
+                        ]);
+                    } else {
+                        $updateResults[] = [
+                            'item_id' => $itemId,
+                            'status' => 'no_change',
+                            'sort_order' => $index,
+                        ];
+                    }
+                }
+            });
+            
+            \Log::info('Update transaction completed', [
+                'task_id' => $task->id,
+                'results' => $updateResults,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error updating checklist item order', [
+                'task_id' => $task->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to update checklist item order: ' . $e->getMessage(),
+            ], 500);
+        }
+
+        // Clear any query cache and reload task and checklist items with updated order
+        $task->unsetRelation('checklistItems');
+        
+        // Verify the updates were saved to database
+        $dbItems = \DB::table('task_checklist_items')
+            ->where('task_id', $task->id)
+            ->orderBy('sort_order')
+            ->get(['id', 'sort_order', 'title']);
+        
+        \Log::info('Database state after reorder', [
+            'task_id' => $task->id,
+            'db_items' => $dbItems->map(function($item) {
+                return ['id' => $item->id, 'sort_order' => $item->sort_order, 'title' => $item->title];
+            })->toArray(),
+        ]);
+        
+        // Reload task with fresh data
+        $task = $task->fresh(['checklistItems']);
+        $progress = $task->checklist_progress;
+        
+        // Log the updated order for debugging
+        \Log::info('Checklist items reordered (from model)', [
+            'task_id' => $task->id,
+            'items' => $task->checklistItems->map(function($item) {
+                return ['id' => $item->id, 'sort_order' => $item->sort_order, 'title' => $item->title];
+            })->toArray(),
+        ]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            // Ensure items are sorted by sort_order (relationship should already do this, but be explicit)
+            $checklistItems = $task->checklistItems->sortBy('sort_order')->values();
+            
+            $responseData = [
+                'success' => true,
+                'message' => 'Checklist items reordered successfully',
+                'checklist_items' => $checklistItems->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'title' => $item->title,
+                        'is_completed' => $item->is_completed,
+                        'sort_order' => (int) $item->sort_order,
+                    ];
+                })->toArray(),
+                'progress' => $progress,
+            ];
+            
+            \Log::info('Sending reorder response', [
+                'task_id' => $task->id,
+                'item_count' => count($responseData['checklist_items']),
+                'items' => $responseData['checklist_items'],
+            ]);
+            
+            return response()->json($responseData);
+        }
+
+        return redirect()->back()->with('success', 'Checklist items reordered successfully!');
     }
 
     private function sanitizeDescription(?string $value): ?string

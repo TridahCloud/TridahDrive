@@ -67,6 +67,39 @@
                 @endif
             </div>
 
+            <!-- Checklist -->
+            @if($task->checklistItems && $task->checklistItems->count() > 0)
+                <div class="dashboard-card mb-4">
+                    <h5 class="mb-3" style="color: var(--text-color);">
+                        <i class="fas fa-tasks me-2"></i>Checklist
+                    </h5>
+                    @php
+                        $completedCount = $task->checklistItems->where('is_completed', true)->count();
+                        $totalCount = $task->checklistItems->count();
+                        $percentage = $totalCount > 0 ? round(($completedCount / $totalCount) * 100) : 0;
+                    @endphp
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">{{ $completedCount }} of {{ $totalCount }} completed</small>
+                            <small class="text-muted">{{ $percentage }}%</small>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar" role="progressbar" style="width: {{ $percentage }}%;" aria-valuenow="{{ $percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                    <div class="list-group">
+                        @foreach($task->checklistItems->sortBy('sort_order') as $item)
+                            <div class="list-group-item d-flex align-items-center gap-2">
+                                <input type="checkbox" class="form-check-input mt-0" {{ $item->is_completed ? 'checked' : '' }} disabled style="cursor: default;">
+                                <span class="flex-grow-1" style="text-decoration: {{ $item->is_completed ? 'line-through' : 'none' }}; color: {{ $item->is_completed ? 'var(--text-muted, #6c757d)' : 'var(--text-color)' }};">
+                                    {{ $item->title }}
+                                </span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
             <!-- Subtasks -->
             @if($task->subtasks->count() > 0)
                 <div class="dashboard-card mb-4">

@@ -56,6 +56,15 @@
             @endif
         </div>
         <div class="d-flex align-items-center gap-1">
+            @if($task->checklistItems && $task->checklistItems->count() > 0)
+                @php
+                    $completedCount = $task->checklistItems->where('is_completed', true)->count();
+                    $totalCount = $task->checklistItems->count();
+                @endphp
+                <small class="text-muted" style="color: var(--text-color); opacity: 0.7;">
+                    <i class="fas fa-tasks me-1"></i>{{ $completedCount }}/{{ $totalCount }}
+                </small>
+            @endif
             @if($statusModel)
                 <span class="badge task-status-badge" style="background-color: {{ $statusModel->color }}; color: #fff;" data-role="task-status-badge">
                     {{ $statusModel->name }}

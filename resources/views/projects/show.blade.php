@@ -404,6 +404,36 @@
         margin-bottom: 1rem;
     }
     
+    /* Checklist drag-and-drop styles */
+    .checklist-item-draggable {
+        transition: background-color 0.2s ease, transform 0.2s ease;
+        user-select: none;
+    }
+    
+    .checklist-item-draggable.dragging {
+        opacity: 0.5;
+        transform: scale(0.95);
+    }
+    
+    .checklist-item-draggable.drag-over {
+        background-color: var(--bg-secondary) !important;
+        border: 2px dashed var(--border-color);
+        transform: scale(1.02);
+    }
+    
+    .checklist-item-draggable:hover {
+        background-color: var(--bg-secondary);
+    }
+    
+    .checklist-item-draggable .fa-grip-vertical {
+        opacity: 0.5;
+        transition: opacity 0.2s ease;
+    }
+    
+    .checklist-item-draggable:hover .fa-grip-vertical {
+        opacity: 1;
+    }
+    
     .task-description-container {
         background-color: var(--bg-primary);
         border: 1px solid var(--border-color);
@@ -2073,6 +2103,18 @@
                                 ];
                             })->toArray(),
                             'custom_fields' => $customFields,
+                            'checklist_items' => $task->checklistItems->map(function ($item) {
+                                return [
+                                    'id' => $item->id,
+                                    'title' => $item->title,
+                                    'is_completed' => (bool) $item->is_completed,
+                                    'sort_order' => $item->sort_order,
+                                ];
+                            })->toArray(),
+                            'checklist_progress' => [
+                                'completed' => $task->checklistItems->where('is_completed', true)->count(),
+                                'total' => $task->checklistItems->count(),
+                            ],
                             'comments' => $task->comments->map(function ($comment) {
                                 return [
                                     'id' => $comment->id,
@@ -2506,6 +2548,50 @@
                 html += '</div>';
             }
             
+            // Checklist Section
+            html += '<div class="task-sidebar-section" id="checklistSection">';
+            html += '<div class="d-flex justify-content-between align-items-center mb-2">';
+            html += '<div class="task-sidebar-section-title mb-0">Checklist</div>';
+            if (canEdit) {
+                html += '<div class="d-flex gap-2 mb-2">';
+                html += '<button type="button" class="btn btn-sm btn-outline-primary" onclick="addChecklistItem()">';
+                html += '<i class="fas fa-plus me-1"></i>Add Item';
+                html += '</button>';
+                html += '</div>';
+            }
+            html += '</div>';
+            
+            if (task.checklist_items && task.checklist_items.length > 0) {
+                const progress = task.checklist_progress || { completed: 0, total: task.checklist_items.length };
+                html += '<div class="mb-2">';
+                html += `<small class="text-muted">${progress.completed} of ${progress.total} completed</small>`;
+                html += '<div class="progress mt-1" style="height: 4px;">';
+                const percentage = progress.total > 0 ? (progress.completed / progress.total * 100) : 0;
+                html += `<div class="progress-bar" role="progressbar" style="width: ${percentage}%"></div>`;
+                html += '</div>';
+                html += '</div>';
+                
+                html += '<div id="checklistItemsContainer">';
+                task.checklist_items.sort((a, b) => a.sort_order - b.sort_order).forEach(item => {
+                    html += '<div class="d-flex align-items-center gap-2 mb-2 p-2 rounded checklist-item-draggable" style="background-color: var(--bg-primary); cursor: ' + (canEdit ? 'move' : 'default') + ';" id="checklist-item-' + item.id + '" data-item-id="' + item.id + '" draggable="' + (canEdit ? 'true' : 'false') + '">';
+                    if (canEdit) {
+                        html += '<i class="fas fa-grip-vertical text-muted" style="cursor: grab;"></i>';
+                    }
+                    html += '<input type="checkbox" class="form-check-input" ' + (item.is_completed ? 'checked' : '') + ' onchange="toggleChecklistItem(' + item.id + ')" ' + (canEdit ? '' : 'disabled') + '>';
+                    html += '<span class="flex-grow-1 small" style="text-decoration: ' + (item.is_completed ? 'line-through' : 'none') + '; color: ' + (item.is_completed ? 'var(--text-muted)' : 'var(--text-color)') + ';">' + sanitizeText(item.title) + '</span>';
+                    if (canEdit) {
+                        html += '<button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="deleteChecklistItem(' + item.id + ')">';
+                        html += '<i class="fas fa-times"></i>';
+                        html += '</button>';
+                    }
+                    html += '</div>';
+                });
+                html += '</div>';
+            } else {
+                html += '<p class="text-muted small mb-0">No checklist items. Click "Add Item" to create one.</p>';
+            }
+            html += '</div>';
+            
             // Comments Section
             html += '<div class="task-sidebar-section" id="commentsSection">';
             html += '<div class="task-sidebar-section-title">Comments</div>';
@@ -2549,6 +2635,9 @@
                     }
                 }, 10);
             }
+            
+            // Initialize drag-and-drop for checklist items after a brief delay
+            setTimeout(initializeChecklistDragAndDrop, 100);
         }
         
         function renderComment(comment, parentId = null) {
@@ -3197,6 +3286,30 @@
             if (footer) {
                 const leftSide = footer.querySelector('.d-flex.align-items-center.gap-2');
                 if (leftSide) {
+                    // Update checklist progress
+                    let checklistProgress = leftSide.querySelector('small:has(i.fa-tasks)');
+                    if (!checklistProgress) {
+                        checklistProgress = Array.from(leftSide.querySelectorAll('small')).find(el => 
+                            el.querySelector('i.fa-tasks')
+                        );
+                    }
+                    if (task.checklist_progress && task.checklist_progress.total > 0) {
+                        if (!checklistProgress) {
+                            checklistProgress = document.createElement('small');
+                            checklistProgress.className = 'text-muted';
+                            checklistProgress.innerHTML = `<i class="fas fa-tasks me-1"></i>${task.checklist_progress.completed}/${task.checklist_progress.total}`;
+                            leftSide.insertBefore(checklistProgress, leftSide.firstChild);
+                        } else {
+                            const icon = checklistProgress.querySelector('i');
+                            checklistProgress.innerHTML = '';
+                            checklistProgress.appendChild(icon);
+                            checklistProgress.appendChild(document.createTextNode(`${task.checklist_progress.completed}/${task.checklist_progress.total}`));
+                            checklistProgress.style.display = '';
+                        }
+                    } else if (checklistProgress) {
+                        checklistProgress.style.display = 'none';
+                    }
+                    
                     // Update members count
                     let membersCount = leftSide.querySelector('small:has(i.fa-users)');
                     if (!membersCount) {
@@ -3314,6 +3427,338 @@
                 this.remove();
             });
         };
+        
+        window.addChecklistItem = function() {
+            if (!currentTaskId) return;
+            const task = taskData[currentTaskId];
+            if (!task) return;
+            
+            const title = prompt('Enter checklist item title:');
+            if (!title || !title.trim()) return;
+            
+            const url = '{{ route("drives.projects.projects.tasks.checklist-items.store", [$drive, $project, ":task"]) }}'.replace(':task', currentTaskId);
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    title: title.trim()
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update task data
+                    if (!task.checklist_items) task.checklist_items = [];
+                    task.checklist_items.push(data.checklist_item);
+                    task.checklist_progress = data.progress;
+                    
+                    // Refresh sidebar
+                    renderSidebarContent(task, isEditMode);
+                    
+                    // Update task card
+                    updateTaskCard(currentTaskId);
+                } else {
+                    alert(data.error || 'Failed to add checklist item');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to add checklist item');
+            });
+        };
+        
+        window.toggleChecklistItem = function(itemId) {
+            if (!currentTaskId) return;
+            const task = taskData[currentTaskId];
+            if (!task) return;
+            
+            const url = '{{ route("drives.projects.projects.tasks.checklist-items.toggle", [$drive, $project, ":task", ":item"]) }}'
+                .replace(':task', currentTaskId)
+                .replace(':item', itemId);
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update task data
+                    const item = task.checklist_items.find(i => i.id === itemId);
+                    if (item) {
+                        item.is_completed = data.checklist_item.is_completed;
+                    }
+                    task.checklist_progress = data.progress;
+                    
+                    // Refresh sidebar
+                    renderSidebarContent(task, isEditMode);
+                    
+                    // Update task card
+                    updateTaskCard(currentTaskId);
+                } else {
+                    alert(data.error || 'Failed to update checklist item');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to update checklist item');
+            });
+        };
+        
+        window.deleteChecklistItem = function(itemId) {
+            if (!currentTaskId) return;
+            const task = taskData[currentTaskId];
+            if (!task) return;
+            
+            if (!confirm('Are you sure you want to delete this checklist item?')) return;
+            
+            const url = '{{ route("drives.projects.projects.tasks.checklist-items.destroy", [$drive, $project, ":task", ":item"]) }}'
+                .replace(':task', currentTaskId)
+                .replace(':item', itemId);
+            
+            fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update task data
+                    task.checklist_items = task.checklist_items.filter(i => i.id !== itemId);
+                    task.checklist_progress = data.progress;
+                    
+                    // Refresh sidebar
+                    renderSidebarContent(task, isEditMode);
+                    
+                    // Update task card
+                    updateTaskCard(currentTaskId);
+                } else {
+                    alert(data.error || 'Failed to delete checklist item');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to delete checklist item');
+            });
+        };
+        
+        // Initialize drag-and-drop for checklist items
+        function initializeChecklistDragAndDrop() {
+            const container = document.getElementById('checklistItemsContainer');
+            if (!container) return;
+            
+            let draggedElement = null;
+            
+            // Remove existing event listeners by cloning and replacing
+            const newContainer = container.cloneNode(true);
+            container.parentNode.replaceChild(newContainer, container);
+            
+            // Add event listeners to all draggable items
+            newContainer.querySelectorAll('.checklist-item-draggable').forEach((item) => {
+                item.addEventListener('dragstart', function(e) {
+                    draggedElement = this;
+                    this.style.opacity = '0.5';
+                    this.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+                
+                item.addEventListener('dragend', function(e) {
+                    const wasDragging = draggedElement === this;
+                    this.style.opacity = '1';
+                    this.classList.remove('dragging');
+                    // Remove any drag-over styling
+                    newContainer.querySelectorAll('.checklist-item-draggable').forEach(el => {
+                        el.classList.remove('drag-over');
+                    });
+                    
+                    // Only reorder if this element was actually dragged
+                    if (wasDragging) {
+                        // Use a longer timeout to ensure DOM has fully settled after drag
+                        setTimeout(() => {
+                            // Get all items in their current DOM order
+                            const allItems = newContainer.querySelectorAll('.checklist-item-draggable:not(.dragging)');
+                            const itemIds = Array.from(allItems)
+                                .map(el => {
+                                    const id = el.getAttribute('data-item-id');
+                                    return id ? parseInt(id) : null;
+                                })
+                                .filter(id => id !== null);
+                            
+                            // Always save the order after a drag operation completes
+                            // The user has explicitly moved an item, so we should save the new order
+                            if (itemIds.length > 0) {
+                                reorderChecklistItems(itemIds);
+                            } else {
+                                console.error('No item IDs found in container after drag');
+                            }
+                            
+                            // Clear draggedElement for next drag
+                            draggedElement = null;
+                        }, 100); // Longer delay to ensure DOM is fully updated
+                    } else {
+                        draggedElement = null;
+                    }
+                });
+                
+                item.addEventListener('dragover', function(e) {
+                    if (e.preventDefault) {
+                        e.preventDefault();
+                    }
+                    e.dataTransfer.dropEffect = 'move';
+                    
+                    if (draggedElement && draggedElement !== this) {
+                        const afterElement = getDragAfterElement(newContainer, e.clientY);
+                        
+                        if (afterElement == null) {
+                            newContainer.appendChild(draggedElement);
+                        } else {
+                            newContainer.insertBefore(draggedElement, afterElement);
+                        }
+                    }
+                    
+                    return false;
+                });
+                
+                item.addEventListener('dragenter', function(e) {
+                    if (draggedElement && draggedElement !== this) {
+                        this.classList.add('drag-over');
+                    }
+                });
+                
+                item.addEventListener('dragleave', function(e) {
+                    this.classList.remove('drag-over');
+                });
+                
+                item.addEventListener('drop', function(e) {
+                    if (e.stopPropagation) {
+                        e.stopPropagation();
+                    }
+                    
+                    e.preventDefault();
+                    this.classList.remove('drag-over');
+                    
+                    // Note: Reordering is handled in dragend event to ensure it always runs
+                    // even if the drop doesn't happen on another item. This ensures auto-save works.
+                    return false;
+                });
+            });
+        }
+        
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.checklist-item-draggable:not(.dragging)')];
+            
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+        
+        function reorderChecklistItems(itemIds) {
+            if (!currentTaskId) {
+                console.error('No current task ID');
+                return;
+            }
+            const task = taskData[currentTaskId];
+            if (!task) {
+                console.error('Task not found in taskData');
+                return;
+            }
+            
+            // Verify we have all items
+            const currentItemIds = task.checklist_items ? task.checklist_items.map(i => i.id).sort() : [];
+            const requestedItemIds = [...itemIds].sort();
+            
+            if (currentItemIds.length !== requestedItemIds.length) {
+                console.error('Item count mismatch', {
+                    current: currentItemIds,
+                    requested: requestedItemIds
+                });
+                alert('Error: Not all checklist items are included in the reorder. Please try again.');
+                return;
+            }
+            
+            // Build the URL
+            let url;
+            try {
+                url = '{{ route("drives.projects.projects.tasks.checklist-items.reorder", [$drive, $project, ":task"]) }}'
+                    .replace(':task', currentTaskId);
+            } catch (e) {
+                console.error('Error building URL:', e);
+                alert('Error building reorder URL. Check console.');
+                return;
+            }
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    item_ids: itemIds
+                }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    // Try to get error message from response
+                    return response.text().then(text => {
+                        console.error('Error response:', text);
+                        throw new Error(`HTTP error! status: ${response.status}, body: ${text}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Update task data with reordered items (preserve sort_order)
+                    task.checklist_items = data.checklist_items.map(item => ({
+                        id: item.id,
+                        title: item.title,
+                        is_completed: item.is_completed,
+                        sort_order: item.sort_order
+                    }));
+                    task.checklist_progress = data.progress;
+                    
+                    // Refresh sidebar to show new order
+                    renderSidebarContent(task, isEditMode);
+                    
+                    // Update task card
+                    updateTaskCard(currentTaskId);
+                } else {
+                    console.error('Reorder failed:', data.error);
+                    alert(data.error || 'Failed to reorder checklist items');
+                    // Re-render to restore original order
+                    renderSidebarContent(task, isEditMode);
+                }
+            })
+            .catch(error => {
+                console.error('Error reordering checklist items:', error);
+                alert('Failed to reorder checklist items. Please try again.');
+                // Re-render to restore original order
+                renderSidebarContent(task, isEditMode);
+            });
+        }
         
         window.addDependency = function() {
             if (!currentTaskId) return;
@@ -3905,6 +4350,25 @@
 
         // Initialize Laravel Echo with Pusher client configured for Reverb
         try {
+            // Suppress WebSocket connection errors in console by overriding console methods temporarily
+            const originalError = console.error;
+            const originalWarn = console.warn;
+            let suppressWebSocketErrors = true;
+            
+            console.error = function(...args) {
+                const message = args.join(' ');
+                // Suppress WebSocket connection errors
+                if (suppressWebSocketErrors && (
+                    message.includes('WebSocket connection') || 
+                    message.includes('ws://') || 
+                    message.includes('wss://') ||
+                    message.includes('failed:')
+                )) {
+                    return; // Suppress these errors
+                }
+                originalError.apply(console, args);
+            };
+            
             window.Echo = new Echo({
                 broadcaster: 'pusher',
                 key: reverbConfig.key,
@@ -3920,9 +4384,27 @@
                 authEndpoint: reverbConfig.authEndpoint,
                 auth: reverbConfig.auth
             });
+            
+            // Restore console methods after a short delay
+            setTimeout(() => {
+                suppressWebSocketErrors = false;
+                console.error = originalError;
+                console.warn = originalWarn;
+            }, 2000);
 
+            // Handle connection errors gracefully
             window.Echo.connector.pusher.connection.bind('error', function (err) {
-                console.error('Reverb: Connection error:', err);
+                // Silently handle connection errors - real-time updates just won't work
+            });
+            
+            // Log connection state changes (but only once)
+            let connectionStateLogged = false;
+            window.Echo.connector.pusher.connection.bind('state_change', function(states) {
+                if ((states.current === 'failed' || states.current === 'disconnected') && !connectionStateLogged) {
+                    connectionStateLogged = true;
+                    // Connection failed - real-time updates won't work, but app will function normally
+                    console.info('Reverb: WebSocket connection unavailable. Real-time updates disabled. The app will continue to work normally.');
+                }
             });
 
             const projectId = {{ $project->id }};
@@ -4305,6 +4787,8 @@
             members: taskData.members || [],
             labels: taskData.labels || [],
             custom_fields: taskData.custom_fields || {},
+            checklist_items: taskData.checklist_items || [],
+            checklist_progress: taskData.checklist_progress || { completed: 0, total: 0 },
             sort_order: taskData.sort_order || 0,
         };
     }
@@ -4368,6 +4852,9 @@
         // Task card footer
         cardHTML += '<div class="task-card-footer">';
         cardHTML += '<div class="d-flex align-items-center gap-2">';
+        if (taskData.checklist_progress && taskData.checklist_progress.total > 0) {
+            cardHTML += `<small class="text-muted"><i class="fas fa-tasks me-1"></i>${taskData.checklist_progress.completed}/${taskData.checklist_progress.total}</small>`;
+        }
         if (taskData.due_date) {
             const dueDate = new Date(taskData.due_date + 'T00:00:00');
             const isOverdue = dueDate < new Date();
@@ -4467,6 +4954,28 @@
         // Update labels (simplified - would need to rebuild meta section for full update)
         if (taskData.labels) {
             taskCard.setAttribute('data-label-ids', taskData.labels.map(l => l.id).join(','));
+        }
+        
+        // Update checklist progress
+        if (taskData.checklist_progress && taskData.checklist_progress.total > 0) {
+            const footer = taskCard.querySelector('.task-card-footer .d-flex.align-items-center.gap-2');
+            if (footer) {
+                let checklistEl = footer.querySelector('small:has(i.fa-tasks)');
+                if (!checklistEl) {
+                    checklistEl = Array.from(footer.querySelectorAll('small')).find(el => 
+                        el.querySelector('i.fa-tasks')
+                    );
+                }
+                if (checklistEl) {
+                    checklistEl.innerHTML = `<i class="fas fa-tasks me-1"></i>${taskData.checklist_progress.completed}/${taskData.checklist_progress.total}`;
+                    checklistEl.style.display = '';
+                } else {
+                    const newEl = document.createElement('small');
+                    newEl.className = 'text-muted';
+                    newEl.innerHTML = `<i class="fas fa-tasks me-1"></i>${taskData.checklist_progress.completed}/${taskData.checklist_progress.total}`;
+                    footer.insertBefore(newEl, footer.firstChild);
+                }
+            }
         }
         
         // Update members

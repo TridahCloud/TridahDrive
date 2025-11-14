@@ -209,7 +209,7 @@ class ProjectController extends Controller
         $project->load([
             'tasks' => function($query) {
                 $query->whereNull('deleted_at')
-                    ->with(['members', 'labels', 'owner', 'creator', 'attachments', 'status'])
+                    ->with(['members', 'labels', 'owner', 'creator', 'attachments', 'status', 'checklistItems'])
                     ->orderBy('sort_order')
                     ->orderBy('created_at', 'desc');
             },
@@ -218,7 +218,7 @@ class ProjectController extends Controller
 
         $statuses = $project->taskStatuses()
             ->with(['tasks' => function($query) {
-                $query->with(['owner', 'creator', 'members', 'labels', 'attachments', 'status'])
+                $query->with(['owner', 'creator', 'members', 'labels', 'attachments', 'status', 'checklistItems'])
                     ->whereNull('deleted_at');
             }])
             ->orderBy('sort_order')
@@ -518,11 +518,12 @@ class ProjectController extends Controller
             'tasks.owner',
             'tasks.attachments',
             'tasks.status',
+            'tasks.checklistItems',
         ]);
 
         $statuses = $project->taskStatuses()
             ->with(['tasks' => function($query) {
-                $query->with(['owner', 'members', 'labels', 'attachments', 'status'])
+                $query->with(['owner', 'members', 'labels', 'attachments', 'status', 'checklistItems'])
                     ->whereNull('deleted_at');
             }])
             ->orderBy('sort_order')

@@ -286,6 +286,27 @@
         background-color: #f8f9fa;
         border-bottom-color: rgba(0, 0, 0, 0.1);
     }
+    
+    /* Checklist list-group-item styling for dark/light mode */
+    .task-sidebar .list-group-item {
+        background-color: var(--bg-primary);
+        border-color: var(--border-color);
+        color: var(--text-color);
+    }
+    
+    .task-sidebar .list-group-item:hover {
+        background-color: var(--bg-secondary);
+    }
+    
+    [data-theme="light"] .task-sidebar .list-group-item {
+        background-color: #ffffff;
+        border-color: rgba(0, 0, 0, 0.125);
+        color: #1e1e28;
+    }
+    
+    [data-theme="light"] .task-sidebar .list-group-item:hover {
+        background-color: #f8f9fa;
+    }
 </style>
 @endpush
 
@@ -400,6 +421,18 @@
                                     'color' => $label->color,
                                 ];
                             })->toArray(),
+                            'checklist_items' => $task->checklistItems->map(function ($item) {
+                                return [
+                                    'id' => $item->id,
+                                    'title' => $item->title,
+                                    'is_completed' => (bool) $item->is_completed,
+                                    'sort_order' => $item->sort_order,
+                                ];
+                            })->toArray(),
+                            'checklist_progress' => [
+                                'completed' => $task->checklistItems->where('is_completed', true)->count(),
+                                'total' => $task->checklistItems->count(),
+                            ],
                             'created_at' => $task->created_at->format('M d, Y'),
                             'is_overdue' => (bool) $task->isOverdue(),
                         ],
@@ -477,6 +510,36 @@
                 html += '<div class="d-flex flex-wrap gap-1">';
                 task.labels.forEach(label => {
                     html += `<span class="badge" style="background-color: ${label.color}; color: white;">${sanitizeText(label.name)}</span>`;
+                });
+                html += '</div>';
+                html += '</div>';
+            }
+            
+            // Checklist
+            if (task.checklist_items && task.checklist_items.length > 0) {
+                html += '<div class="task-sidebar-section">';
+                html += '<div class="task-sidebar-section-title">Checklist</div>';
+                const progress = task.checklist_progress || { completed: 0, total: task.checklist_items.length };
+                if (progress.total > 0) {
+                    const percentage = Math.round((progress.completed / progress.total) * 100);
+                    html += '<div class="mb-3">';
+                    html += '<div class="d-flex justify-content-between align-items-center mb-2">';
+                    html += `<small class="text-muted">${progress.completed} of ${progress.total} completed</small>`;
+                    html += `<small class="text-muted">${percentage}%</small>`;
+                    html += '</div>';
+                    html += '<div class="progress" style="height: 6px;">';
+                    html += `<div class="progress-bar" role="progressbar" style="width: ${percentage}%;" aria-valuenow="${percentage}" aria-valuemin="0" aria-valuemax="100"></div>`;
+                    html += '</div>';
+                    html += '</div>';
+                }
+                html += '<div class="list-group">';
+                task.checklist_items.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)).forEach(item => {
+                    html += '<div class="list-group-item d-flex align-items-center gap-2">';
+                    html += `<input type="checkbox" class="form-check-input mt-0" ${item.is_completed ? 'checked' : ''} disabled style="cursor: default;">`;
+                    html += `<span class="flex-grow-1" style="text-decoration: ${item.is_completed ? 'line-through' : 'none'}; color: ${item.is_completed ? 'var(--text-muted, #6c757d)' : 'var(--text-color)' };">`;
+                    html += sanitizeText(item.title);
+                    html += '</span>';
+                    html += '</div>';
                 });
                 html += '</div>';
                 html += '</div>';

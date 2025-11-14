@@ -156,6 +156,13 @@ Route::middleware('auth')->group(function () {
                    Route::patch('tasks/{task}/comments/{comment}', [TaskCommentController::class, 'update'])->name('tasks.comments.update');
                    Route::delete('tasks/{task}/comments/{comment}', [TaskCommentController::class, 'destroy'])->name('tasks.comments.destroy');
                    
+                   // Task checklist items
+                   Route::post('tasks/{task}/checklist-items', [TaskController::class, 'storeChecklistItem'])->name('tasks.checklist-items.store');
+                   Route::patch('tasks/{task}/checklist-items/{checklistItem}', [TaskController::class, 'updateChecklistItem'])->name('tasks.checklist-items.update');
+                   Route::post('tasks/{task}/checklist-items/{checklistItem}/toggle', [TaskController::class, 'toggleChecklistItem'])->name('tasks.checklist-items.toggle');
+                   Route::post('tasks/{task}/checklist-items/reorder', [TaskController::class, 'reorderChecklistItems'])->name('tasks.checklist-items.reorder');
+                   Route::delete('tasks/{task}/checklist-items/{checklistItem}', [TaskController::class, 'destroyChecklistItem'])->name('tasks.checklist-items.destroy');
+                   
                    // Project people assignment
                    Route::post('assign-people', [ProjectController::class, 'assignPeople'])->name('assign-people');
                    
