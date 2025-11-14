@@ -34,6 +34,9 @@
                             <li><a class="dropdown-item" href="{{ route('drives.bookkeeper.categories.index', $drive) }}">
                                 <i class="fas fa-tags me-2"></i>Categories
                             </a></li>
+                            <li><a class="dropdown-item" href="{{ route('drives.bookkeeper.budgets.index', $drive) }}">
+                                <i class="fas fa-chart-pie me-2"></i>Budgets
+                            </a></li>
                         </ul>
                     </div>
                     <a href="{{ route('drives.bookkeeper.recurring-transactions.upcoming', $drive) }}" class="btn btn-info">
@@ -296,6 +299,9 @@
                     </a>
                     <a href="{{ route('drives.bookkeeper.categories.index', $drive) }}" class="btn btn-outline-primary">
                         <i class="fas fa-tags me-2"></i>Manage Categories
+                    </a>
+                    <a href="{{ route('drives.bookkeeper.budgets.index', $drive) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-chart-pie me-2"></i>Manage Budgets
                     </a>
                 </div>
             </div>

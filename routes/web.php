@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\BookTransactionController;
+use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\RecurringTransactionController;
 use App\Http\Controllers\ClientController;
@@ -117,6 +118,7 @@ Route::middleware('auth')->group(function () {
         Route::get('tax-report', [BookTransactionController::class, 'taxReport'])->name('tax-report');
         Route::resource('accounts', AccountController::class);
         Route::resource('categories', CategoryController::class);
+        Route::resource('budgets', BudgetController::class);
         Route::resource('transactions', BookTransactionController::class);
         Route::get('transactions/{transaction}/attachments/{attachment}', [BookTransactionController::class, 'showAttachment'])->name('transactions.attachments.show');
         Route::delete('transactions/{transaction}/attachments/{attachment}', [BookTransactionController::class, 'destroyAttachment'])->name('transactions.attachments.destroy');

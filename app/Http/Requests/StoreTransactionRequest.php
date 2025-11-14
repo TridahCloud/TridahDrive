@@ -52,6 +52,10 @@ class StoreTransactionRequest extends FormRequest
                 'nullable',
                 'exists:categories,id',
             ],
+            'budget_id' => [
+                'nullable',
+                'exists:budgets,id',
+            ],
             'payee' => [
                 'nullable',
                 'string',

@@ -90,6 +90,28 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
+                                <label for="budget_id" class="form-label">Budget <span class="text-muted">(Optional)</span></label>
+                                <select name="budget_id" id="budget_id" class="form-select">
+                                    <option value="">None</option>
+                                    @foreach($budgets as $budget)
+                                        <option value="{{ $budget->id }}" {{ old('budget_id', $selectedBudgetId ?? null) == $budget->id ? 'selected' : '' }}>
+                                            {{ $budget->name }}
+                                            @if($budget->category)
+                                                ({{ $budget->category->name }})
+                                            @endif
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('budget_id')
+                                    <div class="text-danger small">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
                                 <label for="amount" class="form-label">Amount <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text">{{ currency_code_for($drive) ? \App\Helpers\CurrencyHelper::getSymbol(currency_code_for($drive)) : '$' }}</span>

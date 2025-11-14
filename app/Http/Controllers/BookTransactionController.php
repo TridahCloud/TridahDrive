@@ -68,7 +68,7 @@ class BookTransactionController extends Controller
 
         // Get recent transactions
         $recentTransactions = (clone $baseQuery)
-            ->with(['account', 'category', 'creator', 'drive'])
+            ->with(['account', 'category', 'budget', 'creator', 'drive'])
             ->orderBy('date', 'desc')
             ->orderBy('created_at', 'desc')
             ->limit(10)
@@ -119,10 +119,10 @@ class BookTransactionController extends Controller
         // Use aggregate methods if this is a parent drive (include sub-drives)
         if (!$drive->isSubDrive()) {
             $query = $drive->getTransactionsIncludingSubDrives()
-                ->with(['account', 'category', 'creator', 'drive']);
+                ->with(['account', 'category', 'budget', 'creator', 'drive']);
         } else {
             $query = $drive->bookTransactions()
-                ->with(['account', 'category', 'creator', 'drive']);
+                ->with(['account', 'category', 'budget', 'creator', 'drive']);
         }
 
         // Apply filters
@@ -140,6 +140,10 @@ class BookTransactionController extends Controller
 
         if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
+        }
+
+        if ($request->filled('budget_id')) {
+            $query->where('budget_id', $request->budget_id);
         }
 
         if ($request->filled('date_from')) {
@@ -203,8 +207,12 @@ class BookTransactionController extends Controller
 
         $accounts = $drive->accounts()->where('is_active', true)->orderBy('name')->get();
         $categories = $drive->categories()->where('is_active', true)->orderBy('name')->get();
+        $budgets = $drive->budgets()->where('is_active', true)->orderBy('name')->get();
 
-        return view('bookkeeper.transactions.create', compact('drive', 'accounts', 'categories'));
+        // Check if budget_id is passed in query string
+        $selectedBudgetId = request('budget_id');
+
+        return view('bookkeeper.transactions.create', compact('drive', 'accounts', 'categories', 'budgets', 'selectedBudgetId'));
     }
 
     /**
@@ -245,6 +253,16 @@ class BookTransactionController extends Controller
             if ($category->drive_id !== $drive->id) {
                 return redirect()->back()
                     ->withErrors(['category_id' => 'Invalid category.'])
+                    ->withInput();
+            }
+        }
+
+        // Verify budget belongs to drive if provided
+        if (!empty($validated['budget_id'])) {
+            $budget = \App\Models\Budget::findOrFail($validated['budget_id']);
+            if ($budget->drive_id !== $drive->id) {
+                return redirect()->back()
+                    ->withErrors(['budget_id' => 'Invalid budget.'])
                     ->withInput();
             }
         }
@@ -292,7 +310,7 @@ class BookTransactionController extends Controller
             }
         }
 
-        $transaction->load(['account', 'category', 'creator', 'attachments', 'drive']);
+        $transaction->load(['account', 'category', 'budget', 'creator', 'attachments', 'drive']);
 
         return view('bookkeeper.transactions.show', compact('drive', 'transaction'));
     }
@@ -328,8 +346,9 @@ class BookTransactionController extends Controller
 
         $accounts = $drive->accounts()->where('is_active', true)->orderBy('name')->get();
         $categories = $drive->categories()->where('is_active', true)->orderBy('name')->get();
+        $budgets = $drive->budgets()->where('is_active', true)->orderBy('name')->get();
 
-        return view('bookkeeper.transactions.edit', compact('drive', 'transaction', 'accounts', 'categories'));
+        return view('bookkeeper.transactions.edit', compact('drive', 'transaction', 'accounts', 'categories', 'budgets'));
     }
 
     /**
@@ -384,6 +403,16 @@ class BookTransactionController extends Controller
             if ($category->drive_id !== $drive->id) {
                 return redirect()->back()
                     ->withErrors(['category_id' => 'Invalid category.'])
+                    ->withInput();
+            }
+        }
+
+        // Verify budget belongs to drive if provided
+        if (!empty($validated['budget_id'])) {
+            $budget = \App\Models\Budget::findOrFail($validated['budget_id']);
+            if ($budget->drive_id !== $drive->id) {
+                return redirect()->back()
+                    ->withErrors(['budget_id' => 'Invalid budget.'])
                     ->withInput();
             }
         }
@@ -561,12 +590,12 @@ class BookTransactionController extends Controller
         // Use aggregate methods if this is a parent drive (include sub-drives)
         if (!$drive->isSubDrive()) {
             $query = $drive->getTransactionsIncludingSubDrives()
-                ->with(['account', 'category', 'drive'])
+                ->with(['account', 'category', 'budget', 'drive'])
                 ->whereBetween('date', [$dateFrom, $dateTo])
                 ->where('status', '!=', 'pending');
         } else {
             $query = $drive->bookTransactions()
-                ->with(['account', 'category', 'drive'])
+                ->with(['account', 'category', 'budget', 'drive'])
                 ->whereBetween('date', [$dateFrom, $dateTo])
                 ->where('status', '!=', 'pending');
         }

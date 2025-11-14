@@ -110,8 +110,28 @@
                             <div class="mb-3">
                                 <label class="text-muted small">Category</label>
                                 <p class="mb-0">
-                                    <a href="{{ route('drives.bookkeeper.categories.show', [$drive, $transaction->category]) }}">
+                                    @php
+                                        // Use the transaction's drive for the category route (handles sub-drives correctly)
+                                        $categoryDrive = $transaction->drive ?? $drive;
+                                    @endphp
+                                    <a href="{{ route('drives.bookkeeper.categories.show', [$categoryDrive, $transaction->category]) }}">
                                         <span class="badge" style="background-color: {{ $transaction->category->color }}">{{ $transaction->category->name }}</span>
+                                    </a>
+                                </p>
+                            </div>
+                        </div>
+                    @endif
+                    @if($transaction->budget)
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="text-muted small">Budget</label>
+                                <p class="mb-0">
+                                    @php
+                                        // Use the transaction's drive for the budget route (handles sub-drives correctly)
+                                        $budgetDrive = $transaction->drive ?? $drive;
+                                    @endphp
+                                    <a href="{{ route('drives.bookkeeper.budgets.show', [$budgetDrive, $transaction->budget]) }}">
+                                        {{ $transaction->budget->name }}
                                     </a>
                                 </p>
                             </div>

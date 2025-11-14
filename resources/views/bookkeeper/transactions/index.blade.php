@@ -34,6 +34,9 @@
                             <li><a class="dropdown-item" href="{{ route('drives.bookkeeper.categories.index', $drive) }}">
                                 <i class="fas fa-tags me-2"></i>Categories
                             </a></li>
+                            <li><a class="dropdown-item" href="{{ route('drives.bookkeeper.budgets.index', $drive) }}">
+                                <i class="fas fa-chart-pie me-2"></i>Budgets
+                            </a></li>
                         </ul>
                     </div>
                     <a href="{{ route('drives.bookkeeper.tax-report', $drive) }}" class="btn btn-success">
@@ -124,6 +127,15 @@
                         </select>
                     </div>
                     <div class="col-md-2">
+                        <label class="form-label">Budget</label>
+                        <select name="budget_id" class="form-select">
+                            <option value="">All Budgets</option>
+                            @foreach($drive->budgets()->where('is_active', true)->orderBy('name')->get() as $budget)
+                                <option value="{{ $budget->id }}" {{ request('budget_id') == $budget->id ? 'selected' : '' }}>{{ $budget->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2">
                         <label class="form-label">Date From</label>
                         <input type="date" name="date_from" class="form-control" value="{{ request('date_from') }}">
                     </div>
@@ -131,6 +143,8 @@
                         <label class="form-label">Date To</label>
                         <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}">
                     </div>
+                </div>
+                <div class="row">
                     <div class="col-12">
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-filter me-2"></i>Apply Filters
@@ -157,6 +171,7 @@
                                 <th>Description</th>
                                 <th>Account</th>
                                 <th>Category</th>
+                                <th>Budget</th>
                                 <th>Type</th>
                                 <th>Amount</th>
                                 <th>Status</th>
@@ -177,7 +192,31 @@
                                     <td>{{ $transaction->account->name }}</td>
                                     <td>
                                         @if($transaction->category)
-                                            <span class="badge" style="background-color: {{ $transaction->category->color }}">{{ $transaction->category->name }}</span>
+                                            @php
+                                                // Use the transaction's drive for the category route (handles sub-drives correctly)
+                                                $categoryDrive = $transaction->drive ?? $drive;
+                                            @endphp
+                                            <a href="{{ route('drives.bookkeeper.categories.show', [$categoryDrive, $transaction->category]) }}" 
+                                               class="badge text-decoration-none" 
+                                               style="background-color: {{ $transaction->category->color }}; color: white; cursor: pointer;"
+                                               title="View category details">
+                                                {{ $transaction->category->name }}
+                                            </a>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($transaction->budget)
+                                            @php
+                                                // Use the transaction's drive for the budget route (handles sub-drives correctly)
+                                                $budgetDrive = $transaction->drive ?? $drive;
+                                            @endphp
+                                            <a href="{{ route('drives.bookkeeper.budgets.show', [$budgetDrive, $transaction->budget]) }}" 
+                                               class="text-decoration-none"
+                                               title="View budget details">
+                                                {{ $transaction->budget->name }}
+                                            </a>
                                         @else
                                             <span class="text-muted">-</span>
                                         @endif
@@ -210,7 +249,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="9" class="text-center text-muted py-5">
+                                    <td colspan="10" class="text-center text-muted py-5">
                                         <i class="fas fa-inbox fa-3x mb-3"></i>
                                         <p>No transactions found. @if($drive->canEdit(auth()->user()))<a href="{{ route('drives.bookkeeper.transactions.create', $drive) }}">Create your first transaction</a>@endif</p>
                                     </td>

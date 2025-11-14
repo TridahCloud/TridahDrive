@@ -148,6 +148,14 @@ class Drive extends Model
     }
 
     /**
+     * Get budgets for this drive (BookKeeper)
+     */
+    public function budgets(): HasMany
+    {
+        return $this->hasMany(Budget::class);
+    }
+
+    /**
      * Get recurring transactions for this drive (BookKeeper)
      */
     public function recurringTransactions(): HasMany

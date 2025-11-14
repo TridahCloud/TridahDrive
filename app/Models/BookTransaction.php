@@ -20,6 +20,7 @@ class BookTransaction extends Model
         'type',
         'account_id',
         'category_id',
+        'budget_id',
         'payee',
         'payment_method',
         'status',
@@ -109,6 +110,14 @@ class BookTransaction extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    /**
+     * Get the budget for this transaction
+     */
+    public function budget(): BelongsTo
+    {
+        return $this->belongsTo(Budget::class);
     }
 
     /**
