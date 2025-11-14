@@ -735,7 +735,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target.closest('.remove-checklist-item')) {
             const itemId = e.target.closest('.remove-checklist-item').dataset.itemId;
             if (confirm('Delete this checklist item?')) {
-                    @if($isEdit && $task)
+                @if($isEdit && $task)
                 fetch('{{ route("drives.projects.projects.tasks.checklist-items.destroy", [$drive, $project, $task, ":item"]) }}'.replace(':item', itemId), {
                     method: 'DELETE',
                     headers: {

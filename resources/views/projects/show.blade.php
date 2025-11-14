@@ -2286,7 +2286,14 @@
             
             // Description
             html += '<div class="task-sidebar-section">';
-            html += '<div class="task-sidebar-section-title">Description</div>';
+            html += '<div class="d-flex justify-content-between align-items-center mb-2">';
+            html += '<div class="task-sidebar-section-title mb-0">Description</div>';
+            if (editMode && canEdit) {
+                html += '<button type="button" class="btn btn-sm btn-primary" id="saveDescriptionBtn" onclick="saveTaskDescription()">';
+                html += '<i class="fas fa-save me-1"></i>Save';
+                html += '</button>';
+            }
+            html += '</div>';
             if (editMode && canEdit) {
                 html += '<div id="taskDescriptionEditor" style="min-height: 150px;"></div>';
                 html += '<input type="hidden" id="taskDescriptionHidden" value="">';
@@ -3136,6 +3143,39 @@
             saveTaskChanges();
         }
         
+        function saveTaskDescription() {
+            if (!currentTaskId) return;
+            
+            const task = taskData[currentTaskId];
+            if (!task) return;
+            
+            const saveBtn = document.getElementById('saveDescriptionBtn');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                const originalText = saveBtn.innerHTML;
+                saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
+                
+                saveTaskChanges().then(() => {
+                    if (saveBtn) {
+                        saveBtn.disabled = false;
+                        saveBtn.innerHTML = '<i class="fas fa-check me-1"></i>Saved';
+                        setTimeout(() => {
+                            if (saveBtn) {
+                                saveBtn.innerHTML = originalText;
+                            }
+                        }, 2000);
+                    }
+                }).catch(() => {
+                    if (saveBtn) {
+                        saveBtn.disabled = false;
+                        saveBtn.innerHTML = originalText;
+                    }
+                });
+            } else {
+                saveTaskChanges();
+            }
+        }
+        
         function updateTaskPriority() {
             if (!currentTaskId) return;
             
@@ -3157,10 +3197,10 @@
         }
         
         function saveTaskChanges() {
-            if (!currentTaskId) return;
+            if (!currentTaskId) return Promise.resolve();
             
             const task = taskData[currentTaskId];
-            if (!task || !task.update_url) return;
+            if (!task || !task.update_url) return Promise.resolve();
             
             const labelIds = task.label_ids || [];
             const memberIds = task.member_ids || [];
@@ -3189,7 +3229,7 @@
                 }
             }
             
-            fetch(task.update_url, {
+            return fetch(task.update_url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -3211,7 +3251,10 @@
                     if (data.task.title) {
                         task.title = data.task.title;
                         // Update sidebar header title
-                        document.getElementById('taskSidebarTitle').textContent = data.task.title;
+                        const titleEl = document.getElementById('taskSidebarTitle');
+                        if (titleEl) {
+                            titleEl.textContent = data.task.title;
+                        }
                     }
                     if (data.task.labels) {
                         task.label_ids = data.task.labels.map(l => l.id);
@@ -3226,14 +3269,24 @@
                     }
                     if (data.task.description !== undefined) {
                         task.description = data.task.description;
+                        // Update description in view mode if not in edit mode
+                        if (!isEditMode) {
+                            renderSidebarContent(task, false);
+                        }
                     }
                     
                     // Update the card on the board
                     updateTaskCard(currentTaskId);
+                    
+                    return data;
+                } else {
+                    throw new Error(data.error || 'Failed to save changes');
                 }
             })
             .catch(error => {
                 console.error('Error updating task:', error);
+                alert('Failed to save changes. Please try again.');
+                throw error;
             });
         }
         
@@ -3263,46 +3316,36 @@
             card.dataset.priority = task.priority;
             
             // Update description on card
-            const descriptionEl = card.querySelector('.task-card-description');
-            if (descriptionEl) {
-                if (task.description) {
-                    // Preserve HTML formatting
-                    let html = task.description;
-                    // Get plain text length for truncation
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = html;
-                    const plainText = tempDiv.textContent || tempDiv.innerText || '';
-                    
-                    if (plainText.length > 100) {
-                        // Truncate HTML while preserving tags
-                        let truncated = '';
-                        let plainPos = 0;
-                        let inTag = false;
-                        let tagBuffer = '';
-                        
-                        for (let i = 0; i < html.length && plainPos < 100; i++) {
-                            const char = html[i];
-                            if (char === '<') {
-                                inTag = true;
-                                tagBuffer = char;
-                            } else if (char === '>') {
-                                inTag = false;
-                                tagBuffer += char;
-                                truncated += tagBuffer;
-                                tagBuffer = '';
-                            } else if (inTag) {
-                                tagBuffer += char;
-                            } else {
-                                truncated += char;
-                                plainPos++;
-                            }
-                        }
-                        html = truncated + '...';
+            let descriptionEl = card.querySelector('.task-card-description');
+            if (task.description) {
+                // Get plain text from HTML for truncation
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = task.description;
+                const plainText = tempDiv.textContent || tempDiv.innerText || '';
+                
+                // Create or update description element
+                if (!descriptionEl) {
+                    // Create description element if it doesn't exist
+                    const titleEl = card.querySelector('.task-card-title');
+                    if (titleEl) {
+                        descriptionEl = document.createElement('div');
+                        descriptionEl.className = 'task-card-description';
+                        titleEl.after(descriptionEl);
                     }
-                    
-                    descriptionEl.innerHTML = html;
+                }
+                
+                if (descriptionEl) {
+                    if (plainText.length > 100) {
+                        // Strip HTML and truncate plain text
+                        descriptionEl.textContent = plainText.substring(0, 100) + '...';
+                    } else {
+                        // Use plain text for card display
+                        descriptionEl.textContent = plainText;
+                    }
                     descriptionEl.style.display = '';
-                } else {
+                }
+            } else {
+                if (descriptionEl) {
                     descriptionEl.style.display = 'none';
                 }
             }
@@ -3873,6 +3916,7 @@
         window.removeMemberFromTask = removeMemberFromTask;
         window.toggleEditMode = toggleEditMode;
         window.updateTaskTitle = updateTaskTitle;
+        window.saveTaskDescription = saveTaskDescription;
         window.updateTaskPriority = updateTaskPriority;
         window.renderComment = renderComment;
         window.submitComment = submitComment;
