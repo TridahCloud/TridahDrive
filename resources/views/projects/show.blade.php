@@ -2253,6 +2253,16 @@
         function renderSidebarContent(task, editMode) {
             let html = '';
             
+            // Title
+            html += '<div class="task-sidebar-section">';
+            html += '<div class="task-sidebar-section-title">Title</div>';
+            if (editMode && canEdit) {
+                html += '<input type="text" class="form-control form-control-lg mb-3" id="taskTitleInput" value="' + sanitizeText(task.title) + '" onblur="updateTaskTitle()" onkeypress="if(event.key===\'Enter\'){event.target.blur();}">';
+            } else {
+                html += '<h5 style="color: var(--text-color); margin-bottom: 0;">' + sanitizeText(task.title) + '</h5>';
+            }
+            html += '</div>';
+            
             // Status and Priority
             html += '<div class="task-sidebar-section">';
             html += '<div class="d-flex gap-2 mb-3">';
@@ -3105,6 +3115,27 @@
             saveLabelsAndMembers();
         }
         
+        function updateTaskTitle() {
+            if (!currentTaskId) return;
+            
+            const task = taskData[currentTaskId];
+            if (!task) return;
+            
+            const titleInput = document.getElementById('taskTitleInput');
+            if (!titleInput) return;
+            
+            const newTitle = titleInput.value.trim();
+            if (!newTitle) {
+                titleInput.value = task.title; // Restore original if empty
+                return;
+            }
+            
+            if (newTitle === task.title) return; // No change
+            
+            task.title = newTitle;
+            saveTaskChanges();
+        }
+        
         function updateTaskPriority() {
             if (!currentTaskId) return;
             
@@ -3135,6 +3166,16 @@
             const memberIds = task.member_ids || [];
             const priority = task.priority || 'medium';
             
+            // Get title from input if in edit mode
+            let title = task.title || '';
+            const titleInput = document.getElementById('taskTitleInput');
+            if (titleInput) {
+                const newTitle = titleInput.value.trim();
+                if (newTitle) {
+                    title = newTitle;
+                }
+            }
+            
             // Get description from Quill editor if in edit mode
             let description = task.description || '';
             const editorElement = document.getElementById('taskDescriptionEditor');
@@ -3156,6 +3197,7 @@
                     'Accept': 'application/json'
                 },
                 body: JSON.stringify({
+                    title: title,
                     label_ids: labelIds,
                     member_ids: memberIds,
                     priority: priority,
@@ -3166,6 +3208,11 @@
             .then(data => {
                 if (data.success) {
                     // Update task data with server response
+                    if (data.task.title) {
+                        task.title = data.task.title;
+                        // Update sidebar header title
+                        document.getElementById('taskSidebarTitle').textContent = data.task.title;
+                    }
                     if (data.task.labels) {
                         task.label_ids = data.task.labels.map(l => l.id);
                         task.labels = data.task.labels;
@@ -3196,6 +3243,13 @@
             
             const task = taskData[taskId];
             if (!task) return;
+            
+            // Update title on card
+            const titleEl = card.querySelector('.task-card-title');
+            if (titleEl) {
+                titleEl.textContent = task.title;
+            }
+            card.dataset.taskTitle = task.title;
             
             // Update priority border color
             const priorityColors = {
@@ -3818,6 +3872,7 @@
         window.selectMemberToAdd = selectMemberToAdd;
         window.removeMemberFromTask = removeMemberFromTask;
         window.toggleEditMode = toggleEditMode;
+        window.updateTaskTitle = updateTaskTitle;
         window.updateTaskPriority = updateTaskPriority;
         window.renderComment = renderComment;
         window.submitComment = submitComment;
@@ -3830,6 +3885,9 @@
             div.textContent = text ?? '';
             return div.innerHTML;
         }
+        
+        // Make sanitizeText globally accessible for broadcast event handlers
+        window.sanitizeText = sanitizeText;
         
         // Custom Fields Management - Use event delegation for dynamic content
         document.addEventListener('click', function(e) {
@@ -4900,6 +4958,17 @@
     }
 
     function updateTaskCard(taskCard, taskData) {
+        // Helper function to safely sanitize text
+        const sanitize = (text) => {
+            if (typeof window.sanitizeText === 'function') {
+                return window.sanitizeText(text);
+            }
+            // Fallback if sanitizeText is not available
+            const div = document.createElement('div');
+            div.textContent = text ?? '';
+            return div.innerHTML;
+        };
+        
         // Update task card title
         const titleEl = taskCard.querySelector('.task-card-title');
         if (titleEl) {
@@ -4910,7 +4979,7 @@
         // Update task card description
         const descEl = taskCard.querySelector('.task-card-description');
         if (taskData.description) {
-            const desc = sanitizeText(taskData.description.substring(0, 100));
+            const desc = sanitize(taskData.description.substring(0, 100));
             if (descEl) {
                 descEl.innerHTML = desc + (taskData.description.length > 100 ? '...' : '');
                 descEl.style.display = '';

@@ -765,6 +765,7 @@ class TaskController extends Controller
         }
 
         $validated = $request->validate([
+            'title' => 'nullable|string|max:255',
             'label_ids' => 'nullable|array',
             'label_ids.*' => 'exists:task_labels,id',
             'member_ids' => 'nullable|array',
@@ -772,6 +773,11 @@ class TaskController extends Controller
             'priority' => 'nullable|in:low,medium,high,urgent',
             'description' => 'nullable|string',
         ]);
+
+        // Update title
+        if (isset($validated['title']) && $validated['title']) {
+            $task->title = $validated['title'];
+        }
 
         // Update priority
         if (isset($validated['priority'])) {
@@ -802,12 +808,24 @@ class TaskController extends Controller
         $task->save();
 
         // Reload relationships
-        $task->load(['labels', 'members']);
+        $task->load(['labels', 'members', 'status']);
+
+        // Broadcast task updated event (catch errors so they don't break the request)
+        try {
+            event(new TaskUpdated($task));
+        } catch (\Exception $e) {
+            \Log::error('Failed to broadcast TaskUpdated event', [
+                'task_id' => $task->id,
+                'error' => $e->getMessage(),
+            ]);
+            // Don't fail the request if broadcasting fails
+        }
 
         return response()->json([
             'success' => true,
             'task' => [
                 'id' => $task->id,
+                'title' => $task->title,
                 'priority' => $task->priority,
                 'description' => $task->description,
                 'labels' => $task->labels->map(function ($label) {
