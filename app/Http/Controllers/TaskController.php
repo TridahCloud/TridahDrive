@@ -586,6 +586,113 @@ class TaskController extends Controller
     }
 
     /**
+     * Batch update task order in a column (for kanban drag and drop within same column)
+     */
+    public function batchUpdateOrder(Request $request, Drive $drive, Project $project)
+    {
+        $this->authorize('view', $drive);
+        
+        // Check if user has permission to modify
+        if (!$drive->canEdit(auth()->user())) {
+            abort(403, 'Viewers cannot modify tasks.');
+        }
+
+        if ($project->drive_id !== $drive->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'status_id' => [
+                'required',
+                Rule::exists('task_statuses', 'id')->where('project_id', $project->id),
+            ],
+            'task_orders' => 'required|array',
+            'task_orders.*.task_id' => 'required|exists:tasks,id',
+            'task_orders.*.sort_order' => 'required|integer|min:0',
+        ]);
+
+        $statusId = $validated['status_id'];
+        $taskOrders = $validated['task_orders'];
+
+        try {
+            // Get old status IDs before update
+            $taskIds = collect($taskOrders)->pluck('task_id');
+            $tasksBefore = Task::whereIn('id', $taskIds)
+                ->where('project_id', $project->id)
+                ->get()
+                ->keyBy('id');
+
+            \DB::transaction(function () use ($project, $statusId, $taskOrders) {
+                foreach ($taskOrders as $order) {
+                    $task = \DB::table('tasks')
+                        ->where('id', $order['task_id'])
+                        ->where('project_id', $project->id)
+                        ->first();
+
+                    if (!$task) {
+                        continue;
+                    }
+
+                    // Update status if changed, and always update sort_order
+                    $updateData = [
+                        'sort_order' => $order['sort_order'],
+                        'updated_at' => now(),
+                    ];
+
+                    // Only update status_id if it's different (to avoid unnecessary updates)
+                    if ($task->task_status_id != $statusId) {
+                        $updateData['task_status_id'] = $statusId;
+                    }
+
+                    \DB::table('tasks')
+                        ->where('id', $order['task_id'])
+                        ->where('project_id', $project->id)
+                        ->update($updateData);
+                }
+            });
+
+            // Load updated tasks with their status
+            $tasks = Task::whereIn('id', $taskIds)
+                ->where('project_id', $project->id)
+                ->with('status')
+                ->get()
+                ->keyBy('id');
+
+            // Broadcast task moved events for any tasks that changed status
+            foreach ($taskOrders as $order) {
+                $task = $tasks->get($order['task_id']);
+                $taskBefore = $tasksBefore->get($order['task_id']);
+                if ($task && $taskBefore) {
+                    try {
+                        event(new TaskMoved($task, $taskBefore->task_status_id, $statusId, $order['sort_order']));
+                    } catch (\Exception $e) {
+                        \Log::error('Failed to broadcast TaskMoved event', [
+                            'task_id' => $task->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Task order updated successfully',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Batch update task order failed', [
+                'project_id' => $project->id,
+                'status_id' => $statusId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to update task order',
+            ], 500);
+        }
+    }
+
+    /**
      * Duplicate a task
      */
     public function duplicate(Request $request, Drive $drive, Project $project, Task $task)

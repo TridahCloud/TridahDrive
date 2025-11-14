@@ -1268,39 +1268,36 @@
                         const newStatusId = evt.to.dataset.statusId;
                         const oldStatusId = evt.from.dataset.statusId;
 
-                        const destinationCards = Array.from(evt.to.querySelectorAll('.task-card'));
-                        const sortOrder = destinationCards.findIndex(card => card.dataset.taskId === taskId.toString());
-                        
                         // Update empty states
                         updateEmptyStates(oldStatusId, newStatusId);
                         
-                        // Update sort_order for all cards in the destination column
+                        // Get all cards in the destination column in their current DOM order
                         const allCardsInColumn = Array.from(evt.to.querySelectorAll('.task-card'));
-                        const updatePromises = [];
                         
-                        allCardsInColumn.forEach((card, index) => {
-                            const cardTaskId = card.dataset.taskId;
-                            if (cardTaskId) {
-                                updatePromises.push(
-                                    fetch('{{ route("drives.projects.projects.tasks.update-status", [$drive, $project, ":task"]) }}'.replace(':task', cardTaskId), {
+                        // Build task_orders array from the current DOM order
+                        const taskOrders = allCardsInColumn.map((card, index) => {
+                            return {
+                                task_id: parseInt(card.dataset.taskId),
+                                sort_order: index
+                            };
+                        });
+                        
+                        // Use batch update endpoint to update all cards in a single transaction
+                        fetch('{{ route("drives.projects.projects.tasks.batch-update-order", [$drive, $project]) }}', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json'
                             },
                             body: JSON.stringify({
                                 status_id: Number(newStatusId),
-                                            sort_order: index
-                                        })
-                                    })
-                                );
-                            }
-                        });
-                        
-                        Promise.all(updatePromises)
-                        .then(responses => Promise.all(responses.map(r => r.json())))
-                        .then(results => {
-                            if (results.every(r => r.success)) {
+                                task_orders: taskOrders
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
                                 const movedTaskId = evt.item.dataset.taskId;
                                 if (statusLookup[newStatusId]) {
                                     const statusInfo = statusLookup[newStatusId];
@@ -1313,6 +1310,9 @@
                                 if (oldStatusId !== newStatusId) {
                                     updateColumnTaskCount(oldStatusId);
                                 }
+                            } else {
+                                console.error('Batch update failed:', data.error);
+                                location.reload(); // Reload on error
                             }
                         })
                         .catch(error => {
