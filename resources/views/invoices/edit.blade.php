@@ -110,6 +110,22 @@
             color: #333333 !important;
         }
         
+        /* Make banking info labels bold and visible */
+        #payment-details small.text-muted {
+            color: #000000 !important;
+            font-weight: 600 !important;
+            font-size: 0.875rem !important;
+            display: block !important;
+        }
+        
+        /* Ensure payment details labels are clearly visible */
+        #payment-details .mb-2 small,
+        #payment-details > div > div > div small {
+            color: #000000 !important;
+            font-weight: 600 !important;
+            font-size: 0.875rem !important;
+        }
+        
         /* Ensure regular text elements are dark */
         .invoice-container p:not([style*="color"]),
         .invoice-container div:not([style*="color"]):not([data-field="totals"]),

@@ -55,41 +55,137 @@
             box-shadow: none !important;
         }
         
+        /* Override any CSS variables that might be setting text color FIRST */
+        .invoice-container,
+        body {
+            --text-color: #000000 !important;
+            --text-muted: #000000 !important;
+            --text-secondary: #000000 !important;
+            color: #000000 !important;
+        }
+        
+        /* Force ALL text to black - override dark mode and any grey colors - use universal selector */
+        .invoice-container * {
+            color: #000000 !important;
+        }
+        
+        /* Force all specific text elements to black */
+        .invoice-container,
+        .invoice-container p,
+        .invoice-container div,
+        .invoice-container span,
+        .invoice-container td,
+        .invoice-container th,
+        .invoice-container strong,
+        .invoice-container h1,
+        .invoice-container h2,
+        .invoice-container h3,
+        .invoice-container h4,
+        .invoice-container h5,
+        .invoice-container h6,
+        .invoice-container small,
+        .invoice-container label,
+        .invoice-container .text-muted,
+        .invoice-container .text-muted *,
+        .invoice-container [class*="text-"],
+        .invoice-container [class*="muted"] {
+            color: #000000 !important;
+        }
+        
         /* Make all text dark for good contrast on white paper */
         .text-muted,
         .text-muted *,
         small.text-muted,
-        .text-muted small {
-            color: #333333 !important;
-        }
-        
-        /* Make text-muted elements dark grey instead of light grey */
-        .invoice-container .text-muted {
-            color: #333333 !important;
-        }
-        
-        /* Ensure regular text elements are dark */
-        .invoice-container p:not([style*="color"]),
-        .invoice-container div:not([style*="color"]):not([data-field="totals"]),
-        .invoice-container span:not([style*="color"]),
-        .invoice-container td,
-        .invoice-container strong:not([style*="color"]),
-        .invoice-container h1:not([style*="color"]),
-        .invoice-container h2:not([style*="color"]),
-        .invoice-container h3:not([style*="color"]),
-        .invoice-container h4:not([style*="color"]),
-        .invoice-container h5:not([style*="color"]),
-        .invoice-container h6:not([style*="color"]) {
+        .text-muted small,
+        [class*="text-muted"],
+        [class*="muted"] {
             color: #000000 !important;
         }
         
-        /* Preserve accent color for customized elements - use very specific selectors */
-        .invoice-container h2[data-field="company-name"][style*="color"],
-        .invoice-container h1[data-field="invoice-title"][style*="color"],
-        .invoice-container [data-field="totals"] .mb-3 strong[style*="color"],
-        .invoice-container [data-field="totals"] .h3 strong span[style*="color"],
-        .invoice-container [data-field="totals"] strong[style*="color"],
-        .invoice-container [data-field="totals"] span[style*="color"] {
+        /* Make text-muted elements black instead of grey */
+        .invoice-container .text-muted,
+        .invoice-container .text-muted *,
+        .invoice-container [class*="muted"] {
+            color: #000000 !important;
+        }
+        
+        /* Make banking info labels bold and visible */
+        #payment-details small.text-muted,
+        #payment-details small,
+        #payment-details .text-muted {
+            color: #000000 !important;
+            font-weight: 600 !important;
+            font-size: 0.875rem !important;
+            display: block !important;
+        }
+        
+        /* Ensure payment details labels are clearly visible */
+        #payment-details .mb-2 small,
+        #payment-details > div > div > div small,
+        #payment-details * {
+            color: #000000 !important;
+        }
+        
+        /* Ensure regular text elements are black - remove any style attribute color checks */
+        .invoice-container p,
+        .invoice-container div:not([data-field="totals"]),
+        .invoice-container span,
+        .invoice-container td,
+        .invoice-container th,
+        .invoice-container strong,
+        .invoice-container h1,
+        .invoice-container h2,
+        .invoice-container h3,
+        .invoice-container h4,
+        .invoice-container h5,
+        .invoice-container h6 {
+            color: #000000 !important;
+        }
+        
+        /* Override ALL inline styles that set color - force to black first */
+        .invoice-container [style*="color"] {
+            color: #000000 !important;
+        }
+        
+        /* Force specific problematic elements to black */
+        .invoice-container [data-field="company-address"],
+        .invoice-container [data-field="company-phone"],
+        .invoice-container [data-field="company-email"],
+        .invoice-container .text-uppercase.text-muted,
+        .invoice-container h6.text-uppercase.text-muted,
+        .invoice-container .text-muted,
+        .invoice-container p.text-muted {
+            color: #000000 !important;
+        }
+        
+        /* Force totals section - make everything black first */
+        .invoice-container [data-field="totals"],
+        .invoice-container [data-field="totals"] *,
+        .invoice-container [data-field="totals"] .mb-3,
+        .invoice-container [data-field="totals"] .h3,
+        .invoice-container [data-field="totals"] .mb-3 strong,
+        .invoice-container [data-field="totals"] .h3 strong {
+            color: #000000 !important;
+        }
+        
+        /* NOW restore accent colors with very specific selectors that override the black rules above */
+        /* Preserve accent color for subtotal (entire strong tag has accent color) - must be very specific */
+        .invoice-container [data-field="totals"] .mb-3 strong[style*="color"] {
+            color: var(--invoice-accent-color) !important;
+        }
+        
+        /* Preserve accent color for total amount span (only the span has accent color) - must be very specific */
+        .invoice-container [data-field="totals"] .h3 strong span[style*="color"] {
+            color: var(--invoice-accent-color) !important;
+        }
+        
+        /* Preserve accent color for company name - must be very specific */
+        .invoice-container h2[data-field="company-name"][style*="color"] {
+            color: var(--invoice-accent-color) !important;
+        }
+        
+        /* Preserve accent color for invoice title - must be very specific */
+        .invoice-container h1[data-field="invoice-title"][style*="color"] {
             color: var(--invoice-accent-color) !important;
         }
         

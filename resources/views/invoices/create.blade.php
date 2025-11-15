@@ -387,6 +387,98 @@
     border-bottom: 1px dashed #31d8b2;
     background-color: rgba(49, 216, 178, 0.05);
 }
+
+@media print {
+    /* Hide navigation and toolbar when printing */
+    .breadcrumb,
+    .dashboard-card,
+    .btn,
+    .alert,
+    #customizePanel,
+    #customizePanelOverlay,
+    .customize-panel,
+    .quick-add-item,
+    #addItemBtn,
+    #importClientBtn,
+    .remove-item,
+    .dropdown-menu {
+        display: none !important;
+    }
+    
+    /* Hide form inputs and show values instead */
+    input[type="text"],
+    input[type="email"],
+    input[type="number"],
+    input[type="date"],
+    select,
+    textarea {
+        border: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        box-shadow: none !important;
+        outline: none !important;
+        color: #000000 !important;
+        font-size: inherit !important;
+        font-family: inherit !important;
+        font-weight: inherit !important;
+        width: auto !important;
+        min-width: 0 !important;
+    }
+    
+    /* Remove contenteditable styling when printing */
+    [contenteditable="true"] {
+        border: none !important;
+        background: transparent !important;
+        outline: none !important;
+    }
+    
+    /* Remove padding and margins for print */
+    body {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    .container-fluid {
+        padding: 0 !important;
+    }
+    
+    /* Ensure invoice container is full width and has white background */
+    .invoice-container {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 20px !important;
+        background-color: #ffffff !important;
+        box-shadow: none !important;
+    }
+    
+    /* Make all text dark for good contrast on white paper */
+    .text-muted,
+    .text-muted *,
+    small.text-muted,
+    .text-muted small {
+        color: #333333 !important;
+    }
+    
+    /* Make banking info labels bold and visible */
+    #payment-details small.text-muted {
+        color: #000000 !important;
+        font-weight: 600 !important;
+        font-size: 0.875rem !important;
+        display: block !important;
+    }
+    
+    /* Ensure payment details labels are clearly visible */
+    #payment-details .mb-2 small,
+    #payment-details > div > div > div small {
+        color: #000000 !important;
+        font-weight: 600 !important;
+        font-size: 0.875rem !important;
+    }
+}
 </style>
 @endsection
 
