@@ -55,21 +55,32 @@
             box-shadow: none !important;
         }
         
-        /* Override any CSS variables that might be setting text color FIRST */
+        /* Override any CSS variables that might be setting text color FIRST - at body level */
+        body,
+        html,
         .invoice-container,
-        body {
+        .invoice-container * {
             --text-color: #000000 !important;
             --text-muted: #000000 !important;
             --text-secondary: #000000 !important;
             color: #000000 !important;
         }
         
-        /* Force ALL text to black - override dark mode and any grey colors - use universal selector */
+        /* Force ALL text to black - override dark mode and any grey colors - use universal selector with higher specificity */
+        .invoice-container,
+        .invoice-container *,
+        .invoice-container *::before,
+        .invoice-container *::after {
+            color: #000000 !important;
+            color: #000000 !important; /* Duplicate for maximum override power */
+        }
+        
+        /* Prevent color inheritance - force explicit black */
         .invoice-container * {
             color: #000000 !important;
         }
         
-        /* Force all specific text elements to black */
+        /* Force all specific text elements to black - be very explicit */
         .invoice-container,
         .invoice-container p,
         .invoice-container div,
@@ -84,15 +95,25 @@
         .invoice-container h5,
         .invoice-container h6,
         .invoice-container small,
-        .invoice-container label,
+        .invoice-container label {
+            color: #000000 !important;
+        }
+        
+        /* Force ALL text-muted classes to black - multiple specific selectors */
         .invoice-container .text-muted,
-        .invoice-container .text-muted *,
-        .invoice-container [class*="text-"],
+        .invoice-container p.text-muted,
+        .invoice-container div.text-muted,
+        .invoice-container span.text-muted,
+        .invoice-container small.text-muted,
+        .invoice-container h6.text-muted,
+        .invoice-container .text-uppercase.text-muted,
+        .invoice-container h6.text-uppercase.text-muted,
+        .invoice-container [class*="text-muted"],
         .invoice-container [class*="muted"] {
             color: #000000 !important;
         }
         
-        /* Make all text dark for good contrast on white paper */
+        /* Make all text dark for good contrast on white paper - global overrides */
         .text-muted,
         .text-muted *,
         small.text-muted,
@@ -102,14 +123,7 @@
             color: #000000 !important;
         }
         
-        /* Make text-muted elements black instead of grey */
-        .invoice-container .text-muted,
-        .invoice-container .text-muted *,
-        .invoice-container [class*="muted"] {
-            color: #000000 !important;
-        }
-        
-        /* Make banking info labels bold and visible */
+        /* Make banking info labels bold and visible - this works, so use same pattern */
         #payment-details small.text-muted,
         #payment-details small,
         #payment-details .text-muted {
@@ -124,6 +138,24 @@
         #payment-details > div > div > div small,
         #payment-details * {
             color: #000000 !important;
+        }
+        
+        /* Apply same bold treatment to other text-muted elements that should be visible */
+        .invoice-container [data-field="company-address"].text-muted,
+        .invoice-container [data-field="company-phone"].text-muted,
+        .invoice-container [data-field="company-email"].text-muted,
+        .invoice-container p.text-muted[data-field="company-address"],
+        .invoice-container p.text-muted[data-field="company-phone"],
+        .invoice-container p.text-muted[data-field="company-email"] {
+            color: #000000 !important;
+            font-weight: 400 !important;
+        }
+        
+        /* Force "Bill To:" and other uppercase muted text to black */
+        .invoice-container h6.text-uppercase.text-muted,
+        .invoice-container .text-uppercase.text-muted {
+            color: #000000 !important;
+            font-weight: 600 !important;
         }
         
         /* Ensure regular text elements are black - remove any style attribute color checks */
@@ -147,14 +179,43 @@
             color: #000000 !important;
         }
         
-        /* Force specific problematic elements to black */
+        /* Force specific problematic elements to black - use same high specificity as banking info */
         .invoice-container [data-field="company-address"],
+        .invoice-container [data-field="company-address"] *,
         .invoice-container [data-field="company-phone"],
+        .invoice-container [data-field="company-phone"] *,
         .invoice-container [data-field="company-email"],
+        .invoice-container [data-field="company-email"] *,
+        .invoice-container [data-field="invoice-number"],
+        .invoice-container [data-field="invoice-number"] *,
+        .invoice-container [data-field="invoice-date"],
+        .invoice-container [data-field="invoice-date"] *,
+        .invoice-container [data-field="invoice-due-date"],
+        .invoice-container [data-field="invoice-due-date"] *,
+        .invoice-container [data-field="invoice-status"],
+        .invoice-container [data-field="invoice-status"] *,
+        .invoice-container [data-field="client-name"],
+        .invoice-container [data-field="client-name"] *,
+        .invoice-container [data-field="client-address"],
+        .invoice-container [data-field="client-address"] *,
+        .invoice-container [data-field="client-email"],
+        .invoice-container [data-field="client-email"] *,
+        .invoice-container [data-field="project"],
+        .invoice-container [data-field="project"] *,
         .invoice-container .text-uppercase.text-muted,
+        .invoice-container .text-uppercase.text-muted *,
         .invoice-container h6.text-uppercase.text-muted,
+        .invoice-container h6.text-uppercase.text-muted *,
         .invoice-container .text-muted,
-        .invoice-container p.text-muted {
+        .invoice-container .text-muted *,
+        .invoice-container p.text-muted,
+        .invoice-container p.text-muted *,
+        .invoice-container div.text-muted,
+        .invoice-container div.text-muted *,
+        .invoice-container span.text-muted,
+        .invoice-container span.text-muted *,
+        .invoice-container small.text-muted,
+        .invoice-container small.text-muted * {
             color: #000000 !important;
         }
         
@@ -238,6 +299,133 @@
         
         .table {
             page-break-inside: avoid;
+        }
+        
+        /* FINAL OVERRIDE - Force everything to black at the very end to ensure highest priority */
+        .invoice-container,
+        .invoice-container * {
+            color: #000000 !important;
+        }
+        
+        /* Override any remaining grey text with maximum specificity */
+        .invoice-container p.text-muted,
+        .invoice-container div.text-muted,
+        .invoice-container span.text-muted,
+        .invoice-container small.text-muted,
+        .invoice-container h6.text-muted,
+        .invoice-container .text-muted,
+        .invoice-container [class*="muted"],
+        .invoice-container [class*="text-muted"] {
+            color: #000000 !important;
+        }
+        
+        /* Force all data-field elements and their children to black */
+        .invoice-container [data-field],
+        .invoice-container [data-field] * {
+            color: #000000 !important;
+        }
+        
+        /* Force invoice number to black - it's inside text-muted.small */
+        .invoice-container .text-muted.small [data-field="invoice-number"],
+        .invoice-container .text-muted.small [data-field="invoice-number"] *,
+        .invoice-container [data-field="invoice-number"],
+        .invoice-container [data-field="invoice-number"] *,
+        .invoice-container [data-field="invoice-number"] .text-dark {
+            color: #000000 !important;
+        }
+        
+        /* Force Bill To details to black - client name, address, email */
+        .invoice-container [data-field="client-name"],
+        .invoice-container [data-field="client-name"] *,
+        .invoice-container strong[data-field="client-name"],
+        .invoice-container strong[data-field="client-name"] *,
+        .invoice-container [data-field="client-address"],
+        .invoice-container [data-field="client-address"] *,
+        .invoice-container span[data-field="client-address"],
+        .invoice-container span[data-field="client-address"] *,
+        .invoice-container [data-field="client-email"],
+        .invoice-container [data-field="client-email"] *,
+        .invoice-container span[data-field="client-email"],
+        .invoice-container span[data-field="client-email"] *,
+        .invoice-container [data-field="project"],
+        .invoice-container [data-field="project"] *,
+        .invoice-container div[data-field="project"],
+        .invoice-container div[data-field="project"] * {
+            color: #000000 !important;
+        }
+        
+        /* Force the actual project value text to black - it's after the small label */
+        .invoice-container [data-field="project"]:not(small),
+        .invoice-container [data-field="project"] *:not(small) {
+            color: #000000 !important;
+        }
+        
+        /* Target the Bill To section specifically - force all text inside to black */
+        .invoice-container .border-top,
+        .invoice-container .border-top *,
+        .invoice-container .border-top strong,
+        .invoice-container .border-top strong *,
+        .invoice-container .border-top span,
+        .invoice-container .border-top span *,
+        .invoice-container .border-top div,
+        .invoice-container .border-top div * {
+            color: #000000 !important;
+        }
+        
+        /* Force client name specifically - it's a strong tag */
+        .invoice-container .border-top strong[data-field="client-name"],
+        .invoice-container .border-top strong[data-field="client-name"] * {
+            color: #000000 !important;
+            font-weight: 600 !important;
+        }
+        
+        /* Force project value - it's text after small.text-muted in a div */
+        .invoice-container .border-top div[data-field="project"],
+        .invoice-container .border-top div[data-field="project"] *:not(small),
+        .invoice-container .border-top [data-field="project"],
+        .invoice-container .border-top .mt-2[data-field="project"],
+        .invoice-container .border-top .mt-2[data-field="project"] * {
+            color: #000000 !important;
+        }
+        
+        /* Force all text nodes in project div to black - target the div itself */
+        .invoice-container .border-top div.mt-2[data-field="project"] {
+            color: #000000 !important;
+        }
+        
+        /* Ensure project value text (which is a text node) inherits black from parent */
+        .invoice-container .border-top div[data-field="project"] small.text-muted {
+            color: #000000 !important;
+        }
+        
+        /* Force line items table cells to black */
+        .invoice-container table tbody td,
+        .invoice-container table tbody td *,
+        .invoice-container #items-table td,
+        .invoice-container #items-table td *,
+        .invoice-container [data-section="items-table"] td,
+        .invoice-container [data-section="items-table"] td * {
+            color: #000000 !important;
+        }
+        
+        /* Force "Total:" label to black - it's in a strong tag */
+        .invoice-container #totals strong,
+        .invoice-container #totals .h3 strong,
+        .invoice-container [data-section="totals"] strong,
+        .invoice-container [data-section="totals"] .h3 strong {
+            color: #000000 !important;
+        }
+        
+        /* Ensure "Total:" text specifically is black - target the strong tag itself */
+        .invoice-container #totals .h3 strong,
+        .invoice-container [data-section="totals"] .h3 strong {
+            color: #000000 !important;
+        }
+        
+        /* But preserve accent color for the span inside (inline style will override) */
+        .invoice-container #totals .h3 strong span[style*="color"],
+        .invoice-container [data-section="totals"] .h3 strong span[style*="color"] {
+            /* Let inline style take precedence - don't override */
         }
     }
 </style>
