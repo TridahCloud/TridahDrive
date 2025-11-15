@@ -198,7 +198,7 @@
                                     <td>{{ $member->email }}</td>
                                     <td>
                                         @if($drive->isOwnerOrAdmin(auth()->user()) && $member->id !== $drive->owner_id)
-                                            <select class="form-select form-select-sm" onchange="updateRole({{ $member->id }}, this.value)">
+                                            <select class="form-select form-select-sm" onchange="updateRole({{ $member->id }}, this.value, this)" data-original-role="{{ $drive->getUserRole($member) }}">
                                                 @foreach(['admin', 'member', 'viewer'] as $role)
                                                     <option value="{{ $role }}" {{ $drive->getUserRole($member) === $role ? 'selected' : '' }}>
                                                         {{ ucfirst($role) }}
@@ -664,30 +664,65 @@ function confirmDelete() {
     }
 }
 
-function updateRole(userId, role) {
+function updateRole(userId, role, selectElement) {
+    const originalRole = selectElement.dataset.originalRole;
+    
     if (confirm('Change this member\'s role to ' + role + '?')) {
         const url = `{{ url('drives') }}/{{ $drive->id }}/members/${userId}/role`;
+        
+        // Disable select while processing
+        selectElement.disabled = true;
+        
         fetch(url, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
             },
             body: JSON.stringify({ role: role })
         })
-        .then(response => response.json())
+        .then(async response => {
+            if (!response.ok) {
+                let errorMessage = 'Failed to update role';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.error || errorData.message || errorMessage;
+                } catch (e) {
+                    errorMessage = `Server error: ${response.status} ${response.statusText}`;
+                }
+                throw new Error(errorMessage);
+            }
+            return response.json();
+        })
         .then(data => {
-            if (data.message) {
+            if (data.message || data.success) {
+                // Success - reload page
                 location.reload();
             } else if (data.error) {
-                alert(data.error);
+                alert('Error: ' + data.error);
+                // Reset select to original value
+                if (originalRole) {
+                    selectElement.value = originalRole;
+                }
+                selectElement.disabled = false;
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert('Failed to update role. Please try again.');
+            console.error('Error updating role:', error);
+            alert('Failed to update role: ' + error.message);
+            // Reset select to original value
+            if (originalRole) {
+                selectElement.value = originalRole;
+            }
+            selectElement.disabled = false;
         });
+    } else {
+        // User cancelled - reset select to original value
+        if (originalRole) {
+            selectElement.value = originalRole;
+        }
     }
 }
 

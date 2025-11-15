@@ -15,8 +15,9 @@ class TaskStatusController extends Controller
     {
         $this->authorize('view', $drive);
 
-        if (!$drive->canEdit(auth()->user())) {
-            abort(403, 'Viewers cannot modify task statuses.');
+        // Project-level permissions take priority - viewers cannot modify
+        if (!$project->userCanEdit(auth()->user())) {
+            abort(403, 'You do not have permission to modify task statuses.');
         }
 
         if ($project->drive_id !== $drive->id) {
@@ -49,8 +50,9 @@ class TaskStatusController extends Controller
     {
         $this->authorize('view', $drive);
 
-        if (!$drive->canEdit(auth()->user())) {
-            abort(403, 'Viewers cannot modify task statuses.');
+        // Project-level permissions take priority - viewers cannot modify
+        if (!$project->userCanEdit(auth()->user())) {
+            abort(403, 'You do not have permission to modify task statuses.');
         }
 
         if ($project->drive_id !== $drive->id || $taskStatus->project_id !== $project->id) {
@@ -79,8 +81,9 @@ class TaskStatusController extends Controller
     {
         $this->authorize('view', $drive);
 
-        if (!$drive->canEdit(auth()->user())) {
-            abort(403, 'Viewers cannot modify task statuses.');
+        // Project-level permissions take priority - viewers cannot modify
+        if (!$project->userCanEdit(auth()->user())) {
+            abort(403, 'You do not have permission to modify task statuses.');
         }
 
         if ($project->drive_id !== $drive->id || $taskStatus->project_id !== $project->id) {
@@ -112,8 +115,9 @@ class TaskStatusController extends Controller
     {
         $this->authorize('view', $drive);
 
-        if (!$drive->canEdit(auth()->user())) {
-            abort(403, 'Viewers cannot modify task statuses.');
+        // Project-level permissions take priority - viewers cannot modify
+        if (!$project->userCanEdit(auth()->user())) {
+            abort(403, 'You do not have permission to modify task statuses.');
         }
 
         if ($project->drive_id !== $drive->id) {

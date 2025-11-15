@@ -36,13 +36,21 @@ Broadcast::channel('project.{projectId}', function ($user, $projectId) {
             return false;
         }
         
-        $hasAccess = $project->drive->hasMember($user);
+        // Check if user has access via drive membership
+        $hasDriveAccess = $project->drive->hasMember($user);
+        
+        // Check if user has project-level access (shared to project but not drive member)
+        $hasProjectAccess = $project->userCanView($user);
+        
+        $hasAccess = $hasDriveAccess || $hasProjectAccess;
         
         if (!$hasAccess) {
-            \Log::warning('Broadcast channel authorization failed: User is not a member of the drive', [
+            \Log::warning('Broadcast channel authorization failed: User has no access', [
                 'projectId' => $projectId,
                 'driveId' => $project->drive->id,
-                'userId' => $user->id
+                'userId' => $user->id,
+                'hasDriveAccess' => $hasDriveAccess,
+                'hasProjectAccess' => $hasProjectAccess
             ]);
         }
         

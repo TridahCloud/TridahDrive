@@ -20,7 +20,19 @@ class DrivePolicy
      */
     public function view(User $user, Drive $drive): bool
     {
-        return $drive->hasMember($user);
+        // Drive members can always view
+        if ($drive->hasMember($user)) {
+            return true;
+        }
+        
+        // Check if user has project-level access (shared to projects but not drive member)
+        $hasProjectAccess = $drive->projects()
+            ->whereHas('users', function($query) use ($user) {
+                $query->where('user_id', $user->id);
+            })
+            ->exists();
+        
+        return $hasProjectAccess;
     }
 
     /**

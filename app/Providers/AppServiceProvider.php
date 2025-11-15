@@ -67,9 +67,25 @@ class AppServiceProvider extends ServiceProvider
         Route::bind('drive', function ($value) {
             $drive = Drive::where('id', $value)->firstOrFail();
             
-            // Check if user has access
-            if (auth()->check() && !$drive->hasMember(auth()->user())) {
-                abort(403, 'You do not have access to this drive.');
+            // Check if user has access (either as drive member or via project-level access)
+            if (auth()->check()) {
+                $user = auth()->user();
+                
+                // Drive members can always access
+                if ($drive->hasMember($user)) {
+                    return $drive;
+                }
+                
+                // Check if user has project-level access (shared to projects but not drive member)
+                $hasProjectAccess = $drive->projects()
+                    ->whereHas('users', function($query) use ($user) {
+                        $query->where('user_id', $user->id);
+                    })
+                    ->exists();
+                
+                if (!$hasProjectAccess) {
+                    abort(403, 'You do not have access to this drive.');
+                }
             }
             
             return $drive;

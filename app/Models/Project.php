@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use App\Models\ProjectUser;
 
 class Project extends Model
 {
@@ -94,7 +95,90 @@ class Project extends Model
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'project_user')
-            ->withTimestamps();
+            ->withPivot('role')
+            ->withTimestamps()
+            ->using(ProjectUser::class);
+    }
+
+    /**
+     * Check if a user is a member of this project
+     */
+    public function hasMember(User $user): bool
+    {
+        return $this->users()->where('user_id', $user->id)->exists();
+    }
+
+    /**
+     * Get the user's role in this project
+     */
+    public function getUserRole(User $user): ?string
+    {
+        $membership = $this->users()->where('user_id', $user->id)->first();
+        return $membership?->pivot->role ?? null;
+    }
+
+    /**
+     * Check if user can edit this project
+     */
+    public function userCanEdit(User $user): bool
+    {
+        // Project creator can always edit
+        if ($this->created_by === $user->id) {
+            return true;
+        }
+
+        // PROJECT-LEVEL PERMISSIONS TAKE HIGHEST PRIORITY
+        // Check project-level permissions first
+        $projectRole = $this->getUserRole($user);
+        if ($projectRole !== null) {
+            // If user has a project-level role, it takes priority
+            // Only 'editor' role can edit at project level
+            if ($projectRole === 'editor') {
+                return true;
+            }
+            // If they're a 'viewer' at project level, they cannot edit
+            // (even if drive-level permissions would allow it)
+            if ($projectRole === 'viewer') {
+                return false;
+            }
+        }
+
+        // If no project-level permission, check drive permissions
+        if ($this->drive) {
+            // Drive owner can always edit
+            if ($this->drive->owner_id === $user->id) {
+                return true;
+            }
+            
+            // Drive admin can edit
+            if ($this->drive->getUserRole($user) === 'admin') {
+                return true;
+            }
+            
+            // Drive members can edit if they have edit permission
+            if ($this->drive->canEdit($user)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if user can view this project
+     * This checks project-level permissions only (not drive-level)
+     * Drive-level permissions are checked in Drive::userCanViewProject
+     */
+    public function userCanView(User $user): bool
+    {
+        // Project creator can always view
+        if ($this->created_by === $user->id) {
+            return true;
+        }
+
+        // Check project-level permissions (for users shared directly to project)
+        $role = $this->getUserRole($user);
+        return in_array($role, ['viewer', 'editor']);
     }
 
     public function customFieldDefinitions(): HasMany

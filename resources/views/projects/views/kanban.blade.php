@@ -58,7 +58,7 @@
                                 @endif
                             </div>
                             <div id="kanban-status-{{ $status->id }}" data-status-id="{{ $status->id }}" class="kanban-column-content">
-                                @if($drive->canEdit(auth()->user()))
+                                @if($project->userCanEdit(auth()->user()))
                                 <div class="quick-add-task mb-2 p-2" style="display: none;">
                                     <form class="quick-add-form" data-status-id="{{ $status->id }}">
                                         <input type="text" class="form-control form-control-sm" placeholder="+ Add task..." autocomplete="off">
@@ -78,7 +78,7 @@
                                     <i class="fas fa-layer-group fa-2x mb-2 opacity-50"></i>
                                     <p class="small mb-2 fw-semibold">No tasks in {{ $status->name }}</p>
                                     <p class="small mb-3 opacity-75">Drag tasks here or create a new one to get started</p>
-                                    @if($drive->canEdit(auth()->user()))
+                                    @if($project->userCanEdit(auth()->user()))
                                     <button type="button" class="btn btn-sm btn-outline-primary quick-add-trigger" data-status-id="{{ $status->id }}" style="pointer-events: auto; position: relative; z-index: 10;">
                                         <i class="fas fa-plus me-1"></i>Add Task
                                     </button>
@@ -112,7 +112,7 @@
             <a href="#" id="taskSidebarFullView" class="btn btn-primary btn-sm">
                 <i class="fas fa-external-link-alt me-2"></i>Full View
             </a>
-            @if($drive->canEdit(auth()->user()))
+            @if($project->userCanEdit(auth()->user()))
             <a href="#" id="taskSidebarEdit" class="btn btn-outline-secondary btn-sm">
                 <i class="fas fa-edit me-2"></i>Edit
             </a>
@@ -130,7 +130,7 @@
         <a href="#" class="list-group-item list-group-item-action" id="contextMenuView">
             <i class="fas fa-eye me-2"></i>View
         </a>
-        @if($drive->canEdit(auth()->user()))
+        @if($project->userCanEdit(auth()->user()))
         <a href="#" class="list-group-item list-group-item-action" id="contextMenuEdit">
             <i class="fas fa-edit me-2"></i>Edit
         </a>

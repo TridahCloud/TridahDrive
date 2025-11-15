@@ -49,8 +49,9 @@ class TaskController extends Controller
         $this->authorize('view', $drive);
         
         // Check if user has permission to create
-        if (!$drive->canEdit(auth()->user())) {
-            abort(403, 'Viewers cannot create tasks.');
+        // Project-level permissions take priority - viewers cannot create
+        if (!$project->userCanEdit(auth()->user())) {
+            abort(403, 'You do not have permission to create tasks.');
         }
 
         if ($project->drive_id !== $drive->id) {
@@ -74,8 +75,9 @@ class TaskController extends Controller
         $this->authorize('view', $drive);
         
         // Check if user has permission to create
-        if (!$drive->canEdit(auth()->user())) {
-            abort(403, 'Viewers cannot create tasks.');
+        // Project-level permissions take priority - viewers cannot create
+        if (!$project->userCanEdit(auth()->user())) {
+            abort(403, 'You do not have permission to create tasks.');
         }
 
         if ($project->drive_id !== $drive->id) {
@@ -303,8 +305,9 @@ class TaskController extends Controller
         $this->authorize('view', $drive);
         
         // Check if user has permission to edit
-        if (!$drive->canEdit(auth()->user())) {
-            abort(403, 'Viewers cannot edit tasks.');
+        // Project-level permissions take priority - viewers cannot edit
+        if (!$project->userCanEdit(auth()->user())) {
+            abort(403, 'You do not have permission to edit tasks.');
         }
 
         if ($project->drive_id !== $drive->id || $task->project_id !== $project->id) {
@@ -334,8 +337,9 @@ class TaskController extends Controller
         $this->authorize('view', $drive);
         
         // Check if user has permission to edit
-        if (!$drive->canEdit(auth()->user())) {
-            abort(403, 'Viewers cannot edit tasks.');
+        // Project-level permissions take priority - viewers cannot edit
+        if (!$project->userCanEdit(auth()->user())) {
+            abort(403, 'You do not have permission to edit tasks.');
         }
 
         if ($project->drive_id !== $drive->id || $task->project_id !== $project->id) {
@@ -508,8 +512,9 @@ class TaskController extends Controller
         $this->authorize('view', $drive);
         
         // Check if user has permission to delete
-        if (!$drive->canEdit(auth()->user())) {
-            abort(403, 'Viewers cannot delete tasks.');
+        // Project-level permissions take priority - viewers cannot delete
+        if (!$project->userCanEdit(auth()->user())) {
+            abort(403, 'You do not have permission to delete tasks.');
         }
 
         if ($project->drive_id !== $drive->id || $task->project_id !== $project->id) {
@@ -544,8 +549,9 @@ class TaskController extends Controller
         $this->authorize('view', $drive);
         
         // Check if user has permission to modify
-        if (!$drive->canEdit(auth()->user())) {
-            abort(403, 'Viewers cannot modify tasks.');
+        // Project-level permissions take priority - viewers cannot modify
+        if (!$project->userCanEdit(auth()->user())) {
+            abort(403, 'You do not have permission to modify tasks.');
         }
 
         if ($project->drive_id !== $drive->id || $task->project_id !== $project->id) {
@@ -593,8 +599,9 @@ class TaskController extends Controller
         $this->authorize('view', $drive);
         
         // Check if user has permission to modify
-        if (!$drive->canEdit(auth()->user())) {
-            abort(403, 'Viewers cannot modify tasks.');
+        // Project-level permissions take priority - viewers cannot modify
+        if (!$project->userCanEdit(auth()->user())) {
+            abort(403, 'You do not have permission to modify tasks.');
         }
 
         if ($project->drive_id !== $drive->id) {
@@ -699,7 +706,8 @@ class TaskController extends Controller
     {
         $this->authorize('view', $drive);
         
-        if (!$drive->canEdit(auth()->user())) {
+        // Project-level permissions take priority - viewers cannot modify
+        if (!$project->userCanEdit(auth()->user())) {
             abort(403, 'Viewers cannot duplicate tasks.');
         }
 
@@ -780,7 +788,8 @@ class TaskController extends Controller
     {
         $this->authorize('view', $drive);
         
-        if (!$drive->canEdit(auth()->user())) {
+        // Project-level permissions take priority - viewers cannot modify
+        if (!$project->userCanEdit(auth()->user())) {
             abort(403, 'Viewers cannot archive tasks.');
         }
 
@@ -816,7 +825,8 @@ class TaskController extends Controller
     {
         $this->authorize('view', $drive);
         
-        if (!$drive->canEdit(auth()->user())) {
+        // Project-level permissions take priority - viewers cannot modify
+        if (!$project->userCanEdit(auth()->user())) {
             abort(403, 'Viewers cannot unarchive tasks.');
         }
 
@@ -863,8 +873,9 @@ class TaskController extends Controller
         $this->authorize('view', $drive);
         
         // Check if user has permission to modify
-        if (!$drive->canEdit(auth()->user())) {
-            abort(403, 'Viewers cannot modify tasks.');
+        // Project-level permissions take priority - viewers cannot modify
+        if (!$project->userCanEdit(auth()->user())) {
+            abort(403, 'You do not have permission to modify tasks.');
         }
 
         if ($project->drive_id !== $drive->id || $task->project_id !== $project->id) {
@@ -1016,6 +1027,11 @@ class TaskController extends Controller
     {
         $this->authorize('view', $drive);
 
+        // Project-level permissions take priority - viewers cannot delete attachments
+        if (!$project->userCanEdit(auth()->user())) {
+            abort(403, 'You do not have permission to delete attachments.');
+        }
+
         if ($project->drive_id !== $drive->id || 
             $task->project_id !== $project->id || 
             $attachment->task_id !== $task->id) {
@@ -1060,7 +1076,8 @@ class TaskController extends Controller
     {
         $this->authorize('view', $drive);
         
-        if (!$drive->canEdit(auth()->user())) {
+        // Project-level permissions take priority - viewers cannot modify
+        if (!$project->userCanEdit(auth()->user())) {
             abort(403, 'Viewers cannot modify task dependencies.');
         }
 
@@ -1110,7 +1127,8 @@ class TaskController extends Controller
     {
         $this->authorize('view', $drive);
         
-        if (!$drive->canEdit(auth()->user())) {
+        // Project-level permissions take priority - viewers cannot modify
+        if (!$project->userCanEdit(auth()->user())) {
             abort(403, 'Viewers cannot modify task dependencies.');
         }
 
@@ -1181,7 +1199,8 @@ class TaskController extends Controller
     {
         $this->authorize('view', $drive);
         
-        if (!$drive->canEdit(auth()->user())) {
+        // Project-level permissions take priority - viewers cannot modify
+        if (!$project->userCanEdit(auth()->user())) {
             abort(403, 'Viewers cannot modify tasks.');
         }
 
@@ -1224,7 +1243,8 @@ class TaskController extends Controller
     {
         $this->authorize('view', $drive);
         
-        if (!$drive->canEdit(auth()->user())) {
+        // Project-level permissions take priority - viewers cannot modify
+        if (!$project->userCanEdit(auth()->user())) {
             abort(403, 'Viewers cannot modify tasks.');
         }
 
@@ -1261,7 +1281,8 @@ class TaskController extends Controller
     {
         $this->authorize('view', $drive);
         
-        if (!$drive->canEdit(auth()->user())) {
+        // Project-level permissions take priority - viewers cannot modify
+        if (!$project->userCanEdit(auth()->user())) {
             abort(403, 'Viewers cannot modify tasks.');
         }
 
@@ -1295,7 +1316,8 @@ class TaskController extends Controller
     {
         $this->authorize('view', $drive);
         
-        if (!$drive->canEdit(auth()->user())) {
+        // Project-level permissions take priority - viewers cannot modify
+        if (!$project->userCanEdit(auth()->user())) {
             abort(403, 'Viewers cannot modify tasks.');
         }
 
@@ -1326,7 +1348,8 @@ class TaskController extends Controller
     {
         $this->authorize('view', $drive);
         
-        if (!$drive->canEdit(auth()->user())) {
+        // Project-level permissions take priority - viewers cannot modify
+        if (!$project->userCanEdit(auth()->user())) {
             abort(403, 'Viewers cannot modify tasks.');
         }
 

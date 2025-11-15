@@ -511,6 +511,11 @@ class Drive extends Model
      */
     public function userCanViewProject(User $user, Project $project): bool
     {
+        // First check project-level permissions (for users shared directly to project)
+        if ($project->userCanView($user)) {
+            return true;
+        }
+        
         // Owner and admin can view all
         if ($this->owner_id === $user->id || $this->getUserRole($user) === 'admin') {
             return true;
@@ -649,6 +654,8 @@ class Drive extends Model
 
     /**
      * Check if user can view Project Board
+     * This checks role-based permissions, not project-level permissions
+     * Project-level permissions are checked separately in the controller
      */
     public function userCanViewProjectBoard(User $user): bool
     {

@@ -131,10 +131,12 @@ Route::middleware('auth')->group(function () {
     });
     
     // Project Board routes
+    Route::get('projects/shared', [ProjectController::class, 'shared'])->name('projects.shared');
     Route::prefix('drives/{drive}/projects')->name('drives.projects.')->group(function () {
         Route::resource('projects', ProjectController::class);
         
                Route::prefix('projects/{project}')->name('projects.')->group(function () {
+                   Route::post('search-users', [ProjectController::class, 'searchUsers'])->name('search-users');
                    Route::resource('tasks', TaskController::class);
                    Route::post('tasks/{task}/duplicate', [TaskController::class, 'duplicate'])->name('tasks.duplicate');
                    Route::post('tasks/{task}/update-status', [TaskController::class, 'updateStatus'])->name('tasks.update-status');

@@ -14,54 +14,148 @@ use Illuminate\Support\Str;
 class ProjectController extends Controller
 {
     /**
+     * Display shared projects (projects user has access to but is not a drive member)
+     */
+    public function shared()
+    {
+        $user = auth()->user();
+        
+        // Get all projects where user is a member but not a drive member
+        $sharedProjects = Project::whereHas('users', function($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })
+        ->whereDoesntHave('drive.users', function($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })
+        ->with(['drive', 'creator', 'users' => function($query) {
+            $query->withPivot('role');
+        }, 'tasks' => function($query) {
+            $query->whereNull('deleted_at');
+        }])
+        ->withCount([
+            'tasks as total_tasks' => function($query) {
+                $query->whereNull('deleted_at');
+            },
+            'tasks as completed_tasks' => function($query) {
+                $query->whereNull('deleted_at')
+                    ->whereHas('status', fn($statusQuery) => $statusQuery->where('is_completed', true));
+            },
+        ])
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+        return view('projects.shared', compact('sharedProjects'));
+    }
+
+    /**
      * Display a listing of projects for the drive
      */
     public function index(Drive $drive)
     {
-        $this->authorize('view', $drive);
-        
-        // Check if user has permission to view Project Board
-        if (!$drive->userCanViewProjectBoard(auth()->user())) {
-            abort(403, 'You do not have permission to access Project Board.');
-        }
+        try {
+            $user = auth()->user();
+            
+            // Check if user has access to view the project board
+            // This considers both drive-level and project-level permissions
+            $canViewProjectBoard = false;
+            
+            if ($drive->hasMember($user)) {
+                // Drive member: Check if they can view project board via role OR project-level access
+                // First check role-based permission
+                if ($drive->userCanViewProjectBoard($user)) {
+                    $canViewProjectBoard = true;
+                } else {
+                    // Even if role doesn't allow, check if they have project-level access
+                    // (they might be shared to projects even as a drive member)
+                    $hasProjectAccess = \App\Models\Project::where('drive_id', $drive->id)
+                        ->whereHas('users', function($query) use ($user) {
+                            $query->where('user_id', $user->id);
+                        })
+                        ->exists();
+                    
+                    if ($hasProjectAccess) {
+                        $canViewProjectBoard = true;
+                    }
+                }
+                
+                // If they can view, verify drive authorization
+                if ($canViewProjectBoard) {
+                    $this->authorize('view', $drive);
+                }
+            } else {
+                // Not a drive member: Check if they have project-level access
+                $hasProjectAccess = \App\Models\Project::where('drive_id', $drive->id)
+                    ->whereHas('users', function($query) use ($user) {
+                        $query->where('user_id', $user->id);
+                    })
+                    ->exists();
+                
+                if ($hasProjectAccess) {
+                    $canViewProjectBoard = true;
+                }
+            }
+            
+            if (!$canViewProjectBoard) {
+                abort(403, 'You do not have permission to access Project Board.');
+            }
 
-        // Get all projects and filter based on user permissions
-        $allProjects = $drive->projects()
-            ->with(['creator', 'users', 'tasks' => function($query) {
-                $query->whereNull('deleted_at');
-            }])
-            ->withCount([
-                'tasks as total_tasks' => function($query) {
+            // Get all projects and filter based on user permissions
+            $allProjects = $drive->projects()
+                ->with(['creator', 'users', 'tasks' => function($query) {
                     $query->whereNull('deleted_at');
-                },
-                'tasks as completed_tasks' => function($query) {
-                    $query->whereNull('deleted_at')
-                        ->whereHas('status', fn($statusQuery) => $statusQuery->where('is_completed', true));
-                },
-            ])
-            ->orderBy('created_at', 'desc')
-            ->get();
-        
-        // Filter projects based on user permissions
-        $filteredProjects = $allProjects->filter(function ($project) use ($drive) {
-            return $drive->userCanViewProject(auth()->user(), $project);
-        });
+                }])
+                ->withCount([
+                    'tasks as total_tasks' => function($query) {
+                        $query->whereNull('deleted_at');
+                    },
+                    'tasks as completed_tasks' => function($query) {
+                        $query->whereNull('deleted_at')
+                            ->whereHas('status', fn($statusQuery) => $statusQuery->where('is_completed', true));
+                    },
+                ])
+                ->orderBy('created_at', 'desc')
+                ->get();
+            
+            // Filter projects based on user permissions
+            $filteredProjects = $allProjects->filter(function ($project) use ($drive, $user) {
+                try {
+                    return $drive->userCanViewProject($user, $project);
+                } catch (\Exception $e) {
+                    \Log::error('Error checking project view permission', [
+                        'project_id' => $project->id,
+                        'user_id' => $user->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    return false;
+                }
+            });
 
-        // Convert filtered collection to paginated results
-        $currentPage = request()->get('page', 1);
-        $perPage = 20;
-        $items = $filteredProjects->slice(($currentPage - 1) * $perPage, $perPage)->values();
-        $total = $filteredProjects->count();
-        
-        $projects = new \Illuminate\Pagination\LengthAwarePaginator(
-            $items,
-            $total,
-            $perPage,
-            $currentPage,
-            ['path' => request()->url(), 'query' => request()->query()]
-        );
+            // Convert filtered collection to paginated results
+            $currentPage = request()->get('page', 1);
+            $perPage = 20;
+            $items = $filteredProjects->slice(($currentPage - 1) * $perPage, $perPage)->values();
+            $total = $filteredProjects->count();
+            
+            $projects = new \Illuminate\Pagination\LengthAwarePaginator(
+                $items,
+                $total,
+                $perPage,
+                $currentPage,
+                ['path' => request()->url(), 'query' => request()->query()]
+            );
 
-        return view('projects.index', compact('drive', 'projects'));
+            return view('projects.index', compact('drive', 'projects'));
+        } catch (\Exception $e) {
+            \Log::error('Error in ProjectController@index', [
+                'user_id' => auth()->id(),
+                'drive_id' => $drive->id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Return a proper error response instead of empty response
+            abort(500, 'An error occurred while loading the project board. Please try again.');
+        }
     }
 
     /**
@@ -69,12 +163,18 @@ class ProjectController extends Controller
      */
     public function create(Drive $drive)
     {
-        $this->authorize('view', $drive);
-        
         // Check if user has permission to view Project Board
         if (!$drive->userCanViewProjectBoard(auth()->user())) {
             abort(403, 'You do not have permission to access Project Board.');
         }
+        
+        // If user is not a drive member, they can't create projects
+        if (!$drive->hasMember(auth()->user())) {
+            abort(403, 'Only drive members can create projects.');
+        }
+        
+        // User is a drive member, verify drive authorization
+        $this->authorize('view', $drive);
         
         // Check if user has permission to create
         if (!$drive->canEdit(auth()->user())) {
@@ -168,16 +268,23 @@ class ProjectController extends Controller
      */
     public function show(Drive $drive, Project $project, Request $request)
     {
-        $this->authorize('view', $drive);
+        $user = auth()->user();
         
-        // Check if user has permission to view Project Board
-        if (!$drive->userCanViewProjectBoard(auth()->user())) {
-            abort(403, 'You do not have permission to access Project Board.');
-        }
-
-        // Check if user has permission to view this specific project
-        if (!$drive->userCanViewProject(auth()->user(), $project)) {
-            abort(403, 'You do not have permission to view this project.');
+        // If user is not a drive member, check project-level access first
+        if (!$drive->hasMember($user)) {
+            // Check if user has project-level access
+            if (!$project->userCanView($user)) {
+                abort(403, 'You do not have permission to view this project.');
+            }
+            // User has project-level access - no need to check drive authorization
+            // They can access the project even though they're not a drive member
+        } else {
+            // User is a drive member, check drive-level permissions
+            if (!$drive->userCanViewProject($user, $project)) {
+                abort(403, 'You do not have permission to view this project.');
+            }
+            // Verify drive authorization
+            $this->authorize('view', $drive);
         }
 
         if ($project->drive_id !== $drive->id) {
@@ -341,21 +448,32 @@ class ProjectController extends Controller
      */
     public function edit(Drive $drive, Project $project)
     {
-        $this->authorize('view', $drive);
-        
         // Check if user has permission to edit
-        if (!$drive->canEdit(auth()->user())) {
-            abort(403, 'Viewers cannot edit projects.');
+        // Project-level permissions take priority - if user is a viewer at project level, they cannot edit
+        if (!$project->userCanEdit(auth()->user())) {
+            abort(403, 'You do not have permission to edit this project.');
+        }
+
+        // If user is not a drive member, check if they have project-level access
+        if (!$drive->hasMember(auth()->user())) {
+            if (!$project->userCanView(auth()->user())) {
+                abort(403, 'You do not have permission to view this project.');
+            }
+        } else {
+            // User is a drive member, verify drive authorization
+            $this->authorize('view', $drive);
         }
 
         if ($project->drive_id !== $drive->id) {
             abort(404);
         }
 
-        // Load users relationship
-        $project->load('users');
+        // Load users relationship with pivot data
+        $project->load(['users' => function($query) {
+            $query->withPivot('role');
+        }]);
 
-        // Get available people for assignment
+        // Get available people for assignment (from drive)
         $availableUsers = $drive->users()->orderBy('name')->get();
 
         return view('projects.edit', compact('drive', 'project', 'availableUsers'));
@@ -369,8 +487,9 @@ class ProjectController extends Controller
         $this->authorize('view', $drive);
         
         // Check if user has permission to edit
-        if (!$drive->canEdit(auth()->user())) {
-            abort(403, 'Viewers cannot edit projects.');
+        // Project-level permissions take priority - if user is a viewer at project level, they cannot edit
+        if (!$project->userCanEdit(auth()->user())) {
+            abort(403, 'You do not have permission to edit this project.');
         }
 
         if ($project->drive_id !== $drive->id) {
@@ -431,31 +550,166 @@ class ProjectController extends Controller
      */
     public function assignPeople(Request $request, Drive $drive, Project $project)
     {
-        $this->authorize('view', $drive);
+        if ($project->drive_id !== $drive->id) {
+            abort(404);
+        }
+
+        // Check if user can assign users to projects
+        // Project-level permissions take priority
+        $canAssign = false;
         
-        // Check if user has permission to edit
-        if (!$drive->canEdit(auth()->user())) {
-            abort(403, 'You do not have permission to assign users to projects.');
+        // First check if user has a project-level role
+        $projectRole = $project->getUserRole(auth()->user());
+        if ($projectRole !== null) {
+            // If user has project-level role, only editors can assign
+            if ($projectRole === 'editor') {
+                $canAssign = true;
+            } else {
+                // Viewers cannot assign, even if drive allows it
+                $canAssign = false;
+            }
+        } else {
+            // No project-level role, check drive permissions
+            if ($drive->canEdit(auth()->user()) || $drive->isOwnerOrAdmin(auth()->user())) {
+                $canAssign = true;
+            }
+        }
+        
+        // Return JSON for AJAX requests
+        $isAjax = $request->wantsJson() || $request->ajax();
+        
+        if (!$canAssign) {
+            if ($isAjax) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to assign users to this project. You need to be a drive owner, admin, member, or project editor.'
+                ], 403);
+            }
+            return redirect()->back()
+                ->withErrors(['permission' => 'You do not have permission to assign users to this project. You need to be a drive owner, admin, member, or project editor.'])
+                ->withInput();
+        }
+
+        // If user is not a drive member, check if they have project-level access
+        if (!$drive->hasMember(auth()->user())) {
+            if (!$project->userCanView(auth()->user())) {
+                if ($isAjax) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'You do not have permission to view this project.'
+                    ], 403);
+                }
+                return redirect()->back()
+                    ->withErrors(['permission' => 'You do not have permission to view this project.'])
+                    ->withInput();
+            }
+        } else {
+            // User is a drive member, verify drive authorization
+            try {
+                $this->authorize('view', $drive);
+            } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+                if ($isAjax) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'You do not have permission to access this drive.'
+                    ], 403);
+                }
+                return redirect()->back()
+                    ->withErrors(['permission' => 'You do not have permission to access this drive.'])
+                    ->withInput();
+            }
+        }
+
+        try {
+            $validated = $request->validate([
+                'users' => 'nullable|array',
+                'users.*.id' => 'required_with:users|exists:users,id',
+                'users.*.role' => 'required_with:users|in:viewer,editor',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($isAjax) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed: ' . implode(', ', $e->validator->errors()->all())
+                ], 422);
+            }
+            throw $e;
+        }
+
+        // Sync assigned users with roles
+        $usersData = [];
+        if (!empty($validated['users'])) {
+            foreach ($validated['users'] as $userData) {
+                if (isset($userData['id']) && isset($userData['role'])) {
+                    $usersData[$userData['id']] = ['role' => $userData['role']];
+                }
+            }
+        }
+        
+        $project->users()->sync($usersData);
+
+        // Return JSON response for AJAX requests
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Users assigned to project successfully!'
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Users assigned to project successfully!');
+    }
+
+    /**
+     * Search for users by email to add to project
+     */
+    public function searchUsers(Request $request, Drive $drive, Project $project)
+    {
+        // Check if user has permission to add users
+        // Project-level permissions take priority
+        if (!$project->userCanEdit(auth()->user())) {
+            abort(403, 'You do not have permission to add users to projects.');
+        }
+
+        // If user is not a drive member, check if they have project-level access
+        if (!$drive->hasMember(auth()->user())) {
+            if (!$project->userCanView(auth()->user())) {
+                abort(403, 'You do not have permission to view this project.');
+            }
+        } else {
+            // User is a drive member, verify drive authorization
+            $this->authorize('view', $drive);
         }
 
         if ($project->drive_id !== $drive->id) {
             abort(404);
         }
 
-        $validated = $request->validate([
-            'user_ids' => 'nullable|array',
-            'user_ids.*' => 'exists:users,id',
+        $request->validate([
+            'email' => 'required|email',
         ]);
 
-        // Sync assigned users (only users from this drive)
-        $userIds = $validated['user_ids'] ?? [];
-        
-        // Verify all users belong to this drive
-        $validUserIds = $drive->users()->whereIn('users.id', $userIds)->pluck('users.id')->toArray();
-        
-        $project->users()->sync($validUserIds);
+        $user = \App\Models\User::where('email', $request->email)->first();
 
-        return redirect()->back()->with('success', 'Users assigned to project successfully!');
+        if (!$user) {
+            return response()->json([
+                'error' => 'User not found with that email address.',
+            ], 404);
+        }
+
+        // Check if user is already assigned
+        if ($project->users()->where('user_id', $user->id)->exists()) {
+            return response()->json([
+                'error' => 'User is already assigned to this project.',
+            ], 422);
+        }
+
+        return response()->json([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ],
+        ]);
     }
 
     /**
@@ -466,8 +720,9 @@ class ProjectController extends Controller
         $this->authorize('view', $drive);
         
         // Check if user has permission to delete
-        if (!$drive->canEdit(auth()->user())) {
-            abort(403, 'Viewers cannot delete projects.');
+        // Project-level permissions take priority - viewers cannot delete
+        if (!$project->userCanEdit(auth()->user())) {
+            abort(403, 'You do not have permission to delete this project.');
         }
 
         if ($project->drive_id !== $drive->id) {

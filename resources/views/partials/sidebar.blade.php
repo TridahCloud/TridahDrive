@@ -94,6 +94,35 @@
             @endif
         @endauth
         
+        @auth
+            @php
+                // Get shared projects count (projects where user is a member but not a drive member)
+                $sharedProjectsCount = \App\Models\Project::whereHas('users', function($query) {
+                    $query->where('user_id', auth()->id());
+                })
+                ->whereDoesntHave('drive.users', function($query) {
+                    $query->where('user_id', auth()->id());
+                })
+                ->count();
+            @endphp
+            @if($sharedProjectsCount > 0)
+            <div class="nav-section mt-4">
+                <p class="nav-section-title text-muted text-uppercase small mb-3">Shared With Me</p>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a href="{{ route('projects.shared') }}" class="nav-link {{ request()->routeIs('projects.shared') ? 'active' : '' }}">
+                            <i class="fas fa-share-alt me-2"></i>
+                            <span>Shared Projects</span>
+                            @if($sharedProjectsCount > 0)
+                                <span class="badge bg-brand-teal ms-auto">{{ $sharedProjectsCount }}</span>
+                            @endif
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            @endif
+        @endauth
+        
         <div class="nav-section mt-4">
             <p class="nav-section-title text-muted text-uppercase small mb-3">Account</p>
             <ul class="nav flex-column">

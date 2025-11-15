@@ -637,7 +637,7 @@
                     @endif
                 </div>
                 <div class="d-flex flex-wrap gap-2">
-                    @if($drive->canEdit(auth()->user()))
+                    @if($project->userCanEdit(auth()->user()))
                         <a href="{{ route('drives.projects.projects.edit', [$drive, $project]) }}" class="btn btn-outline-primary">
                             <i class="fas fa-edit me-2"></i>Edit Project
                         </a>
@@ -695,7 +695,7 @@
                                 </button>
                             </div>
                         @endif
-                        @if($drive->canEdit(auth()->user()))
+                        @if($project->userCanEdit(auth()->user()))
                             <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#manageStatusesModal">
                                 <i class="fas fa-columns me-2"></i>Manage Statuses
                             </button>
@@ -726,7 +726,7 @@
             </div>
         </div>
 
-        @if($drive->canEdit(auth()->user()) && isset($availableUsers))
+        @if($project->userCanEdit(auth()->user()) && isset($availableUsers))
         <div class="col-12 col-xl-4">
             <div class="dashboard-card h-100">
                 <div class="d-flex justify-content-between align-items-center mb-2">
@@ -757,7 +757,7 @@
     </div>
 
     <!-- Assign Users Modal -->
-    @if($drive->canEdit(auth()->user()) && isset($availableUsers))
+    @if($project->userCanEdit(auth()->user()) && isset($availableUsers))
     <div class="modal fade" id="assignPeopleModal" tabindex="-1" aria-labelledby="assignPeopleModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -870,7 +870,7 @@
     </div>
 
     <!-- Manage Custom Fields Modal -->
-    @if($drive->canEdit(auth()->user()))
+    @if($project->userCanEdit(auth()->user()))
     <div class="modal fade" id="manageCustomFieldsModal" tabindex="-1" aria-labelledby="manageCustomFieldsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -1000,7 +1000,7 @@
     @endif
 </div>
 
-@if($drive->canEdit(auth()->user()))
+@if($project->userCanEdit(auth()->user()))
     <div class="modal fade" id="manageStatusesModal" tabindex="-1" aria-labelledby="manageStatusesModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
@@ -2075,7 +2075,7 @@
         const editBtn = document.getElementById('taskSidebarEdit');
         
         @php
-            $canEdit = $drive->canEdit(auth()->user());
+            $canEdit = $project->userCanEdit(auth()->user());
         @endphp
         const canEdit = @json($canEdit);
         

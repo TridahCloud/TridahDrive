@@ -58,17 +58,25 @@ class DriveMemberController extends Controller
             'role' => 'required|in:owner,admin,member,viewer',
         ]);
 
+        $isAjax = $request->expectsJson() || $request->ajax();
+
         try {
             $this->driveService->updateUserRole($drive, Auth::user(), $user, $validated['role']);
 
-            if ($request->expectsJson()) {
-                return response()->json(['message' => 'Member role updated successfully!']);
+            if ($isAjax) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Member role updated successfully!'
+                ]);
             }
 
             return redirect()->back()->with('success', 'Member role updated successfully!');
         } catch (\Exception $e) {
-            if ($request->expectsJson()) {
-                return response()->json(['error' => $e->getMessage()], 422);
+            if ($isAjax) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $e->getMessage()
+                ], 422);
             }
 
             return redirect()->back()->withErrors(['error' => $e->getMessage()]);

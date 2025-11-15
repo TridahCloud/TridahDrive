@@ -22,8 +22,9 @@ class TaskCommentController extends Controller
         $this->authorize('view', $drive);
         
         // Check if user has permission to create
-        if (!$drive->canEdit(auth()->user())) {
-            abort(403, 'Viewers cannot create comments.');
+        // Project-level permissions take priority - viewers cannot create
+        if (!$project->userCanEdit(auth()->user())) {
+            abort(403, 'You do not have permission to create comments.');
         }
         
         if ($project->drive_id !== $drive->id || $task->project_id !== $project->id) {
@@ -142,8 +143,9 @@ class TaskCommentController extends Controller
         $this->authorize('view', $drive);
         
         // Check if user has permission to edit
-        if (!$drive->canEdit(auth()->user())) {
-            abort(403, 'Viewers cannot edit comments.');
+        // Project-level permissions take priority - viewers cannot edit
+        if (!$project->userCanEdit(auth()->user())) {
+            abort(403, 'You do not have permission to edit comments.');
         }
         
         if ($project->drive_id !== $drive->id || 
@@ -194,8 +196,9 @@ class TaskCommentController extends Controller
         $this->authorize('view', $drive);
         
         // Check if user has permission to delete
-        if (!$drive->canEdit(auth()->user())) {
-            abort(403, 'Viewers cannot delete comments.');
+        // Project-level permissions take priority - viewers cannot delete
+        if (!$project->userCanEdit(auth()->user())) {
+            abort(403, 'You do not have permission to delete comments.');
         }
         
         if ($project->drive_id !== $drive->id || 

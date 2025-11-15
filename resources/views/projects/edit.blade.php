@@ -20,6 +20,13 @@
         </div>
     </div>
 
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
     @if($errors->any())
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
             <strong>Please fix the following errors:</strong>
@@ -129,50 +136,288 @@
             </div>
             
             <!-- Assigned Users Section -->
-            @if(isset($availableUsers))
             <div class="dashboard-card">
                 <h5 class="mb-3">
-                    <i class="fas fa-users me-2 brand-teal"></i>Assigned Users
+                    <i class="fas fa-users me-2 brand-teal"></i>Shared With
                 </h5>
-                <p class="text-muted small mb-3">Assign users from your Drive to this project.</p>
+                <p class="text-muted small mb-3">Add users to this project and set their permissions. Users don't need to be members of the drive.</p>
                 
-                <form action="{{ route('drives.projects.projects.assign-people', [$drive, $project]) }}" method="POST" id="assignPeopleForm">
+                <!-- Add User by Email -->
+                <div class="mb-3">
+                    <label for="user-email-search" class="form-label small">Add User by Email</label>
+                    <div class="input-group">
+                        <input type="email" class="form-control" id="user-email-search" placeholder="user@example.com">
+                        <button class="btn btn-outline-primary" type="button" id="search-user-btn">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    <div id="user-search-result" class="mt-2"></div>
+                </div>
+                
+                <form id="assignPeopleForm" onsubmit="return handleAssignPeopleSubmit(event)">
                     @csrf
                     
-                    @if($availableUsers->count() > 0)
-                        <div class="mb-3">
-                            <div class="list-group" style="max-height: 400px; overflow-y: auto;">
+                    <div id="assigned-users-list" class="mb-3">
+                        <div class="list-group" style="max-height: 400px; overflow-y: auto;">
+                            @foreach($project->users as $user)
+                                <div class="list-group-item" data-user-id="{{ $user->id }}">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div class="flex-grow-1">
+                                            <div class="fw-bold">{{ $user->name }}</div>
+                                            @if($user->email)
+                                                <small class="text-muted">{{ $user->email }}</small>
+                                            @endif
+                                        </div>
+                                        <div class="ms-3">
+                                            <select name="users[{{ $user->id }}][role]" class="form-select form-select-sm" style="width: auto;">
+                                                <option value="viewer" {{ $user->pivot->role === 'viewer' ? 'selected' : '' }}>Viewer</option>
+                                                <option value="editor" {{ $user->pivot->role === 'editor' ? 'selected' : '' }}>Editor</option>
+                                            </select>
+                                            <input type="hidden" name="users[{{ $user->id }}][id]" value="{{ $user->id }}">
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-danger ms-2 remove-user-btn" data-user-id="{{ $user->id }}">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            @endforeach
+                            
+                            @if(isset($availableUsers) && $availableUsers->count() > 0)
                                 @foreach($availableUsers as $user)
-                                    <label class="list-group-item list-group-item-action">
-                                        <div class="d-flex align-items-center">
-                                            <input type="checkbox" 
-                                                   class="form-check-input me-3" 
-                                                   name="user_ids[]" 
-                                                   value="{{ $user->id }}"
-                                                   {{ $project->users->contains($user->id) ? 'checked' : '' }}>
-                                            <div class="flex-grow-1">
-                                                <div class="fw-bold">{{ $user->name }}</div>
-                                                @if($user->email)
-                                                    <small class="text-muted">{{ $user->email }}</small>
-                                                @endif
+                                    @if(!$project->users->contains($user->id))
+                                        <div class="list-group-item" data-user-id="{{ $user->id }}">
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold">{{ $user->name }}</div>
+                                                    @if($user->email)
+                                                        <small class="text-muted">{{ $user->email }}</small>
+                                                    @endif
+                                                    <small class="badge bg-info ms-2">Drive Member</small>
+                                                </div>
+                                                <div class="ms-3">
+                                                    <select name="users[{{ $user->id }}][role]" class="form-select form-select-sm" style="width: auto;">
+                                                        <option value="viewer">Viewer</option>
+                                                        <option value="editor">Editor</option>
+                                                    </select>
+                                                    <input type="hidden" name="users[{{ $user->id }}][id]" value="{{ $user->id }}">
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-outline-danger ms-2 remove-user-btn" data-user-id="{{ $user->id }}">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
                                             </div>
                                         </div>
-                                    </label>
+                                    @endif
                                 @endforeach
-                            </div>
+                            @endif
                         </div>
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="fas fa-save me-2"></i>Save Assignments
-                        </button>
-                    @else
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            No users available in this Drive.
-                        </div>
-                    @endif
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100" id="saveAssignmentsBtn">
+                        <i class="fas fa-save me-2"></i>Save Assignments
+                    </button>
                 </form>
             </div>
-            @endif
+            
+            @push('scripts')
+            <script>
+                function handleAssignPeopleSubmit(event) {
+                    event.preventDefault();
+                    const form = event.target;
+                    const formData = new FormData(form);
+                    const submitBtn = document.getElementById('saveAssignmentsBtn');
+                    const originalBtnText = submitBtn.innerHTML;
+                    
+                    // Disable button and show loading
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+                    
+                    // Collect all user data
+                    const users = {};
+                    const userInputs = form.querySelectorAll('input[name^="users["][name$="[id]"]');
+                    userInputs.forEach(input => {
+                        const userId = input.value;
+                        const roleInput = form.querySelector(`input[name="users[${userId}][role]"], select[name="users[${userId}][role]"]`);
+                        if (userId && roleInput) {
+                            users[userId] = {
+                                id: userId,
+                                role: roleInput.value || roleInput.options[roleInput.selectedIndex].value
+                            };
+                        }
+                    });
+                    
+                    // Convert to array format
+                    const usersArray = Object.values(users);
+                    
+                    // Submit via fetch to avoid service worker issues
+                    fetch('{{ route("drives.projects.projects.assign-people", [$drive, $project]) }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({ users: usersArray })
+                    })
+                    .then(async response => {
+                        // Check if response is ok
+                        if (!response.ok) {
+                            let errorMessage = 'An error occurred';
+                            try {
+                                const errorData = await response.json();
+                                errorMessage = errorData.message || errorData.error || errorMessage;
+                            } catch (e) {
+                                // If response is not JSON, try to get text
+                                try {
+                                    errorMessage = await response.text() || errorMessage;
+                                } catch (e2) {
+                                    errorMessage = `Server error: ${response.status} ${response.statusText}`;
+                                }
+                            }
+                            throw new Error(errorMessage);
+                        }
+                        
+                        // Try to parse JSON, but handle non-JSON responses
+                        try {
+                            const data = await response.json();
+                            return data;
+                        } catch (e) {
+                            // If not JSON, assume success
+                            return { success: true };
+                        }
+                    })
+                    .then(data => {
+                        // Success - reload page to show updated assignments
+                        window.location.reload();
+                    })
+                    .catch(error => {
+                        console.error('Error saving assignments:', error);
+                        
+                        // Show error message
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'alert alert-danger alert-dismissible fade show mt-3';
+                        errorDiv.innerHTML = `
+                            <strong>Error:</strong> ${error.message || 'Failed to save assignments. Please try again.'}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        form.insertAdjacentElement('afterend', errorDiv);
+                        
+                        // Re-enable button
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnText;
+                    });
+                    
+                    return false;
+                }
+                
+                document.addEventListener('DOMContentLoaded', function() {
+                    const searchBtn = document.getElementById('search-user-btn');
+                    const emailInput = document.getElementById('user-email-search');
+                    const resultDiv = document.getElementById('user-search-result');
+                    const assignedUsersList = document.getElementById('assigned-users-list');
+                    const form = document.getElementById('assignPeopleForm');
+                    
+                    // Remove user button handlers
+                    document.querySelectorAll('.remove-user-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const userId = this.dataset.userId;
+                            const userItem = document.querySelector(`[data-user-id="${userId}"]`);
+                            if (userItem) {
+                                userItem.remove();
+                            }
+                        });
+                    });
+                    
+                    // Search user by email
+                    searchBtn.addEventListener('click', function() {
+                        const email = emailInput.value.trim();
+                        if (!email) {
+                            resultDiv.innerHTML = '<div class="alert alert-warning">Please enter an email address.</div>';
+                            return;
+                        }
+                        
+                        searchBtn.disabled = true;
+                        searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                        
+                        fetch('{{ route("drives.projects.projects.search-users", [$drive, $project]) }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({ email: email })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.error) {
+                                resultDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                            } else if (data.user) {
+                                // Check if user is already in the list
+                                const existingUser = document.querySelector(`[data-user-id="${data.user.id}"]`);
+                                if (existingUser) {
+                                    resultDiv.innerHTML = '<div class="alert alert-warning">User is already added to this project.</div>';
+                                } else {
+                                    // Add user to the list
+                                    const userHtml = `
+                                        <div class="list-group-item" data-user-id="${data.user.id}">
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-bold">${data.user.name}</div>
+                                                    <small class="text-muted">${data.user.email}</small>
+                                                </div>
+                                                <div class="ms-3">
+                                                    <select name="users[${data.user.id}][role]" class="form-select form-select-sm" style="width: auto;">
+                                                        <option value="viewer">Viewer</option>
+                                                        <option value="editor">Editor</option>
+                                                    </select>
+                                                    <input type="hidden" name="users[${data.user.id}][id]" value="${data.user.id}">
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-outline-danger ms-2 remove-user-btn" data-user-id="${data.user.id}">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    `;
+                                    assignedUsersList.querySelector('.list-group').insertAdjacentHTML('beforeend', userHtml);
+                                    
+                                    // Add remove handler to new button
+                                    const newRemoveBtn = assignedUsersList.querySelector(`[data-user-id="${data.user.id}"] .remove-user-btn`);
+                                    newRemoveBtn.addEventListener('click', function() {
+                                        const userId = this.dataset.userId;
+                                        const userItem = document.querySelector(`[data-user-id="${userId}"]`);
+                                        if (userItem) {
+                                            userItem.remove();
+                                        }
+                                    });
+                                    
+                                    resultDiv.innerHTML = '<div class="alert alert-success">User added successfully!</div>';
+                                    emailInput.value = '';
+                                    
+                                    setTimeout(() => {
+                                        resultDiv.innerHTML = '';
+                                    }, 3000);
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            resultDiv.innerHTML = '<div class="alert alert-danger">An error occurred. Please try again.</div>';
+                        })
+                        .finally(() => {
+                            searchBtn.disabled = false;
+                            searchBtn.innerHTML = '<i class="fas fa-search"></i>';
+                        });
+                    });
+                    
+                    // Allow Enter key to trigger search
+                    emailInput.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            searchBtn.click();
+                        }
+                    });
+                });
+            </script>
+            @endpush
         </div>
     </div>
 </div>

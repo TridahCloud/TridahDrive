@@ -17,8 +17,9 @@ class TaskCustomFieldController extends Controller
     {
         $this->authorize('view', $drive);
         
-        if (!$drive->canEdit(auth()->user())) {
-            abort(403, 'Viewers cannot create custom fields.');
+        // Project-level permissions take priority - viewers cannot create
+        if (!$project->userCanEdit(auth()->user())) {
+            abort(403, 'You do not have permission to create custom fields.');
         }
 
         if ($project->drive_id !== $drive->id) {
@@ -113,8 +114,9 @@ class TaskCustomFieldController extends Controller
     {
         $this->authorize('view', $drive);
         
-        if (!$drive->canEdit(auth()->user())) {
-            abort(403, 'Viewers cannot delete custom fields.');
+        // Project-level permissions take priority - viewers cannot delete
+        if (!$project->userCanEdit(auth()->user())) {
+            abort(403, 'You do not have permission to delete custom fields.');
         }
 
         if ($project->drive_id !== $drive->id || $customField->project_id !== $project->id) {
