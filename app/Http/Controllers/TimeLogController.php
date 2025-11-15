@@ -168,6 +168,7 @@ class TimeLogController extends Controller
             'total_hours' => 'nullable|numeric|min:0',
             'status' => 'nullable|in:pending,approved,rejected',
             'notes' => 'nullable|string',
+            'work_description' => 'nullable|string',
         ]);
 
         // Ensure person belongs to this drive
@@ -288,6 +289,7 @@ class TimeLogController extends Controller
             'total_hours' => 'nullable|numeric|min:0',
             'status' => 'nullable|in:pending,approved,rejected',
             'notes' => 'nullable|string',
+            'work_description' => 'nullable|string',
         ]);
 
         // Ensure person belongs to this drive

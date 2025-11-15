@@ -285,6 +285,7 @@ class UserSelfServiceController extends Controller
             'break_hours' => 'nullable|numeric|min:0',
             'total_hours' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string|max:1000',
+            'work_description' => 'nullable|string',
         ]);
 
         // Load schedule to get timezone

@@ -56,6 +56,11 @@
                     </select>
                 </div>
             </div>
+            <div class="mb-3">
+                <label for="work_description" class="form-label">Description of Work</label>
+                <textarea class="form-control" id="work_description" name="work_description" rows="4" placeholder="Describe the work performed during this time period...">{{ old('work_description', $timeLog->work_description) }}</textarea>
+                <small class="form-text text-muted">This description will appear in printed reports.</small>
+            </div>
             <div class="d-flex justify-content-between mt-4">
                 <a href="{{ route('drives.people-manager.time-logs.index', $drive) }}" class="btn btn-secondary">Cancel</a>
                 <button type="submit" class="btn btn-primary">Update Time Log</button>

@@ -30,6 +30,14 @@
         @if($timeLog->total_hours)
             <p><strong>Hours:</strong> {{ number_format($timeLog->total_hours, 1) }}</p>
         @endif
+        @if($timeLog->work_description)
+            <div class="mb-3">
+                <strong>Description of Work:</strong>
+                <div class="mt-2 p-3 bg-light rounded">
+                    {{ nl2br(e($timeLog->work_description)) }}
+                </div>
+            </div>
+        @endif
         <p><strong>Status:</strong> 
             <span class="badge bg-{{ $timeLog->status === 'approved' ? 'success' : ($timeLog->status === 'pending' ? 'warning' : 'secondary') }}">
                 {{ ucfirst($timeLog->status) }}

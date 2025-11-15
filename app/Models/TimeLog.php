@@ -35,6 +35,7 @@ class TimeLog extends Model
         'clock_out_latitude',
         'clock_out_longitude',
         'notes',
+        'work_description',
         'custom_fields',
     ];
 

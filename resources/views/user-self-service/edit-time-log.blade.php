@@ -132,6 +132,19 @@
             </div>
 
             <div class="mb-4">
+                <label for="work_description" class="form-label">Description of Work</label>
+                <textarea class="form-control @error('work_description') is-invalid @enderror" 
+                          id="work_description" 
+                          name="work_description" 
+                          rows="4" 
+                          placeholder="Describe the work performed during this time period...">{{ old('work_description', $timeLog->work_description ?? '') }}</textarea>
+                @error('work_description')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+                <small class="form-text text-muted">This description will appear in printed reports.</small>
+            </div>
+
+            <div class="mb-4">
                 <label for="notes" class="form-label">Notes</label>
                 <textarea class="form-control @error('notes') is-invalid @enderror" 
                           id="notes" 

@@ -132,6 +132,7 @@
                     <th>Regular Hours</th>
                     <th>Overtime Hours</th>
                     <th>Total Hours</th>
+                    <th>Description of Work</th>
                     <th>Status</th>
                     @if($totalPay > 0)
                         <th>Total Pay</th>
@@ -147,6 +148,7 @@
                         <td>{{ number_format($timeLog->regular_hours ?? 0, 2) }}</td>
                         <td>{{ number_format($timeLog->overtime_hours ?? 0, 2) }}</td>
                         <td>{{ number_format($timeLog->total_hours ?? 0, 2) }}</td>
+                        <td>{{ $timeLog->work_description ? nl2br(e($timeLog->work_description)) : '-' }}</td>
                         <td>{{ ucfirst($timeLog->status) }}</td>
                         @if($totalPay > 0)
                             <td>{{ $timeLog->total_pay ? currency_for($timeLog->total_pay, $drive) : '-' }}</td>
