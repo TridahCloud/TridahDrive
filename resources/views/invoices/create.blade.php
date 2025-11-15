@@ -18,9 +18,6 @@
             <button type="button" class="btn btn-outline-primary btn-sm" id="saveBtn">
                 <i class="fas fa-save me-1"></i>Save
             </button>
-            <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">
-                <i class="fas fa-print me-1"></i>Print
-            </button>
         </div>
     </div>
 
@@ -507,40 +504,36 @@ document.addEventListener('DOMContentLoaded', function() {
             
             console.log('Adding item:', { name, unit, price });
             
-            // Find the first empty or create a new row
+            // Always create a new row instead of editing the first one
             const tbody = document.getElementById('itemsBody');
-            const firstRow = tbody.querySelector('.item-row');
-            
-            if (firstRow) {
-                // Fill the first row
-                const descriptionInput = firstRow.querySelector('.item-description');
-                const unitInput = firstRow.querySelector('input[name*="[unit]"]');
-                const priceInput = firstRow.querySelector('.item-price');
-                
-                console.log('Found inputs:', { descriptionInput, unitInput, priceInput });
-                
-                if (descriptionInput) {
-                    if (!descriptionInput.value || descriptionInput.value.trim() === '') {
-                        descriptionInput.value = name;
-                    }
-                }
-                
-                if (unitInput) {
-                    unitInput.value = unit;
-                    console.log('Set unit to:', unit);
-                }
-                
-                if (priceInput) {
-                    priceInput.value = price.toFixed(2);
-                    console.log('Set price to:', price.toFixed(2));
-                    
-                    // Trigger input event to ensure calculations run
-                    priceInput.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-                
-                // Calculate totals for this row
-                calculateTotals();
-            }
+            const newRow = document.createElement('tr');
+            newRow.className = 'item-row';
+            newRow.innerHTML = `
+                <td>
+                    <input type="text" class="form-control border-0 item-description" name="items[${itemCounter}][description]" placeholder="Enter description" value="${name}" required>
+                </td>
+                <td>
+                    <input type="number" class="form-control border-0 item-qty" name="items[${itemCounter}][quantity]" value="1" step="1" min="0" required>
+                </td>
+                <td>
+                    <input type="text" class="form-control border-0" name="items[${itemCounter}][unit]" value="${unit}">
+                </td>
+                <td>
+                    <input type="number" class="form-control border-0 item-price" name="items[${itemCounter}][unit_price]" value="${price.toFixed(2)}" step="1" min="0" required>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="item-total">${formatCurrency(price)}</span>
+                        <button type="button" class="btn btn-link btn-sm text-danger remove-item">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(newRow);
+            attachItemListeners(newRow);
+            itemCounter++;
+            calculateTotals();
         });
     });
     
@@ -770,13 +763,65 @@ document.addEventListener('DOMContentLoaded', function() {
         'show-payment-details': 'payment-details',
         'show-totals': 'totals'
     };
+    
+    // Section mappings for larger sections that use data-section attribute
+    const sectionMappings = {
+        'show-items-table': 'items-table',
+        'show-payment-details': 'payment-details',
+        'show-totals': 'totals',
+    };
 
     document.querySelectorAll('#customizePanel input[type="checkbox"]').forEach(checkbox => {
         checkbox.addEventListener('change', function() {
             const fieldKey = this.id;
             const fieldName = fieldMappings[fieldKey];
+            const sectionName = sectionMappings[fieldKey];
             
-            if (fieldName) {
+            // Handle sections with data-section attribute FIRST (before regular fields)
+            if (sectionName) {
+                // Try to find the section - use ID first (most reliable), then data-section
+                const targetSection = document.getElementById(sectionName)
+                    || document.querySelector(`[data-section="${sectionName}"]`)
+                    || document.querySelector(`.invoice-container [data-section="${sectionName}"]`);
+                if (targetSection) {
+                    if (this.checked) {
+                        targetSection.style.display = '';
+                        // For totals row, also show the parent row if either payment-details or totals is visible
+                        if (sectionName === 'payment-details' || sectionName === 'totals') {
+                            const totalsRow = targetSection.closest('.row');
+                            if (totalsRow) {
+                                const paymentDetailsCheckbox = document.getElementById('show-payment-details');
+                                const totalsCheckbox = document.getElementById('show-totals');
+                                const paymentDetailsVisible = paymentDetailsCheckbox ? paymentDetailsCheckbox.checked : true;
+                                const totalsVisible = totalsCheckbox ? totalsCheckbox.checked : true;
+                                if (paymentDetailsVisible || totalsVisible) {
+                                    totalsRow.style.display = '';
+                                }
+                            }
+                        }
+                    } else {
+                        targetSection.style.display = 'none';
+                        // For totals row, hide the parent row if both payment-details and totals are hidden
+                        if (sectionName === 'payment-details' || sectionName === 'totals') {
+                            const totalsRow = targetSection.closest('.row');
+                            if (totalsRow) {
+                                const paymentDetailsCheckbox = document.getElementById('show-payment-details');
+                                const totalsCheckbox = document.getElementById('show-totals');
+                                const paymentDetailsVisible = paymentDetailsCheckbox ? paymentDetailsCheckbox.checked : true;
+                                const totalsVisible = totalsCheckbox ? totalsCheckbox.checked : true;
+                                if (!paymentDetailsVisible && !totalsVisible) {
+                                    totalsRow.style.display = 'none';
+                                } else {
+                                    // Make sure row is visible if at least one section is visible
+                                    totalsRow.style.display = '';
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            // Handle regular fields with data-field attribute (only if not a section)
+            else if (fieldName) {
                 const targetElements = document.querySelectorAll(`[data-field="${fieldName}"]`);
                 targetElements.forEach(element => {
                     if (this.checked) {

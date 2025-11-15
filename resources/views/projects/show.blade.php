@@ -82,6 +82,13 @@
         opacity: 0.5;
     }
     
+    .kanban-empty-state button,
+    .kanban-empty-state .quick-add-trigger {
+        pointer-events: auto;
+        position: relative;
+        z-index: 10;
+    }
+    
     .kanban-column-content .task-card {
         position: relative;
         z-index: 1;
@@ -692,9 +699,21 @@
                             <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#manageStatusesModal">
                                 <i class="fas fa-columns me-2"></i>Manage Statuses
                             </button>
-                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createLabelModal">
-                                <i class="fas fa-tag me-2"></i>Create Label
-                            </button>
+                            <div class="btn-group">
+                                <a href="{{ route('drives.projects.task-labels.index', $drive) }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-tags me-2"></i>Manage Labels
+                                </a>
+                                <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span class="visually-hidden">Toggle dropdown</span>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#createLabelModal">
+                                            <i class="fas fa-tag me-2"></i>Create Label
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
                             <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#manageCustomFieldsModal">
                                 <i class="fas fa-list-alt me-2"></i>Custom Fields
                             </button>
@@ -1271,6 +1290,58 @@
                         // Update empty states
                         updateEmptyStates(oldStatusId, newStatusId);
                         
+                        // Ensure cards are positioned correctly (after control elements)
+                        // Fix position if card was placed before quick-add-button or quick-add-task
+                        const column = evt.to;
+                        const quickAddButton = column.querySelector('.quick-add-button');
+                        const quickAdd = column.querySelector('.quick-add-task');
+                        
+                        // Find the insertion point after all control elements
+                        let insertionPoint = null;
+                        if (quickAdd && quickAdd.parentNode === column) {
+                            insertionPoint = quickAdd.nextSibling;
+                        } else if (quickAddButton && quickAddButton.parentNode === column) {
+                            insertionPoint = quickAddButton.nextSibling;
+                        }
+                        
+                        // Get all task cards and check if any are positioned incorrectly
+                        const allTaskCards = Array.from(column.querySelectorAll('.task-card'));
+                        const controlElements = new Set();
+                        if (quickAddButton) controlElements.add(quickAddButton);
+                        if (quickAdd) controlElements.add(quickAdd);
+                        
+                        // Check if any task cards are before control elements
+                        let needsRepositioning = false;
+                        if (insertionPoint) {
+                            for (const card of allTaskCards) {
+                                // Check if this card comes before the insertion point
+                                let node = column.firstChild;
+                                while (node && node !== insertionPoint) {
+                                    if (node === card) {
+                                        needsRepositioning = true;
+                                        break;
+                                    }
+                                    node = node.nextSibling;
+                                }
+                                if (needsRepositioning) break;
+                            }
+                        }
+                        
+                        // Reposition all cards after control elements, maintaining their relative order
+                        if (needsRepositioning && insertionPoint) {
+                            // Collect all task cards in their current order
+                            const cardsToMove = Array.from(allTaskCards);
+                            
+                            // Move each card to after the insertion point, maintaining order
+                            cardsToMove.forEach(card => {
+                                if (card.parentNode === column && insertionPoint) {
+                                    column.insertBefore(card, insertionPoint);
+                                    // Move insertion point to after this card
+                                    insertionPoint = card.nextSibling;
+                                }
+                            });
+                        }
+                        
                         // Get all cards in the destination column in their current DOM order
                         const allCardsInColumn = Array.from(evt.to.querySelectorAll('.task-card'));
                         
@@ -1293,8 +1364,8 @@
                             body: JSON.stringify({
                                 status_id: Number(newStatusId),
                                 task_orders: taskOrders
-                            })
-                        })
+                                        })
+                                    })
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
@@ -1601,28 +1672,17 @@
                     if (options) options.style.display = 'none';
                     const statusId = quickAdd.closest('.kanban-column-content').dataset.statusId;
                     
-                    // Show the appropriate button(s) based on whether column has tasks
-                    const column = document.getElementById('kanban-status-' + statusId);
-                    const hasTasks = column && column.querySelectorAll('.task-card').length > 0;
-                    
-                    // Always show the appropriate button based on current state
+                    // Always show the quick-add-button at the top (it's always visible now)
                     const quickAddButtonContainer = document.querySelector(`#kanban-status-${statusId} .quick-add-button`);
                     const quickAddButtonInside = quickAddButtonContainer ? quickAddButtonContainer.querySelector('.quick-add-trigger') : null;
                     const emptyStateButton = document.querySelector(`#empty-status-${statusId} .quick-add-trigger`);
                     
-                    if (hasTasks) {
-                        // Show the quick-add-button container and button if there are tasks
-                        if (quickAddButtonContainer) quickAddButtonContainer.style.display = 'block';
-                        if (quickAddButtonInside) quickAddButtonInside.style.display = 'block';
-                        // Hide empty state button if it exists
-                        if (emptyStateButton) emptyStateButton.style.display = 'none';
-                    } else {
-                        // Show the empty state button if no tasks
-                        if (emptyStateButton) emptyStateButton.style.display = 'inline-block';
-                        // Hide quick-add-button container if it exists
-                        if (quickAddButtonContainer) quickAddButtonContainer.style.display = 'none';
-                        if (quickAddButtonInside) quickAddButtonInside.style.display = 'none';
-                    }
+                    // Always show the quick-add-button at the top
+                    if (quickAddButtonContainer) quickAddButtonContainer.style.display = 'block';
+                    if (quickAddButtonInside) quickAddButtonInside.style.display = 'block';
+                    
+                    // Hide the empty state button since we have the top button
+                    if (emptyStateButton) emptyStateButton.style.display = 'none';
                     
                     // Clear the stored button reference
                     delete quickAdd.dataset.clickedButton;
@@ -2319,14 +2379,23 @@
             }
             
             // Due Date
-            if (task.due_date) {
-                html += '<div class="task-sidebar-section">';
-                html += '<div class="task-sidebar-section-title">Due Date</div>';
-                const dueDate = new Date(task.due_date + 'T00:00:00');
-                const formattedDate = dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                html += `<p style="color: var(--text-color);">${formattedDate}${task.is_overdue ? ' <span class="badge bg-danger">Overdue</span>' : ''}</p>`;
-                html += '</div>';
+            html += '<div class="task-sidebar-section">';
+            html += '<div class="task-sidebar-section-title">Due Date</div>';
+            if (editMode && canEdit) {
+                html += '<input type="date" class="form-control form-control-sm mb-2" id="taskDueDateInput" value="' + (task.due_date || '') + '" onchange="updateTaskDueDate()">';
+                html += '<button type="button" class="btn btn-sm btn-outline-danger" id="removeDueDateBtn" onclick="removeTaskDueDate()" style="display: ' + (task.due_date ? 'inline-block' : 'none') + ';">';
+                html += '<i class="fas fa-times me-1"></i>Remove';
+                html += '</button>';
+            } else {
+                if (task.due_date) {
+                    const dueDate = new Date(task.due_date + 'T00:00:00');
+                    const formattedDate = dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    html += `<p style="color: var(--text-color);">${formattedDate}${task.is_overdue ? ' <span class="badge bg-danger">Overdue</span>' : ''}</p>`;
+                } else {
+                    html += '<p class="text-muted small mb-0">No due date set</p>';
+                }
             }
+            html += '</div>';
             
             // Time Tracking
             if (task.estimated_hours || task.actual_hours) {
@@ -3192,6 +3261,69 @@
             saveTaskChanges();
         }
         
+        function updateTaskDueDate() {
+            if (!currentTaskId) return;
+            
+            const task = taskData[currentTaskId];
+            if (!task) return;
+            
+            const dueDateInput = document.getElementById('taskDueDateInput');
+            if (!dueDateInput) return;
+            
+            const newDueDate = dueDateInput.value || null;
+            if (newDueDate === (task.due_date || '')) return;
+            
+            task.due_date = newDueDate;
+            
+            // Calculate overdue status locally for immediate feedback
+            if (newDueDate) {
+                const dueDate = new Date(newDueDate + 'T00:00:00');
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                // Only mark as overdue if task is not completed
+                task.is_overdue = dueDate < today && (!task.status || !task.status.is_completed);
+            } else {
+                task.is_overdue = false;
+            }
+            
+            // Show/hide remove button
+            const removeBtn = document.getElementById('removeDueDateBtn');
+            if (removeBtn) {
+                removeBtn.style.display = newDueDate ? 'inline-block' : 'none';
+            }
+            
+            // Update card immediately for instant feedback
+            updateTaskCard(currentTaskId);
+            
+            saveTaskChanges();
+        }
+        
+        function removeTaskDueDate() {
+            if (!currentTaskId) return;
+            
+            const task = taskData[currentTaskId];
+            if (!task) return;
+            
+            const dueDateInput = document.getElementById('taskDueDateInput');
+            if (dueDateInput) {
+                dueDateInput.value = '';
+            }
+            
+            task.due_date = null;
+            task.is_overdue = false;
+            
+            // Hide remove button
+            const removeBtn = document.getElementById('removeDueDateBtn');
+            if (removeBtn) {
+                removeBtn.style.display = 'none';
+            }
+            
+            // Update card immediately for instant feedback
+            updateTaskCard(currentTaskId);
+            
+            saveTaskChanges();
+        }
+        
         function saveLabelsAndMembers() {
             saveTaskChanges();
         }
@@ -3229,6 +3361,18 @@
                 }
             }
             
+            // Get due_date from input if in edit mode, otherwise use task data
+            let dueDate = null;
+            const dueDateInput = document.getElementById('taskDueDateInput');
+            if (dueDateInput) {
+                // Always use input value when input exists (edit mode)
+                const inputValue = dueDateInput.value.trim();
+                dueDate = inputValue ? inputValue : null;
+            } else {
+                // Not in edit mode, use task data
+                dueDate = task.due_date || null;
+            }
+            
             return fetch(task.update_url, {
                 method: 'POST',
                 headers: {
@@ -3241,7 +3385,8 @@
                     label_ids: labelIds,
                     member_ids: memberIds,
                     priority: priority,
-                    description: description
+                    description: description,
+                    due_date: dueDate
                 })
             })
             .then(response => response.json())
@@ -3270,6 +3415,15 @@
                     if (data.task.description !== undefined) {
                         task.description = data.task.description;
                         // Update description in view mode if not in edit mode
+                        if (!isEditMode) {
+                            renderSidebarContent(task, false);
+                        }
+                    }
+                    // Always update due_date if it's in the response (including null)
+                    if ('due_date' in data.task) {
+                        task.due_date = data.task.due_date;
+                        task.is_overdue = data.task.is_overdue || false;
+                        // Update due date display in view mode if not in edit mode
                         if (!isEditMode) {
                             renderSidebarContent(task, false);
                         }
@@ -3317,12 +3471,12 @@
             
             // Update description on card
             let descriptionEl = card.querySelector('.task-card-description');
-            if (task.description) {
+                if (task.description) {
                 // Get plain text from HTML for truncation
-                const tempDiv = document.createElement('div');
+                    const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = task.description;
-                const plainText = tempDiv.textContent || tempDiv.innerText || '';
-                
+                    const plainText = tempDiv.textContent || tempDiv.innerText || '';
+                    
                 // Create or update description element
                 if (!descriptionEl) {
                     // Create description element if it doesn't exist
@@ -3338,13 +3492,13 @@
                     if (plainText.length > 100) {
                         // Strip HTML and truncate plain text
                         descriptionEl.textContent = plainText.substring(0, 100) + '...';
-                    } else {
+                            } else {
                         // Use plain text for card display
                         descriptionEl.textContent = plainText;
                     }
                     descriptionEl.style.display = '';
                 }
-            } else {
+                } else {
                 if (descriptionEl) {
                     descriptionEl.style.display = 'none';
                 }
@@ -3425,6 +3579,49 @@
                         } else {
                             membersCount.style.display = 'none';
                         }
+                    }
+                    
+                    // Update or add due date
+                    let dueDateEl = leftSide.querySelector('small:has(i.fa-calendar-alt)');
+                    if (!dueDateEl) {
+                        // Try alternative selector
+                        dueDateEl = Array.from(leftSide.querySelectorAll('small')).find(el => 
+                            el.querySelector('i.fa-calendar-alt')
+                        );
+                    }
+                    
+                    if (task.due_date) {
+                        const dueDate = new Date(task.due_date + 'T00:00:00');
+                        const formattedDate = dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        const isOverdue = task.is_overdue || false;
+                        
+                        if (!dueDateEl) {
+                            // Create due date element
+                            dueDateEl = document.createElement('small');
+                            dueDateEl.className = isOverdue ? 'text-danger' : 'text-muted';
+                            const icon = document.createElement('i');
+                            icon.className = 'fas fa-calendar-alt me-1';
+                            dueDateEl.appendChild(icon);
+                            dueDateEl.appendChild(document.createTextNode(formattedDate));
+                            // Insert after checklist progress if it exists, otherwise at the beginning
+                            const checklistProgress = leftSide.querySelector('small:has(i.fa-tasks)');
+                            if (checklistProgress) {
+                                checklistProgress.after(dueDateEl);
+                            } else {
+                                leftSide.insertBefore(dueDateEl, leftSide.firstChild);
+                            }
+                        } else {
+                            // Update existing due date element
+                            const icon = dueDateEl.querySelector('i');
+                            dueDateEl.className = isOverdue ? 'text-danger' : 'text-muted';
+                            dueDateEl.innerHTML = '';
+                            dueDateEl.appendChild(icon);
+                            dueDateEl.appendChild(document.createTextNode(`\u00A0${formattedDate}`));
+                            dueDateEl.style.display = '';
+                        }
+                    } else if (dueDateEl) {
+                        // Hide due date if it was removed
+                        dueDateEl.style.display = 'none';
                     }
                     
                     // Update or add comment count
@@ -3918,6 +4115,8 @@
         window.updateTaskTitle = updateTaskTitle;
         window.saveTaskDescription = saveTaskDescription;
         window.updateTaskPriority = updateTaskPriority;
+        window.updateTaskDueDate = updateTaskDueDate;
+        window.removeTaskDueDate = removeTaskDueDate;
         window.renderComment = renderComment;
         window.submitComment = submitComment;
         window.showReplyForm = showReplyForm;
@@ -4558,17 +4757,26 @@
             }
             
             // Hide quick add button if it exists
-            const quickAddButton = column.querySelector('.quick-add-button');
-            if (quickAddButton) {
-                quickAddButton.style.display = 'block';
-            }
+            // quick-add-button is always visible now, no need to show/hide it
             
             // Create and add task card
             const taskCard = createTaskCard(taskData);
+            const quickAddButton = column.querySelector('.quick-add-button');
             const quickAdd = column.querySelector('.quick-add-task');
-            if (quickAdd && quickAdd.nextSibling) {
-                column.insertBefore(taskCard, quickAdd.nextSibling);
+            
+            // Insert card after control elements (quick-add-button and quick-add-task)
+            // Cards should always come after these control elements
+            let insertAfter = null;
+            if (quickAdd && quickAdd.parentNode === column) {
+                insertAfter = quickAdd;
+            } else if (quickAddButton && quickAddButton.parentNode === column) {
+                insertAfter = quickAddButton;
+            }
+            
+            if (insertAfter) {
+                column.insertBefore(taskCard, insertAfter.nextSibling);
             } else {
+                // Fallback: append to end
                 column.appendChild(taskCard);
             }
             
@@ -4635,10 +4843,7 @@
                         emptyState.style.display = 'block';
                     }
                     // Hide quick add button if column is empty
-                    const quickAddButton = column.querySelector('.quick-add-button');
-                    if (quickAddButton && cards.length === 0) {
-                        quickAddButton.style.display = 'none';
-                    }
+                    // quick-add-button is always visible now, no need to hide it
                 }
             }
             
@@ -4678,10 +4883,7 @@
                 }
                 
                 // Show quick add button for new column if it exists
-                const newQuickAddButton = newColumn.querySelector('.quick-add-button');
-                if (newQuickAddButton) {
-                    newQuickAddButton.style.display = 'block';
-                }
+                // quick-add-button is always visible now, no need to show it
                 
                 // Remove from old column
                 taskCard.remove();
@@ -4706,17 +4908,24 @@
                 taskCard.style.order = newSortOrder;
                 
                 // Insert task card in the correct position based on new_sort_order (which is the index)
-                // Get all existing task cards in the new column (in DOM order, only before quick-add-task)
+                // Find reference elements: quick-add-button, quick-add-task, and empty-state
+                const quickAddButton = newColumn.querySelector('.quick-add-button');
                 const quickAdd = newColumn.querySelector('.quick-add-task');
+                const emptyState = newColumn.querySelector('.kanban-empty-state');
                 
-                // Get all children of the column
+                // Get all children of the column, filtering out non-task elements
                 const allChildren = Array.from(newColumn.children);
                 
-                // Find task cards that come before quick-add-task
+                // Find all task cards (excluding control elements like quick-add-button, quick-add-task, empty-state)
                 const existingCards = [];
+                const controlElements = new Set();
+                if (quickAddButton) controlElements.add(quickAddButton);
+                if (quickAdd) controlElements.add(quickAdd);
+                if (emptyState) controlElements.add(emptyState);
+                
                 for (const child of allChildren) {
-                    if (child === quickAdd) {
-                        break; // Stop when we reach quick-add-task
+                    if (controlElements.has(child)) {
+                        continue; // Skip control elements
                     }
                     if (child.classList.contains('task-card') && !child.classList.contains('dragging') && child !== taskCard) {
                         existingCards.push(child);
@@ -4725,7 +4934,7 @@
                 
                 // new_sort_order is the 0-based index where the card should be positioned
                 // Insert the card at that index position
-                // NEVER insert before quick-add-task - always insert before task cards
+                // NEVER insert before quick-add-button or quick-add-task - always insert after them
                 let insertBefore = null;
                 
                 if (newSortOrder < existingCards.length && existingCards[newSortOrder]) {
@@ -4733,29 +4942,47 @@
                     insertBefore = existingCards[newSortOrder];
                 } else {
                     // Index is beyond existing cards - find the last task card and insert after it
-                    // Get ALL task cards in the column (including any that might be after quick-add-task)
+                    // Get ALL task cards in the column (excluding control elements)
                     const allTaskCards = Array.from(newColumn.querySelectorAll('.task-card:not(.dragging)'))
-                        .filter(card => card !== taskCard);
+                        .filter(card => card !== taskCard && !controlElements.has(card));
                     
                     if (allTaskCards.length > 0) {
                         // Insert after the last task card
                         const lastTaskCard = allTaskCards[allTaskCards.length - 1];
-                        insertBefore = lastTaskCard.nextSibling; // This will be quick-add-task or null
-                    } else if (quickAdd && quickAdd.parentNode === newColumn) {
-                        // No task cards exist, insert before quick-add-task as last resort
-                        insertBefore = quickAdd;
+                        insertBefore = lastTaskCard.nextSibling;
+                    } else {
+                        // No task cards exist - find the insertion point after control elements
+                        // Cards should go after quick-add-button and quick-add-task
+                        let referenceElement = null;
+                        if (quickAdd && quickAdd.parentNode === newColumn) {
+                            referenceElement = quickAdd.nextSibling;
+                        } else if (quickAddButton && quickAddButton.parentNode === newColumn) {
+                            referenceElement = quickAddButton.nextSibling;
+                        } else if (emptyState && emptyState.parentNode === newColumn) {
+                            referenceElement = emptyState.nextSibling;
+                        }
+                        insertBefore = referenceElement;
                     }
                 }
                 
                 // Insert the card at the correct position
                 if (insertBefore && insertBefore.parentNode === newColumn) {
                     newColumn.insertBefore(taskCard, insertBefore);
-                } else if (quickAdd && quickAdd.parentNode === newColumn) {
-                    // Fallback: insert before quick-add-task only if absolutely necessary
-                    newColumn.insertBefore(taskCard, quickAdd);
                 } else {
-                    // Last resort: append to end
-                    newColumn.appendChild(taskCard);
+                    // Fallback: find a safe insertion point after all control elements
+                    let fallbackInsertAfter = null;
+                    if (quickAdd && quickAdd.parentNode === newColumn) {
+                        fallbackInsertAfter = quickAdd;
+                    } else if (quickAddButton && quickAddButton.parentNode === newColumn) {
+                        fallbackInsertAfter = quickAddButton;
+                    }
+                    
+                    if (fallbackInsertAfter) {
+                        newColumn.insertBefore(taskCard, fallbackInsertAfter.nextSibling);
+                    } else {
+                        // Last resort: append to end
+                        newColumn.appendChild(taskCard);
+                    }
                 }
                 
                 // Update column task counts
@@ -4773,11 +5000,7 @@
                 if (oldCards.length === 0 && oldEmptyState) {
                     oldEmptyState.style.display = 'block';
                 }
-                // Hide quick add button for old column if it's empty
-                const oldQuickAddButton = oldColumn.querySelector('.quick-add-button');
-                if (oldQuickAddButton && oldCards.length === 0) {
-                    oldQuickAddButton.style.display = 'none';
-                }
+                // quick-add-button is always visible now, no need to hide it
             }
         } else {
             // Same column - just reorder within the column
@@ -4798,13 +5021,20 @@
             
             // Get all children of the column
             const allChildren = Array.from(column.children);
+            const quickAddButton = column.querySelector('.quick-add-button');
             const quickAdd = column.querySelector('.quick-add-task');
+            const emptyState = column.querySelector('.kanban-empty-state');
             
-            // Find task cards that come before quick-add-task
+            // Find all task cards (excluding control elements like quick-add-button, quick-add-task, empty-state)
             const existingCards = [];
+            const controlElements = new Set();
+            if (quickAddButton) controlElements.add(quickAddButton);
+            if (quickAdd) controlElements.add(quickAdd);
+            if (emptyState) controlElements.add(emptyState);
+            
             for (const child of allChildren) {
-                if (child === quickAdd) {
-                    break; // Stop when we reach quick-add-task
+                if (controlElements.has(child)) {
+                    continue; // Skip control elements
                 }
                 if (child.classList.contains('task-card') && !child.classList.contains('dragging')) {
                     existingCards.push(child);
@@ -4812,7 +5042,7 @@
             }
             
             // Find the correct insertion point based on the new sort order (index)
-            // NEVER insert before quick-add-task - always insert before task cards
+            // NEVER insert before quick-add-button or quick-add-task - always insert after them
             let insertBefore = null;
             
             if (newSortOrder < existingCards.length && existingCards[newSortOrder]) {
@@ -4820,28 +5050,47 @@
                 insertBefore = existingCards[newSortOrder];
             } else {
                 // Index is beyond existing cards - find the last task card and insert after it
-                // Get ALL task cards in the column (including any that might be after quick-add-task)
-                const allTaskCards = Array.from(column.querySelectorAll('.task-card:not(.dragging)'));
+                // Get ALL task cards in the column (excluding control elements)
+                const allTaskCards = Array.from(column.querySelectorAll('.task-card:not(.dragging)'))
+                    .filter(card => !controlElements.has(card));
                 
                 if (allTaskCards.length > 0) {
                     // Insert after the last task card
                     const lastTaskCard = allTaskCards[allTaskCards.length - 1];
-                    insertBefore = lastTaskCard.nextSibling; // This will be quick-add-task or null
-                } else if (quickAdd && quickAdd.parentNode === column) {
-                    // No task cards exist, insert before quick-add-task as last resort
-                    insertBefore = quickAdd;
+                    insertBefore = lastTaskCard.nextSibling;
+                } else {
+                    // No task cards exist - find the insertion point after control elements
+                    // Cards should go after quick-add-button and quick-add-task
+                    let referenceElement = null;
+                    if (quickAdd && quickAdd.parentNode === column) {
+                        referenceElement = quickAdd.nextSibling;
+                    } else if (quickAddButton && quickAddButton.parentNode === column) {
+                        referenceElement = quickAddButton.nextSibling;
+                    } else if (emptyState && emptyState.parentNode === column) {
+                        referenceElement = emptyState.nextSibling;
+                    }
+                    insertBefore = referenceElement;
                 }
             }
             
             // Move the card to the correct position
             if (insertBefore && insertBefore.parentNode === column) {
                 column.insertBefore(taskCard, insertBefore);
-            } else if (quickAdd && quickAdd.parentNode === column) {
-                // Fallback: insert before quick-add-task only if absolutely necessary
-                column.insertBefore(taskCard, quickAdd);
-            } else if (!wasInDOM) {
-                // If card wasn't in DOM and we couldn't find insertion point, append
-                column.appendChild(taskCard);
+            } else {
+                // Fallback: find a safe insertion point after all control elements
+                let fallbackInsertAfter = null;
+                if (quickAdd && quickAdd.parentNode === column) {
+                    fallbackInsertAfter = quickAdd;
+                } else if (quickAddButton && quickAddButton.parentNode === column) {
+                    fallbackInsertAfter = quickAddButton;
+                }
+                
+                if (fallbackInsertAfter) {
+                    column.insertBefore(taskCard, fallbackInsertAfter.nextSibling);
+                } else if (!wasInDOM) {
+                    // If card wasn't in DOM and we couldn't find insertion point, append
+                    column.appendChild(taskCard);
+                }
             }
         }
         

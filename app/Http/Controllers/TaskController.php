@@ -879,6 +879,7 @@ class TaskController extends Controller
             'member_ids.*' => 'exists:users,id',
             'priority' => 'nullable|in:low,medium,high,urgent',
             'description' => 'nullable|string',
+            'due_date' => 'nullable|date',
         ]);
 
         // Update title
@@ -894,6 +895,11 @@ class TaskController extends Controller
         // Update description
         if (isset($validated['description'])) {
             $task->description = $this->sanitizeDescription($validated['description']);
+        }
+
+        // Update due_date - explicitly handle null to allow removal
+        if (array_key_exists('due_date', $validated)) {
+            $task->due_date = $validated['due_date'] ? \Carbon\Carbon::parse($validated['due_date']) : null;
         }
 
         // Sync labels
@@ -935,6 +941,8 @@ class TaskController extends Controller
                 'title' => $task->title,
                 'priority' => $task->priority,
                 'description' => $task->description,
+                'due_date' => $task->due_date ? $task->due_date->format('Y-m-d') : null,
+                'is_overdue' => (bool) $task->isOverdue(),
                 'labels' => $task->labels->map(function ($label) {
                     return [
                         'id' => $label->id,

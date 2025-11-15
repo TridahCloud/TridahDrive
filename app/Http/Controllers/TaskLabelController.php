@@ -152,6 +152,21 @@ class TaskLabelController extends Controller
             'is_active' => $request->has('is_active'),
         ]);
 
+        // If AJAX request, return JSON response
+        if ($request->ajax() || $request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Task label updated successfully!',
+                'label' => [
+                    'id' => $taskLabel->id,
+                    'name' => $taskLabel->name,
+                    'color' => $taskLabel->color,
+                    'description' => $taskLabel->description,
+                    'is_active' => $taskLabel->is_active,
+                ]
+            ]);
+        }
+
         return redirect()->route('drives.projects.task-labels.show', [$drive, $taskLabel])
             ->with('success', 'Task label updated successfully!');
     }
@@ -159,7 +174,7 @@ class TaskLabelController extends Controller
     /**
      * Remove the specified task label
      */
-    public function destroy(Drive $drive, TaskLabel $taskLabel)
+    public function destroy(Request $request, Drive $drive, TaskLabel $taskLabel)
     {
         $this->authorize('view', $drive);
         
@@ -172,7 +187,18 @@ class TaskLabelController extends Controller
             abort(404);
         }
 
+        // Detach the label from all tasks before deleting
+        $taskLabel->tasks()->detach();
+
         $taskLabel->delete();
+
+        // If AJAX request, return JSON response
+        if ($request->ajax() || $request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Task label deleted successfully!'
+            ]);
+        }
 
         return redirect()->route('drives.projects.task-labels.index', $drive)
             ->with('success', 'Task label deleted successfully!');

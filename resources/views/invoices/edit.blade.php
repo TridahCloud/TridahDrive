@@ -859,40 +859,36 @@ document.addEventListener('DOMContentLoaded', function() {
             
             console.log('Adding item:', { name, unit, price });
             
-            // Find the first empty or create a new row
+            // Always create a new row instead of editing the first one
             const tbody = document.getElementById('itemsBody');
-            const firstRow = tbody.querySelector('.item-row');
-            
-            if (firstRow) {
-                // Fill the first row
-                const descriptionInput = firstRow.querySelector('.item-description');
-                const unitInput = firstRow.querySelector('input[name*="[unit]"]');
-                const priceInput = firstRow.querySelector('.item-price');
-                
-                console.log('Found inputs:', { descriptionInput, unitInput, priceInput });
-                
-                if (descriptionInput) {
-                    if (!descriptionInput.value || descriptionInput.value.trim() === '') {
-                        descriptionInput.value = name;
-                    }
-                }
-                
-                if (unitInput) {
-                    unitInput.value = unit;
-                    console.log('Set unit to:', unit);
-                }
-                
-                if (priceInput) {
-                    priceInput.value = price.toFixed(2);
-                    console.log('Set price to:', price.toFixed(2));
-                    
-                    // Trigger input event to ensure calculations run
-                    priceInput.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-                
-                // Calculate totals for this row
-                calculateTotals();
-            }
+            const newRow = document.createElement('tr');
+            newRow.className = 'item-row';
+            newRow.innerHTML = `
+                <td>
+                    <input type="text" class="form-control border-0 item-description" name="items[${itemCounter}][description]" placeholder="Enter description" value="${name}" required>
+                </td>
+                <td>
+                    <input type="number" class="form-control border-0 item-qty" name="items[${itemCounter}][quantity]" value="1" step="1" min="0" required>
+                </td>
+                <td>
+                    <input type="text" class="form-control border-0" name="items[${itemCounter}][unit]" value="${unit}">
+                </td>
+                <td>
+                    <input type="number" class="form-control border-0 item-price" name="items[${itemCounter}][unit_price]" value="${price.toFixed(2)}" step="1" min="0" required>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="item-total">${formatCurrency(price)}</span>
+                        <button type="button" class="btn btn-link btn-sm text-danger remove-item">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(newRow);
+            attachItemListeners(newRow);
+            itemCounter++;
+            calculateTotals();
         });
     });
     

@@ -203,7 +203,7 @@ class ProjectController extends Controller
             // Use defaults
         }
         
-        $view = $request->get('view', $userPreference?->view ?? 'list'); // list, kanban, gantt, calendar, workload
+        $view = $request->get('view', $userPreference?->view ?? 'kanban'); // list, kanban, gantt, calendar, workload
 
         // Optimize queries with eager loading and pagination for large projects
         $project->load([

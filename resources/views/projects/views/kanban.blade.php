@@ -68,7 +68,7 @@
                                         </div>
                                     </form>
                                 </div>
-                                <div class="quick-add-button mb-2" style="display: {{ $status->tasks->isEmpty() ? 'none' : 'block' }};">
+                                <div class="quick-add-button mb-2">
                                     <button type="button" class="btn btn-sm btn-outline-secondary w-100 quick-add-trigger" data-status-id="{{ $status->id }}">
                                         <i class="fas fa-plus me-1"></i>Add Task
                                     </button>
@@ -79,7 +79,7 @@
                                     <p class="small mb-2 fw-semibold">No tasks in {{ $status->name }}</p>
                                     <p class="small mb-3 opacity-75">Drag tasks here or create a new one to get started</p>
                                     @if($drive->canEdit(auth()->user()))
-                                    <button type="button" class="btn btn-sm btn-outline-primary quick-add-trigger" data-status-id="{{ $status->id }}">
+                                    <button type="button" class="btn btn-sm btn-outline-primary quick-add-trigger" data-status-id="{{ $status->id }}" style="pointer-events: auto; position: relative; z-index: 10;">
                                         <i class="fas fa-plus me-1"></i>Add Task
                                     </button>
                                     @endif

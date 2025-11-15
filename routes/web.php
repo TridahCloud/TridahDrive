@@ -137,9 +137,9 @@ Route::middleware('auth')->group(function () {
                Route::prefix('projects/{project}')->name('projects.')->group(function () {
                    Route::resource('tasks', TaskController::class);
                    Route::post('tasks/{task}/duplicate', [TaskController::class, 'duplicate'])->name('tasks.duplicate');
-                  Route::post('tasks/{task}/update-status', [TaskController::class, 'updateStatus'])->name('tasks.update-status');
+                   Route::post('tasks/{task}/update-status', [TaskController::class, 'updateStatus'])->name('tasks.update-status');
                   Route::post('tasks/batch-update-order', [TaskController::class, 'batchUpdateOrder'])->name('tasks.batch-update-order');
-                  Route::post('tasks/{task}/update-labels-members', [TaskController::class, 'updateLabelsAndMembers'])->name('tasks.update-labels-members');
+                   Route::post('tasks/{task}/update-labels-members', [TaskController::class, 'updateLabelsAndMembers'])->name('tasks.update-labels-members');
                    Route::post('tasks/{task}/archive', [TaskController::class, 'archive'])->name('tasks.archive');
                    Route::post('tasks/{task}/unarchive', [TaskController::class, 'unarchive'])->name('tasks.unarchive');
                    Route::post('tasks/{task}/dependencies', [TaskController::class, 'addDependency'])->name('tasks.dependencies.store');
