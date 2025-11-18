@@ -523,9 +523,9 @@
                             <i class="fab fa-github me-2"></i>
                             Contribute on GitHub
                         </a>
-                        <a href="https://drive.tridah.cloud" target="_blank" class="btn btn-lg btn-outline-light">
-                            <i class="fas fa-globe me-2"></i>
-                            Try Live Demo
+                        <a href="https://discord.gg/xx6sJaxHKg" target="_blank" class="btn btn-lg btn-outline-light">
+                            <i class="fab fa-discord me-2"></i>
+                            Join our Discord
                         </a>
                     </div>
                 </div>
